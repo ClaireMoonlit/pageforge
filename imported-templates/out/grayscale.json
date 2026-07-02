@@ -1,0 +1,1802 @@
+{
+  "id": "sb-grayscale",
+  "name": "StartBootstrap Grayscale",
+  "nodes": [
+    {
+      "id": "sbt_mqwkvs32_1",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 0,
+        "position": "relative",
+        "display": "flex",
+        "flexWrap": "wrap",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "padding": "var(--bs-navbar-padding-y) var(--bs-navbar-padding-x)",
+        "width": "1200px",
+        "minHeight": "224px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs33_2",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "224px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs33_3",
+              "type": "text",
+              "props": {
+                "text": "Start Bootstrap"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "color": "var(--bs-navbar-brand-color)",
+                "textDecoration": "none",
+                "fontSize": "var(--bs-navbar-brand-font-size)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs33_4",
+              "type": "button",
+              "props": {
+                "text": "Menu"
+              },
+              "style": {
+                "x": 0,
+                "y": 44,
+                "borderRadius": "var(--bs-navbar-toggler-border-radius)",
+                "margin": "0",
+                "fontFamily": "inherit",
+                "fontSize": "var(--bs-navbar-toggler-font-size)",
+                "lineHeight": "1",
+                "padding": "var(--bs-navbar-toggler-padding-y) var(--bs-navbar-toggler-padding-x)",
+                "color": "var(--bs-navbar-color)",
+                "backgroundColor": "transparent",
+                "border": "var(--bs-border-width) solid var(--bs-navbar-toggler-border-color)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs33_5",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 108,
+                "flexGrow": "1",
+                "alignItems": "center",
+                "width": "1200px",
+                "minHeight": "116px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs33_6",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexDirection": "column",
+                    "width": "1200px",
+                    "minHeight": "116px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs33_7",
+                      "type": "text",
+                      "props": {
+                        "text": "About"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs33_8",
+                      "type": "text",
+                      "props": {
+                        "text": "Projects"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs33_9",
+                      "type": "text",
+                      "props": {
+                        "text": "Contact"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 88,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs33_10",
+      "type": "container",
+      "props": {
+        "text": "Grayscale",
+        "level": 1
+      },
+      "style": {
+        "x": 0,
+        "y": 248,
+        "position": "relative",
+        "width": "1200px",
+        "minHeight": "580px",
+        "padding": "15rem 0",
+        "background": "linear-gradient(to bottom,rgba(0,0,0,.3) 0,rgba(0,0,0,.7) 75%,#000 100%),url(\"../assets/img/bg-masthead.jpg\")"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs33_11",
+          "type": "container",
+          "props": {
+            "text": "Grayscale",
+            "level": 1
+          },
+          "style": {
+            "x": 0,
+            "y": 240,
+            "width": "1200px",
+            "display": "flex",
+            "height": "100%",
+            "alignItems": "center",
+            "justifyContent": "center",
+            "minHeight": "138.88px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs33_12",
+              "type": "container",
+              "props": {
+                "text": "Grayscale",
+                "level": 1
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "display": "flex",
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "138.88px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs33_13",
+                  "type": "container",
+                  "props": {
+                    "text": "Grayscale",
+                    "level": 1
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "138.88px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs33_14",
+                      "type": "heading",
+                      "props": {
+                        "text": "Grayscale",
+                        "level": 1
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontWeight": "500",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.375rem + 1.5vw)",
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs33_15",
+                      "type": "heading",
+                      "props": {
+                        "text": "A free, responsive, one page Bootstrap theme created by Start Bootstrap.",
+                        "level": 2
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "fontWeight": "500",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.325rem + .9vw)",
+                        "color": "rgba(255,255,255,.5)",
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs33_16",
+                      "type": "text",
+                      "props": {
+                        "text": "Get Started"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 110.88,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-block",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "var(--bs-btn-font-size)",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "borderRadius": "var(--bs-btn-border-radius)",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs33_17",
+      "type": "container",
+      "props": {
+        "text": "Built with Bootstrap 5",
+        "level": 2,
+        "subtitle": "Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on\n                            the preview page.\n                            The theme is open source, and you can use it for any purpose, personal or commercial."
+      },
+      "style": {
+        "x": 0,
+        "y": 852,
+        "textAlign": "center",
+        "width": "1200px",
+        "minHeight": "396px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs33_18",
+          "type": "container",
+          "props": {
+            "text": "Built with Bootstrap 5",
+            "level": 2,
+            "subtitle": "Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on\n                            the preview page.\n                            The theme is open source, and you can use it for any purpose, personal or commercial."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "396px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs33_19",
+              "type": "container",
+              "props": {
+                "text": "Built with Bootstrap 5",
+                "level": 2,
+                "subtitle": "Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on\n                            the preview page.\n                            The theme is open source, and you can use it for any purpose, personal or commercial."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "180px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs33_20",
+                  "type": "container",
+                  "props": {
+                    "text": "Built with Bootstrap 5",
+                    "level": 2,
+                    "subtitle": "Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on\n                            the preview page.\n                            The theme is open source, and you can use it for any purpose, personal or commercial."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "800.0000000399999px",
+                    "minHeight": "180px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs33_21",
+                      "type": "heading",
+                      "props": {
+                        "text": "Built with Bootstrap 5",
+                        "level": 2
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontWeight": "500",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.325rem + .9vw)",
+                        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                        "width": "800.0000000399999px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs33_22",
+                      "type": "text",
+                      "props": {
+                        "text": "Grayscale is a free Bootstrap theme created by Start Bootstrap. It can be yours right now, simply download the template on\n                            the preview page.\n                            The theme is open source, and you can use it for any purpose, personal or commercial."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "color": "rgba(255,255,255,.5)",
+                        "width": "800.0000000399999px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs33_23",
+              "type": "image",
+              "props": {
+                "src": "assets/img/ipad.png",
+                "alt": "..."
+              },
+              "style": {
+                "x": 0,
+                "y": 196,
+                "maxWidth": "100%",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs33_24",
+      "type": "container",
+      "props": {
+        "text": "Shoreline",
+        "level": 3,
+        "subtitle": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+      },
+      "style": {
+        "x": 0,
+        "y": 1272,
+        "padding": "10rem 0",
+        "backgroundColor": "rgba(var(--bs-light-rgb),var(--bs-bg-opacity))",
+        "width": "1200px",
+        "minHeight": "1380px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs34_25",
+          "type": "container",
+          "props": {
+            "text": "Shoreline",
+            "level": 3,
+            "subtitle": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+          },
+          "style": {
+            "x": 0,
+            "y": 160,
+            "width": "1200px",
+            "minHeight": "1060px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs34_26",
+              "type": "container",
+              "props": {
+                "text": "Shoreline",
+                "level": 3,
+                "subtitle": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "alignItems": "center",
+                "width": "1200px",
+                "minHeight": "396px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs34_27",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "699.9999999600001px",
+                    "minHeight": "200px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_28",
+                      "type": "image",
+                      "props": {
+                        "src": "assets/img/bg-masthead.jpg",
+                        "alt": "..."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "maxWidth": "100%",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs34_29",
+                  "type": "container",
+                  "props": {
+                    "text": "Shoreline",
+                    "level": 3,
+                    "subtitle": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 216,
+                    "flex": "0 0 auto",
+                    "width": "500.00000004px",
+                    "minHeight": "180px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_30",
+                      "type": "container",
+                      "props": {
+                        "text": "Shoreline",
+                        "level": 3,
+                        "subtitle": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "textAlign": "center",
+                        "width": "500.00000004px",
+                        "minHeight": "180px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs34_31",
+                          "type": "heading",
+                          "props": {
+                            "text": "Shoreline",
+                            "level": 3
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "fontWeight": "500",
+                            "lineHeight": "1.2",
+                            "fontSize": "calc(1.275rem + .3vw)",
+                            "width": "500.00000004px"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs34_32",
+                          "type": "text",
+                          "props": {
+                            "text": "Grayscale is open source and MIT licensed. This means you can use it for any project - even commercial projects! Download it, customize it, and publish your website!"
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 44,
+                            "color": "rgba(0,0,0,.5)",
+                            "width": "500.00000004px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs34_33",
+              "type": "container",
+              "props": {
+                "text": "Misty",
+                "level": 3,
+                "subtitle": "An example of where you can put an image of a project, or anything else, along with a description."
+              },
+              "style": {
+                "x": 0,
+                "y": 412,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "316px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs34_34",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "600px",
+                    "minHeight": "200px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_35",
+                      "type": "image",
+                      "props": {
+                        "src": "assets/img/demo-image-01.jpg",
+                        "alt": "..."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "maxWidth": "100%",
+                        "width": "600px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs34_36",
+                  "type": "container",
+                  "props": {
+                    "text": "Misty",
+                    "level": 3,
+                    "subtitle": "An example of where you can put an image of a project, or anything else, along with a description."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 216,
+                    "flex": "0 0 auto",
+                    "width": "600px",
+                    "minHeight": "100px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_37",
+                      "type": "container",
+                      "props": {
+                        "text": "Misty",
+                        "level": 3,
+                        "subtitle": "An example of where you can put an image of a project, or anything else, along with a description."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "backgroundColor": "rgba(var(--bs-black-rgb),var(--bs-bg-opacity))",
+                        "textAlign": "center",
+                        "height": "100%",
+                        "width": "600px",
+                        "minHeight": "100px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs34_38",
+                          "type": "container",
+                          "props": {
+                            "text": "Misty",
+                            "level": 3,
+                            "subtitle": "An example of where you can put an image of a project, or anything else, along with a description."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "height": "100%",
+                            "width": "600px",
+                            "minHeight": "125.6px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs34_39",
+                              "type": "container",
+                              "props": {
+                                "text": "Misty",
+                                "level": 3,
+                                "subtitle": "An example of where you can put an image of a project, or anything else, along with a description."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "width": "600px",
+                                "textAlign": "center",
+                                "minHeight": "125.6px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs34_40",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Misty",
+                                    "level": 3
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontWeight": "500",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.275rem + .3vw)",
+                                    "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                    "width": "600px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs34_41",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "An example of where you can put an image of a project, or anything else, along with a description."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "color": "rgba(255,255,255,.5)",
+                                    "width": "600px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs34_42",
+              "type": "container",
+              "props": {
+                "text": "Mountains",
+                "level": 3,
+                "subtitle": "Another example of a project with its respective description. These sections work well responsively as well!"
+              },
+              "style": {
+                "x": 0,
+                "y": 744,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "316px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs34_43",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "600px",
+                    "minHeight": "200px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_44",
+                      "type": "image",
+                      "props": {
+                        "src": "assets/img/demo-image-02.jpg",
+                        "alt": "..."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "maxWidth": "100%",
+                        "width": "600px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs34_45",
+                  "type": "container",
+                  "props": {
+                    "text": "Mountains",
+                    "level": 3,
+                    "subtitle": "Another example of a project with its respective description. These sections work well responsively as well!"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 216,
+                    "flex": "0 0 auto",
+                    "width": "600px",
+                    "minHeight": "100px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs34_46",
+                      "type": "container",
+                      "props": {
+                        "text": "Mountains",
+                        "level": 3,
+                        "subtitle": "Another example of a project with its respective description. These sections work well responsively as well!"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "backgroundColor": "rgba(var(--bs-black-rgb),var(--bs-bg-opacity))",
+                        "textAlign": "center",
+                        "height": "100%",
+                        "width": "600px",
+                        "minHeight": "100px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs34_47",
+                          "type": "container",
+                          "props": {
+                            "text": "Mountains",
+                            "level": 3,
+                            "subtitle": "Another example of a project with its respective description. These sections work well responsively as well!"
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "height": "100%",
+                            "width": "600px",
+                            "minHeight": "125.6px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs34_48",
+                              "type": "container",
+                              "props": {
+                                "text": "Mountains",
+                                "level": 3,
+                                "subtitle": "Another example of a project with its respective description. These sections work well responsively as well!"
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "width": "600px",
+                                "textAlign": "center",
+                                "minHeight": "125.6px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs34_49",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Mountains",
+                                    "level": 3
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontWeight": "500",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.275rem + .3vw)",
+                                    "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                    "width": "600px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs34_50",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Another example of a project with its respective description. These sections work well responsively as well!"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "color": "rgba(255,255,255,.5)",
+                                    "width": "600px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs34_51",
+      "type": "container",
+      "props": {
+        "text": "Subscribe to receive updates!",
+        "level": 2
+      },
+      "style": {
+        "x": 0,
+        "y": 2676,
+        "width": "1200px",
+        "minHeight": "620px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs34_52",
+          "type": "container",
+          "props": {
+            "text": "Subscribe to receive updates!",
+            "level": 2
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "620px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs35_53",
+              "type": "container",
+              "props": {
+                "text": "Subscribe to receive updates!",
+                "level": 2
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "width": "1200px",
+                "minHeight": "620px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs35_54",
+                  "type": "container",
+                  "props": {
+                    "text": "Subscribe to receive updates!",
+                    "level": 2
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "800.0000000399999px",
+                    "textAlign": "center",
+                    "minHeight": "620px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs35_55",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                        "width": "800.0000000399999px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs35_56",
+                      "type": "heading",
+                      "props": {
+                        "text": "Subscribe to receive updates!",
+                        "level": 2
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "fontWeight": "500",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.325rem + .9vw)",
+                        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                        "width": "800.0000000399999px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs35_57",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 88,
+                        "width": "800.0000000399999px",
+                        "minHeight": "532px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs35_58",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "width": "800.0000000399999px",
+                            "minHeight": "108px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs35_59",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "1 0 0%",
+                                "width": "800.0000000399999px",
+                                "minHeight": "44px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs35_60",
+                                  "type": "input",
+                                  "props": {
+                                    "placeholder": "Enter email address...",
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "margin": "0",
+                                    "fontFamily": "inherit",
+                                    "fontSize": "1rem",
+                                    "lineHeight": "1.5",
+                                    "display": "block",
+                                    "width": "800.0000000399999px",
+                                    "padding": ".375rem .75rem",
+                                    "fontWeight": "400",
+                                    "color": "#212529",
+                                    "backgroundColor": "#fff",
+                                    "border": "1px solid #ced4da",
+                                    "borderRadius": ".375rem"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs35_61",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 60,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "48px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs35_62",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Notify Me!"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs35_63",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 124,
+                            "display": "none",
+                            "width": "800.0000000399999px",
+                            "fontSize": ".875em",
+                            "color": "#a16468"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs35_64",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 200,
+                            "display": "none",
+                            "width": "800.0000000399999px",
+                            "fontSize": ".875em",
+                            "color": "#a16468"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs35_65",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 276,
+                            "display": "none",
+                            "width": "800.0000000399999px",
+                            "minHeight": "180px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs35_66",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "800.0000000399999px",
+                                "minHeight": "180px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs35_67",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontWeight": "bolder",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs35_68",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 76,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs35_69",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "https://startbootstrap.com/solution/contact-forms"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 152,
+                                    "color": "var(--bs-link-color)",
+                                    "textDecoration": "underline",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs35_70",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 472,
+                            "display": "none",
+                            "width": "800.0000000399999px",
+                            "minHeight": "60px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs35_71",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-danger-rgb),var(--bs-text-opacity))",
+                                "width": "800.0000000399999px"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs35_72",
+      "type": "container",
+      "props": {
+        "text": "Address",
+        "level": 3
+      },
+      "style": {
+        "x": 0,
+        "y": 3320,
+        "backgroundColor": "rgba(var(--bs-black-rgb),var(--bs-bg-opacity))",
+        "width": "1200px",
+        "minHeight": "376px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs35_73",
+          "type": "container",
+          "props": {
+            "text": "Address",
+            "level": 3
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "376px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs35_74",
+              "type": "container",
+              "props": {
+                "text": "Address",
+                "level": 3
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "width": "1200px",
+                "minHeight": "332px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs35_75",
+                  "type": "container",
+                  "props": {
+                    "text": "Address",
+                    "level": 3
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "100px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs35_76",
+                      "type": "container",
+                      "props": {
+                        "text": "Address",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "position": "relative",
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "height": "100%",
+                        "backgroundColor": "var(--bs-card-bg)",
+                        "border": "var(--bs-card-border-width) solid var(--bs-card-border-color)",
+                        "borderRadius": "var(--bs-card-border-radius)",
+                        "width": "399.99999996px",
+                        "minHeight": "194px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs35_77",
+                          "type": "container",
+                          "props": {
+                            "text": "Address",
+                            "level": 3
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "flex": "1 1 auto",
+                            "padding": "var(--bs-card-spacer-y) var(--bs-card-spacer-x)",
+                            "color": "var(--bs-card-color)",
+                            "textAlign": "center",
+                            "width": "399.99999996px",
+                            "minHeight": "194px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs35_78",
+                              "type": "text",
+                              "props": {
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "color": "rgba(var(--bs-primary-rgb),var(--bs-text-opacity))",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs35_79",
+                              "type": "heading",
+                              "props": {
+                                "text": "Address",
+                                "level": 3
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 44,
+                                "fontWeight": "500",
+                                "lineHeight": "1.2",
+                                "fontSize": "calc(1.275rem + .3vw)",
+                                "margin": "0",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_80",
+                              "type": "divider",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 88,
+                                "margin": "1rem 0",
+                                "color": "inherit",
+                                "border": "0",
+                                "opacity": ".25",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_81",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 134,
+                                "fontSize": ".875em",
+                                "color": "rgba(0,0,0,.5)",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs36_82",
+                  "type": "container",
+                  "props": {
+                    "text": "Email",
+                    "level": 3
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 116,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "100px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs36_83",
+                      "type": "container",
+                      "props": {
+                        "text": "Email",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "position": "relative",
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "height": "100%",
+                        "backgroundColor": "var(--bs-card-bg)",
+                        "border": "var(--bs-card-border-width) solid var(--bs-card-border-color)",
+                        "borderRadius": "var(--bs-card-border-radius)",
+                        "width": "399.99999996px",
+                        "minHeight": "162px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs36_84",
+                          "type": "container",
+                          "props": {
+                            "text": "Email",
+                            "level": 3
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "flex": "1 1 auto",
+                            "padding": "var(--bs-card-spacer-y) var(--bs-card-spacer-x)",
+                            "color": "var(--bs-card-color)",
+                            "textAlign": "center",
+                            "width": "399.99999996px",
+                            "minHeight": "162px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs36_85",
+                              "type": "text",
+                              "props": {
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "color": "rgba(var(--bs-primary-rgb),var(--bs-text-opacity))",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_86",
+                              "type": "heading",
+                              "props": {
+                                "text": "Email",
+                                "level": 3
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 44,
+                                "fontWeight": "500",
+                                "lineHeight": "1.2",
+                                "fontSize": "calc(1.275rem + .3vw)",
+                                "margin": "0",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_87",
+                              "type": "divider",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 88,
+                                "margin": "1rem 0",
+                                "color": "inherit",
+                                "border": "0",
+                                "opacity": ".25",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_88",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 134,
+                                "fontSize": ".875em",
+                                "color": "rgba(0,0,0,.5)",
+                                "width": "399.99999996px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs36_89",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "hello@yourdomain.com"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "color": "var(--bs-link-color)",
+                                    "textDecoration": "underline",
+                                    "width": "399.99999996px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs36_90",
+                  "type": "container",
+                  "props": {
+                    "text": "Phone",
+                    "level": 3
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 232,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "100px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs36_91",
+                      "type": "container",
+                      "props": {
+                        "text": "Phone",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "position": "relative",
+                        "display": "flex",
+                        "flexDirection": "column",
+                        "height": "100%",
+                        "backgroundColor": "var(--bs-card-bg)",
+                        "border": "var(--bs-card-border-width) solid var(--bs-card-border-color)",
+                        "borderRadius": "var(--bs-card-border-radius)",
+                        "width": "399.99999996px",
+                        "minHeight": "194px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs36_92",
+                          "type": "container",
+                          "props": {
+                            "text": "Phone",
+                            "level": 3
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "flex": "1 1 auto",
+                            "padding": "var(--bs-card-spacer-y) var(--bs-card-spacer-x)",
+                            "color": "var(--bs-card-color)",
+                            "textAlign": "center",
+                            "width": "399.99999996px",
+                            "minHeight": "194px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs36_93",
+                              "type": "text",
+                              "props": {
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "color": "rgba(var(--bs-primary-rgb),var(--bs-text-opacity))",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_94",
+                              "type": "heading",
+                              "props": {
+                                "text": "Phone",
+                                "level": 3
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 44,
+                                "fontWeight": "500",
+                                "lineHeight": "1.2",
+                                "fontSize": "calc(1.275rem + .3vw)",
+                                "margin": "0",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_95",
+                              "type": "divider",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 88,
+                                "margin": "1rem 0",
+                                "color": "inherit",
+                                "border": "0",
+                                "opacity": ".25",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs36_96",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 134,
+                                "fontSize": ".875em",
+                                "color": "rgba(0,0,0,.5)",
+                                "width": "399.99999996px"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs36_97",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 348,
+                "display": "flex",
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "28px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs36_98",
+                  "type": "text",
+                  "props": {
+                    "text": ""
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "color": "var(--bs-link-color)",
+                    "textDecoration": "underline",
+                    "width": "389px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs36_99",
+                  "type": "text",
+                  "props": {
+                    "text": ""
+                  },
+                  "style": {
+                    "x": 405,
+                    "y": 0,
+                    "color": "var(--bs-link-color)",
+                    "textDecoration": "underline",
+                    "width": "389px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs36_100",
+                  "type": "text",
+                  "props": {
+                    "text": ""
+                  },
+                  "style": {
+                    "x": 810,
+                    "y": 0,
+                    "color": "var(--bs-link-color)",
+                    "textDecoration": "underline",
+                    "width": "389px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs36_101",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 3720,
+        "padding": "5rem 0",
+        "backgroundColor": "rgba(var(--bs-black-rgb),var(--bs-bg-opacity))",
+        "fontSize": ".875em",
+        "textAlign": "center",
+        "color": "rgba(255,255,255,.5)",
+        "width": "1200px",
+        "minHeight": "220px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs36_102",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 80,
+            "width": "1200px"
+          },
+          "children": [],
+          "visible": true
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "canvas": {
+    "width": "1200px",
+    "height": "3864px",
+    "backgroundColor": "#ffffff"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+*.local
+.uploads
+work_output*
+*.zip
+.DS_Store
+*.log
+.npm-cache
+.vite

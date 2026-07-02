@@ -1,0 +1,4219 @@
+{
+  "id": "sb-freelancer",
+  "name": "StartBootstrap Freelancer",
+  "nodes": [
+    {
+      "id": "sbt_mqwkvs24_1",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 0,
+        "position": "relative",
+        "display": "flex",
+        "flexWrap": "wrap",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "padding": "var(--bs-navbar-padding-y) var(--bs-navbar-padding-x)",
+        "backgroundColor": "rgba(var(--bs-secondary-rgb),var(--bs-bg-opacity))",
+        "width": "1200px",
+        "minHeight": "224px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs24_2",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "224px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs24_3",
+              "type": "text",
+              "props": {
+                "text": "Start Bootstrap"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "color": "var(--bs-navbar-brand-color)",
+                "textDecoration": "none",
+                "fontSize": "var(--bs-navbar-brand-font-size)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs24_4",
+              "type": "button",
+              "props": {
+                "text": "Menu"
+              },
+              "style": {
+                "x": 0,
+                "y": 44,
+                "borderRadius": "var(--bs-border-radius)",
+                "margin": "0",
+                "fontFamily": "inherit",
+                "fontSize": "var(--bs-navbar-toggler-font-size)",
+                "lineHeight": "1",
+                "padding": "var(--bs-navbar-toggler-padding-y) var(--bs-navbar-toggler-padding-x)",
+                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                "backgroundColor": "rgba(var(--bs-primary-rgb),var(--bs-bg-opacity))",
+                "border": "var(--bs-border-width) solid var(--bs-navbar-toggler-border-color)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs24_5",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 108,
+                "flexGrow": "1",
+                "alignItems": "center",
+                "width": "1200px",
+                "minHeight": "116px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs24_6",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexDirection": "column",
+                    "width": "1200px",
+                    "minHeight": "116px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs24_7",
+                      "type": "text",
+                      "props": {
+                        "text": "Portfolio"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs24_8",
+                      "type": "text",
+                      "props": {
+                        "text": "About"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs24_9",
+                      "type": "text",
+                      "props": {
+                        "text": "Contact"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 88,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs24_10",
+      "type": "container",
+      "props": {
+        "text": "Start Bootstrap",
+        "level": 1,
+        "subtitle": "Graphic Artist - Web Designer - Illustrator"
+      },
+      "style": {
+        "x": 0,
+        "y": 248,
+        "backgroundColor": "rgba(var(--bs-primary-rgb),var(--bs-bg-opacity))",
+        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+        "textAlign": "center",
+        "width": "1200px",
+        "minHeight": "484px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs24_11",
+          "type": "container",
+          "props": {
+            "text": "Start Bootstrap",
+            "level": 1,
+            "subtitle": "Graphic Artist - Web Designer - Illustrator"
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "display": "flex",
+            "alignItems": "center",
+            "flexDirection": "column",
+            "minHeight": "484px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs24_12",
+              "type": "image",
+              "props": {
+                "src": "assets/img/avataaars.svg",
+                "alt": "..."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs24_13",
+              "type": "heading",
+              "props": {
+                "text": "Start Bootstrap",
+                "level": 1
+              },
+              "style": {
+                "x": 0,
+                "y": 216,
+                "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                "fontWeight": "700",
+                "lineHeight": "1.2",
+                "fontSize": "calc(1.375rem + 1.5vw)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs24_14",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 260,
+                "width": "1200px",
+                "minHeight": "180px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs24_15",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs24_16",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 76,
+                    "width": "1200px",
+                    "minHeight": "28px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs24_17",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs24_18",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 120,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs24_19",
+              "type": "text",
+              "props": {
+                "text": "Graphic Artist - Web Designer - Illustrator"
+              },
+              "style": {
+                "x": 0,
+                "y": 456,
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs25_20",
+      "type": "container",
+      "props": {
+        "text": "Portfolio",
+        "level": 2
+      },
+      "style": {
+        "x": 0,
+        "y": 756,
+        "padding": "6rem 0",
+        "width": "1200px",
+        "minHeight": "2408px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs25_21",
+          "type": "container",
+          "props": {
+            "text": "Portfolio",
+            "level": 2
+          },
+          "style": {
+            "x": 0,
+            "y": 96,
+            "width": "1200px",
+            "minHeight": "2216px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs25_22",
+              "type": "heading",
+              "props": {
+                "text": "Portfolio",
+                "level": 2
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                "fontWeight": "700",
+                "lineHeight": "1.2",
+                "fontSize": "calc(1.325rem + .9vw)",
+                "textAlign": "center",
+                "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs25_23",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 44,
+                "width": "1200px",
+                "minHeight": "180px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs25_24",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_25",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 76,
+                    "width": "1200px",
+                    "minHeight": "28px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_26",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_27",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 120,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs25_28",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 240,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "1976px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs25_29",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_30",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs25_31",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs25_32",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs25_33",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs25_34",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/cabin.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_35",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 332,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_36",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs25_37",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs25_38",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs25_39",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs25_40",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/cake.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_41",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 664,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_42",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs25_43",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs25_44",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs25_45",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs25_46",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/circus.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_47",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 996,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_48",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs25_49",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs25_50",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs25_51",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs25_52",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/game.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_53",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 1328,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_54",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs25_55",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs25_56",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs25_57",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs25_58",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/safe.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs25_59",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 1660,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "316px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs25_60",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "399.99999996px",
+                        "minHeight": "316px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs26_61",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "flex",
+                            "alignItems": "center",
+                            "justifyContent": "center",
+                            "height": "100%",
+                            "width": "399.99999996px",
+                            "minHeight": "28px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs26_62",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                                "width": "399px",
+                                "minHeight": "28px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs26_63",
+                                  "type": "text",
+                                  "props": {
+                                    "text": ""
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "width": "399px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs26_64",
+                          "type": "image",
+                          "props": {
+                            "src": "assets/img/portfolio/submarine.png",
+                            "alt": "..."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 116,
+                            "maxWidth": "100%",
+                            "width": "399.99999996px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs26_65",
+      "type": "container",
+      "props": {
+        "text": "About",
+        "level": 2,
+        "subtitle": "Freelancer is a free bootstrap theme created by Start Bootstrap. The download includes the complete source files including HTML, CSS, and JavaScript as well as optional SASS stylesheets for easy customization."
+      },
+      "style": {
+        "x": 0,
+        "y": 3188,
+        "padding": "6rem 0",
+        "backgroundColor": "rgba(var(--bs-primary-rgb),var(--bs-bg-opacity))",
+        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+        "width": "1200px",
+        "minHeight": "1074px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs26_66",
+          "type": "container",
+          "props": {
+            "text": "About",
+            "level": 2,
+            "subtitle": "Freelancer is a free bootstrap theme created by Start Bootstrap. The download includes the complete source files including HTML, CSS, and JavaScript as well as optional SASS stylesheets for easy customization."
+          },
+          "style": {
+            "x": 0,
+            "y": 96,
+            "width": "1200px",
+            "minHeight": "882px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs26_67",
+              "type": "heading",
+              "props": {
+                "text": "About",
+                "level": 2
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                "fontWeight": "700",
+                "lineHeight": "1.2",
+                "fontSize": "calc(1.325rem + .9vw)",
+                "textAlign": "center",
+                "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs26_68",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 44,
+                "width": "1200px",
+                "minHeight": "180px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs26_69",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs26_70",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 76,
+                    "width": "1200px",
+                    "minHeight": "28px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs26_71",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs26_72",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 120,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs26_73",
+              "type": "container",
+              "props": {
+                "subtitle": "Freelancer is a free bootstrap theme created by Start Bootstrap. The download includes the complete source files including HTML, CSS, and JavaScript as well as optional SASS stylesheets for easy customization."
+              },
+              "style": {
+                "x": 0,
+                "y": 240,
+                "width": "1200px",
+                "minHeight": "560px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs26_74",
+                  "type": "container",
+                  "props": {
+                    "subtitle": "Freelancer is a free bootstrap theme created by Start Bootstrap. The download includes the complete source files including HTML, CSS, and JavaScript as well as optional SASS stylesheets for easy customization."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "306px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs26_75",
+                      "type": "text",
+                      "props": {
+                        "text": "Freelancer is a free bootstrap theme created by Start Bootstrap. The download includes the complete source files including HTML, CSS, and JavaScript as well as optional SASS stylesheets for easy customization."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontSize": "1.25rem",
+                        "fontWeight": "300",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs26_76",
+                  "type": "container",
+                  "props": {
+                    "subtitle": "You can create your own custom avatar for the masthead, change the icon in the dividers, and add your email address to the contact form to make it fully functional!"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 322,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "238px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs26_77",
+                      "type": "text",
+                      "props": {
+                        "text": "You can create your own custom avatar for the masthead, change the icon in the dividers, and add your email address to the contact form to make it fully functional!"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontSize": "1.25rem",
+                        "fontWeight": "300",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs26_78",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 816,
+                "textAlign": "center",
+                "width": "1200px",
+                "minHeight": "66px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs26_79",
+                  "type": "text",
+                  "props": {
+                    "text": "Free Download!"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "color": "var(--bs-btn-color)",
+                    "textDecoration": "none",
+                    "display": "inline-block",
+                    "padding": "1rem 1.75rem",
+                    "fontFamily": "var(--bs-btn-font-family)",
+                    "fontSize": "1.25rem",
+                    "fontWeight": "var(--bs-btn-font-weight)",
+                    "lineHeight": "var(--bs-btn-line-height)",
+                    "textAlign": "center",
+                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                    "borderRadius": "var(--bs-btn-border-radius)",
+                    "backgroundColor": "var(--bs-btn-bg)",
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs26_80",
+      "type": "container",
+      "props": {
+        "text": "Contact Me",
+        "level": 2
+      },
+      "style": {
+        "x": 0,
+        "y": 4286,
+        "padding": "6rem 0",
+        "width": "1200px",
+        "minHeight": "1664px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs26_81",
+          "type": "container",
+          "props": {
+            "text": "Contact Me",
+            "level": 2
+          },
+          "style": {
+            "x": 0,
+            "y": 96,
+            "width": "1200px",
+            "minHeight": "1472px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs26_82",
+              "type": "heading",
+              "props": {
+                "text": "Contact Me",
+                "level": 2
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                "fontWeight": "700",
+                "lineHeight": "1.2",
+                "fontSize": "calc(1.325rem + .9vw)",
+                "textAlign": "center",
+                "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs26_83",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 44,
+                "width": "1200px",
+                "minHeight": "180px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs26_84",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs26_85",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 76,
+                    "width": "1200px",
+                    "minHeight": "28px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs26_86",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs26_87",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 120,
+                    "width": "1200px"
+                  },
+                  "children": [],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs26_88",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 240,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "1232px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs26_89",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "699.9999999600001px",
+                    "minHeight": "1232px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs26_90",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "699.9999999600001px",
+                        "minHeight": "1232px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs26_91",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "position": "relative",
+                            "width": "699.9999999600001px",
+                            "minHeight": "164px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs26_92",
+                              "type": "input",
+                              "props": {
+                                "placeholder": "Enter your name...",
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "margin": "0",
+                                "fontFamily": "inherit",
+                                "fontSize": "1rem",
+                                "lineHeight": "1.5",
+                                "display": "block",
+                                "width": "699.9999999600001px",
+                                "padding": ".375rem .75rem",
+                                "fontWeight": "400",
+                                "color": "#212529",
+                                "backgroundColor": "#fff",
+                                "border": ".125rem solid #ced4da",
+                                "borderRadius": ".5rem"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_93",
+                              "type": "text",
+                              "props": {
+                                "text": "Full name"
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 60,
+                                "display": "inline-block",
+                                "width": "699.9999999600001px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_94",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 104,
+                                "display": "none",
+                                "width": "699.9999999600001px",
+                                "fontSize": ".875em",
+                                "color": "#dc3545"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_95",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 180,
+                            "position": "relative",
+                            "width": "699.9999999600001px",
+                            "minHeight": "240px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs27_96",
+                              "type": "input",
+                              "props": {
+                                "placeholder": "name@example.com",
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "margin": "0",
+                                "fontFamily": "inherit",
+                                "fontSize": "1rem",
+                                "lineHeight": "1.5",
+                                "display": "block",
+                                "width": "699.9999999600001px",
+                                "padding": ".375rem .75rem",
+                                "fontWeight": "400",
+                                "color": "#212529",
+                                "backgroundColor": "#fff",
+                                "border": ".125rem solid #ced4da",
+                                "borderRadius": ".5rem"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_97",
+                              "type": "text",
+                              "props": {
+                                "text": "Email address"
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 60,
+                                "display": "inline-block",
+                                "width": "699.9999999600001px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_98",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 104,
+                                "display": "none",
+                                "width": "699.9999999600001px",
+                                "fontSize": ".875em",
+                                "color": "#dc3545"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_99",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 180,
+                                "display": "none",
+                                "width": "699.9999999600001px",
+                                "fontSize": ".875em",
+                                "color": "#dc3545"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_100",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 436,
+                            "position": "relative",
+                            "width": "699.9999999600001px",
+                            "minHeight": "164px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs27_101",
+                              "type": "input",
+                              "props": {
+                                "placeholder": "(123) 456-7890",
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "margin": "0",
+                                "fontFamily": "inherit",
+                                "fontSize": "1rem",
+                                "lineHeight": "1.5",
+                                "display": "block",
+                                "width": "699.9999999600001px",
+                                "padding": ".375rem .75rem",
+                                "fontWeight": "400",
+                                "color": "#212529",
+                                "backgroundColor": "#fff",
+                                "border": ".125rem solid #ced4da",
+                                "borderRadius": ".5rem"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_102",
+                              "type": "text",
+                              "props": {
+                                "text": "Phone number"
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 60,
+                                "display": "inline-block",
+                                "width": "699.9999999600001px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_103",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 104,
+                                "display": "none",
+                                "width": "699.9999999600001px",
+                                "fontSize": ".875em",
+                                "color": "#dc3545"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_104",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 616,
+                            "position": "relative",
+                            "width": "699.9999999600001px",
+                            "minHeight": "280px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs27_105",
+                              "type": "input",
+                              "props": {
+                                "placeholder": "Enter your message here...",
+                                "text": ""
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "margin": "0",
+                                "fontFamily": "inherit",
+                                "fontSize": "1rem",
+                                "lineHeight": "1.5",
+                                "display": "block",
+                                "width": "699.9999999600001px",
+                                "padding": ".375rem .75rem",
+                                "fontWeight": "400",
+                                "color": "#212529",
+                                "backgroundColor": "#fff",
+                                "border": ".125rem solid #ced4da",
+                                "borderRadius": ".5rem",
+                                "height": "10rem"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_106",
+                              "type": "text",
+                              "props": {
+                                "text": "Message"
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 176,
+                                "display": "inline-block",
+                                "width": "699.9999999600001px"
+                              },
+                              "children": [],
+                              "visible": true
+                            },
+                            {
+                              "id": "sbt_mqwkvs27_107",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 220,
+                                "display": "none",
+                                "width": "699.9999999600001px",
+                                "fontSize": ".875em",
+                                "color": "#dc3545"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_108",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 912,
+                            "display": "none",
+                            "width": "699.9999999600001px",
+                            "minHeight": "180px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs27_109",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "width": "699.9999999600001px",
+                                "minHeight": "180px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs27_110",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontWeight": "bolder",
+                                    "width": "699.9999999600001px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs27_111",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 76,
+                                    "width": "699.9999999600001px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs27_112",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "https://startbootstrap.com/solution/contact-forms"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 152,
+                                    "color": "var(--bs-link-color)",
+                                    "textDecoration": "underline",
+                                    "width": "699.9999999600001px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_113",
+                          "type": "container",
+                          "props": {},
+                          "style": {
+                            "x": 0,
+                            "y": 1108,
+                            "display": "none",
+                            "width": "699.9999999600001px",
+                            "minHeight": "60px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs27_114",
+                              "type": "container",
+                              "props": {},
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "textAlign": "center",
+                                "color": "rgba(var(--bs-danger-rgb),var(--bs-text-opacity))",
+                                "width": "699.9999999600001px"
+                              },
+                              "children": [],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs27_115",
+                          "type": "button",
+                          "props": {
+                            "text": "Send"
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 1184,
+                            "borderRadius": "var(--bs-btn-border-radius)",
+                            "margin": "0",
+                            "fontFamily": "var(--bs-btn-font-family)",
+                            "fontSize": "1.25rem",
+                            "lineHeight": "var(--bs-btn-line-height)",
+                            "display": "inline-block",
+                            "padding": "1rem 1.75rem",
+                            "fontWeight": "var(--bs-btn-font-weight)",
+                            "color": "var(--bs-btn-color)",
+                            "textAlign": "center",
+                            "textDecoration": "none",
+                            "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                            "backgroundColor": "var(--bs-btn-bg)",
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs27_116",
+      "type": "container",
+      "props": {
+        "text": "Location",
+        "level": 3,
+        "subtitle": "2215 John Daniel Drive\n                            \n\n                            Clark, MO 65243"
+      },
+      "style": {
+        "x": 0,
+        "y": 5974,
+        "textAlign": "center",
+        "width": "1200px",
+        "minHeight": "760px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs27_117",
+          "type": "container",
+          "props": {
+            "text": "Location",
+            "level": 3,
+            "subtitle": "2215 John Daniel Drive\n                            \n\n                            Clark, MO 65243"
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "760px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs27_118",
+              "type": "container",
+              "props": {
+                "text": "Location",
+                "level": 3,
+                "subtitle": "2215 John Daniel Drive\n                            \n\n                            Clark, MO 65243"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "width": "1200px",
+                "minHeight": "760px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs27_119",
+                  "type": "container",
+                  "props": {
+                    "text": "Location",
+                    "level": 3,
+                    "subtitle": "2215 John Daniel Drive\n                            \n\n                            Clark, MO 65243"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "180px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs27_120",
+                      "type": "heading",
+                      "props": {
+                        "text": "Location",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                        "fontWeight": "700",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.275rem + .3vw)",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs27_121",
+                      "type": "text",
+                      "props": {
+                        "text": "2215 John Daniel Drive\n                            \n\n                            Clark, MO 65243"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "fontSize": "1.25rem",
+                        "fontWeight": "300",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs27_122",
+                  "type": "container",
+                  "props": {
+                    "text": "Around the Web",
+                    "level": 3
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 196,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "300px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs27_123",
+                      "type": "heading",
+                      "props": {
+                        "text": "Around the Web",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                        "fontWeight": "700",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.275rem + .3vw)",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs27_124",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-flex",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "1.25rem",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "borderRadius": "100%",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "52px",
+                        "height": "3.25rem",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs27_125",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 112,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-flex",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "1.25rem",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "borderRadius": "100%",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "52px",
+                        "height": "3.25rem",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs27_126",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 180,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-flex",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "1.25rem",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "borderRadius": "100%",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "52px",
+                        "height": "3.25rem",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs27_127",
+                      "type": "text",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 248,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-flex",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "1.25rem",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "borderRadius": "100%",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "52px",
+                        "height": "3.25rem",
+                        "justifyContent": "center",
+                        "alignItems": "center"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs27_128",
+                  "type": "container",
+                  "props": {
+                    "text": "About Freelancer",
+                    "level": 3,
+                    "subtitle": "Freelance is a free to use, MIT licensed Bootstrap theme created by\n                            Start Bootstrap\n                            ."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 512,
+                    "flex": "0 0 auto",
+                    "width": "399.99999996px",
+                    "minHeight": "248px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs28_129",
+                      "type": "heading",
+                      "props": {
+                        "text": "About Freelancer",
+                        "level": 3
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                        "fontWeight": "700",
+                        "lineHeight": "1.2",
+                        "fontSize": "calc(1.275rem + .3vw)",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs28_130",
+                      "type": "text",
+                      "props": {
+                        "text": "Freelance is a free to use, MIT licensed Bootstrap theme created by\n                            Start Bootstrap\n                            ."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "fontSize": "1.25rem",
+                        "fontWeight": "300",
+                        "width": "399.99999996px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs28_131",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 6758,
+        "backgroundColor": "#1a252f",
+        "textAlign": "center",
+        "color": "rgba(var(--bs-white-rgb),var(--bs-text-opacity))",
+        "width": "1200px",
+        "minHeight": "28px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs28_132",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "28px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs28_133",
+              "type": "text",
+              "props": {
+                "text": "Copyright © Your Website 2023"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "fontSize": ".875em",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs28_134",
+      "type": "container",
+      "props": {
+        "text": "Log Cabin",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 6810,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs28_135",
+          "type": "container",
+          "props": {
+            "text": "Log Cabin",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs28_136",
+              "type": "container",
+              "props": {
+                "text": "Log Cabin",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs28_137",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs28_138",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs28_139",
+                  "type": "container",
+                  "props": {
+                    "text": "Log Cabin",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs28_140",
+                      "type": "container",
+                      "props": {
+                        "text": "Log Cabin",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs28_141",
+                          "type": "container",
+                          "props": {
+                            "text": "Log Cabin",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs28_142",
+                              "type": "container",
+                              "props": {
+                                "text": "Log Cabin",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs28_143",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Log Cabin",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs28_144",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs28_145",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs28_146",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs28_147",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs28_148",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs28_149",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/cabin.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs28_150",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs28_151",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs28_152",
+      "type": "container",
+      "props": {
+        "text": "Tasty Cake",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 6934,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs29_153",
+          "type": "container",
+          "props": {
+            "text": "Tasty Cake",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs29_154",
+              "type": "container",
+              "props": {
+                "text": "Tasty Cake",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs29_155",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs29_156",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs29_157",
+                  "type": "container",
+                  "props": {
+                    "text": "Tasty Cake",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs29_158",
+                      "type": "container",
+                      "props": {
+                        "text": "Tasty Cake",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs29_159",
+                          "type": "container",
+                          "props": {
+                            "text": "Tasty Cake",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs29_160",
+                              "type": "container",
+                              "props": {
+                                "text": "Tasty Cake",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs29_161",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Tasty Cake",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_162",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs29_163",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs29_164",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs29_165",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs29_166",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_167",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/cake.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_168",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_169",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs29_170",
+      "type": "container",
+      "props": {
+        "text": "Circus Tent",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 7058,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs29_171",
+          "type": "container",
+          "props": {
+            "text": "Circus Tent",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs29_172",
+              "type": "container",
+              "props": {
+                "text": "Circus Tent",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs29_173",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs29_174",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs29_175",
+                  "type": "container",
+                  "props": {
+                    "text": "Circus Tent",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs29_176",
+                      "type": "container",
+                      "props": {
+                        "text": "Circus Tent",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs29_177",
+                          "type": "container",
+                          "props": {
+                            "text": "Circus Tent",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs29_178",
+                              "type": "container",
+                              "props": {
+                                "text": "Circus Tent",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs29_179",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Circus Tent",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_180",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs29_181",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs29_182",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs29_183",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs29_184",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_185",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/circus.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_186",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs29_187",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs2a_188",
+      "type": "container",
+      "props": {
+        "text": "Controller",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 7182,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs2a_189",
+          "type": "container",
+          "props": {
+            "text": "Controller",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs2a_190",
+              "type": "container",
+              "props": {
+                "text": "Controller",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs2a_191",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2a_192",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs2a_193",
+                  "type": "container",
+                  "props": {
+                    "text": "Controller",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2a_194",
+                      "type": "container",
+                      "props": {
+                        "text": "Controller",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs2a_195",
+                          "type": "container",
+                          "props": {
+                            "text": "Controller",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs2a_196",
+                              "type": "container",
+                              "props": {
+                                "text": "Controller",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs2a_197",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Controller",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_198",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs2a_199",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2a_200",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs2a_201",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2a_202",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_203",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/game.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_204",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_205",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs2a_206",
+      "type": "container",
+      "props": {
+        "text": "Locked Safe",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 7306,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs2a_207",
+          "type": "container",
+          "props": {
+            "text": "Locked Safe",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs2a_208",
+              "type": "container",
+              "props": {
+                "text": "Locked Safe",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs2a_209",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2a_210",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs2a_211",
+                  "type": "container",
+                  "props": {
+                    "text": "Locked Safe",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2a_212",
+                      "type": "container",
+                      "props": {
+                        "text": "Locked Safe",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs2a_213",
+                          "type": "container",
+                          "props": {
+                            "text": "Locked Safe",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs2a_214",
+                              "type": "container",
+                              "props": {
+                                "text": "Locked Safe",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs2a_215",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Locked Safe",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_216",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs2a_217",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2a_218",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs2a_219",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2a_220",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_221",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/safe.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_222",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2a_223",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs2b_224",
+      "type": "container",
+      "props": {
+        "text": "Submarine",
+        "level": 2,
+        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+      },
+      "style": {
+        "x": 0,
+        "y": 7430,
+        "position": "relative",
+        "display": "none",
+        "width": "1200px",
+        "height": "100%",
+        "minHeight": "660.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs2b_225",
+          "type": "container",
+          "props": {
+            "text": "Submarine",
+            "level": 2,
+            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "position": "relative",
+            "margin": "var(--bs-modal-margin)",
+            "maxWidth": "var(--bs-modal-width)",
+            "width": "1200px",
+            "minHeight": "660.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs2b_226",
+              "type": "container",
+              "props": {
+                "text": "Submarine",
+                "level": 2,
+                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "position": "relative",
+                "display": "flex",
+                "flexDirection": "column",
+                "width": "1200px",
+                "color": "var(--bs-modal-color)",
+                "backgroundColor": "var(--bs-modal-bg)",
+                "border": "var(--bs-modal-border-width) solid var(--bs-modal-border-color)",
+                "borderRadius": "var(--bs-modal-border-radius)",
+                "minHeight": "660.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs2b_227",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexShrink": "0",
+                    "alignItems": "center",
+                    "justifyContent": "space-between",
+                    "padding": "var(--bs-modal-header-padding)",
+                    "border": "0",
+                    "width": "1200px",
+                    "minHeight": "16px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2b_228",
+                      "type": "button",
+                      "props": {
+                        "text": ""
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "borderRadius": ".5rem",
+                        "margin": "0",
+                        "fontFamily": "inherit",
+                        "fontSize": "inherit",
+                        "lineHeight": "inherit",
+                        "width": "16px",
+                        "height": "1em",
+                        "padding": ".25em .25em",
+                        "color": "#000",
+                        "background": "transparent url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e\") center/1em auto no-repeat",
+                        "border": "0",
+                        "opacity": ".5"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs2b_229",
+                  "type": "container",
+                  "props": {
+                    "text": "Submarine",
+                    "level": 2,
+                    "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 32,
+                    "position": "relative",
+                    "flex": "1 1 auto",
+                    "padding": "var(--bs-modal-padding)",
+                    "textAlign": "center",
+                    "width": "1200px",
+                    "minHeight": "628.8px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs2b_230",
+                      "type": "container",
+                      "props": {
+                        "text": "Submarine",
+                        "level": 2,
+                        "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px",
+                        "minHeight": "628.8px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs2b_231",
+                          "type": "container",
+                          "props": {
+                            "text": "Submarine",
+                            "level": 2,
+                            "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "justifyContent": "center",
+                            "width": "1200px",
+                            "minHeight": "628.8px"
+                          },
+                          "children": [
+                            {
+                              "id": "sbt_mqwkvs2b_232",
+                              "type": "container",
+                              "props": {
+                                "text": "Submarine",
+                                "level": 2,
+                                "subtitle": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                              },
+                              "style": {
+                                "x": 0,
+                                "y": 0,
+                                "flex": "0 0 auto",
+                                "width": "800.0000000399999px",
+                                "minHeight": "628.8px"
+                              },
+                              "children": [
+                                {
+                                  "id": "sbt_mqwkvs2b_233",
+                                  "type": "heading",
+                                  "props": {
+                                    "text": "Submarine",
+                                    "level": 2
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 0,
+                                    "fontFamily": "Montserrat,-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,\"Noto Sans\",sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                                    "fontWeight": "700",
+                                    "lineHeight": "1.2",
+                                    "fontSize": "calc(1.325rem + .9vw)",
+                                    "color": "rgba(var(--bs-secondary-rgb),var(--bs-text-opacity))",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2b_234",
+                                  "type": "container",
+                                  "props": {},
+                                  "style": {
+                                    "x": 0,
+                                    "y": 44,
+                                    "width": "800.0000000399999px",
+                                    "minHeight": "180px"
+                                  },
+                                  "children": [
+                                    {
+                                      "id": "sbt_mqwkvs2b_235",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 0,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2b_236",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 76,
+                                        "width": "800.0000000399999px",
+                                        "minHeight": "28px"
+                                      },
+                                      "children": [
+                                        {
+                                          "id": "sbt_mqwkvs2b_237",
+                                          "type": "text",
+                                          "props": {
+                                            "text": ""
+                                          },
+                                          "style": {
+                                            "x": 0,
+                                            "y": 0,
+                                            "width": "800.0000000399999px"
+                                          },
+                                          "children": [],
+                                          "visible": true
+                                        }
+                                      ],
+                                      "visible": true
+                                    },
+                                    {
+                                      "id": "sbt_mqwkvs2b_238",
+                                      "type": "container",
+                                      "props": {},
+                                      "style": {
+                                        "x": 0,
+                                        "y": 120,
+                                        "width": "800.0000000399999px"
+                                      },
+                                      "children": [],
+                                      "visible": true
+                                    }
+                                  ],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2b_239",
+                                  "type": "image",
+                                  "props": {
+                                    "src": "assets/img/portfolio/submarine.png",
+                                    "alt": "..."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 240,
+                                    "maxWidth": "100%",
+                                    "borderRadius": "var(--bs-border-radius)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2b_240",
+                                  "type": "text",
+                                  "props": {
+                                    "text": "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam."
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 456,
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                },
+                                {
+                                  "id": "sbt_mqwkvs2b_241",
+                                  "type": "button",
+                                  "props": {
+                                    "text": "Close Window"
+                                  },
+                                  "style": {
+                                    "x": 0,
+                                    "y": 580.8,
+                                    "borderRadius": "var(--bs-btn-border-radius)",
+                                    "margin": "0",
+                                    "fontFamily": "var(--bs-btn-font-family)",
+                                    "fontSize": "var(--bs-btn-font-size)",
+                                    "lineHeight": "var(--bs-btn-line-height)",
+                                    "display": "inline-block",
+                                    "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                                    "fontWeight": "var(--bs-btn-font-weight)",
+                                    "color": "var(--bs-btn-color)",
+                                    "textAlign": "center",
+                                    "textDecoration": "none",
+                                    "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                                    "backgroundColor": "var(--bs-btn-bg)",
+                                    "width": "800.0000000399999px"
+                                  },
+                                  "children": [],
+                                  "visible": true
+                                }
+                              ],
+                              "visible": true
+                            }
+                          ],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "canvas": {
+    "width": "1200px",
+    "height": "7494px",
+    "backgroundColor": "#ffffff"
+  }
+}

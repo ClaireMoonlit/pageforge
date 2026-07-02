@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 输入框 placeholder 颜色更浅，避免看起来像已填内容 */
+input::placeholder,
+textarea::placeholder {
+  color: #4b5563 !important;
+  opacity: 1;
+}
+
+/* 库拖拽 overlay 居中：用 !important 确保在 DragOverlay portal 中不被覆盖 */
+.dnd-overlay-center {
+  transform: translate(-50%, -50%) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   入场动画 keyframes：编辑器内预览模式与导出 HTML 共享同一组类名
+   ═══════════════════════════════════════════════ */
+@keyframes pf-fade-in {
+  from { opacity: 0 } to { opacity: 1 }
+}
+@keyframes pf-slide-up {
+  from { opacity: 0; transform: translateY(40px) } to { opacity: 1; transform: translateY(0) }
+}
+@keyframes pf-slide-down {
+  from { opacity: 0; transform: translateY(-40px) } to { opacity: 1; transform: translateY(0) }
+}
+@keyframes pf-slide-left {
+  from { opacity: 0; transform: translateX(40px) } to { opacity: 1; transform: translateX(0) }
+}
+@keyframes pf-slide-right {
+  from { opacity: 0; transform: translateX(-40px) } to { opacity: 1; transform: translateX(0) }
+}
+@keyframes pf-zoom-in {
+  from { opacity: 0; transform: scale(0.85) } to { opacity: 1; transform: scale(1) }
+}
+@keyframes pf-bounce {
+  0% { opacity: 0; transform: scale(0.3) }
+  50% { transform: scale(1.05) }
+  70% { transform: scale(0.95) }
+  100% { opacity: 1; transform: scale(1) }
+}
+
+.pf-animate-fade-in   { animation: pf-fade-in   600ms ease 0ms both }
+.pf-animate-slide-up  { animation: pf-slide-up  600ms ease 0ms both }
+.pf-animate-slide-down{ animation: pf-slide-down 600ms ease 0ms both }
+.pf-animate-slide-left{ animation: pf-slide-left 600ms ease 0ms both }
+.pf-animate-slide-right{animation: pf-slide-right 600ms ease 0ms both }
+.pf-animate-zoom-in   { animation: pf-zoom-in   600ms ease 0ms both }
+.pf-animate-bounce    { animation: pf-bounce    600ms ease 0ms both }

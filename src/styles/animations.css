@@ -1,0 +1,48 @@
+/* PageForge 入场动画 keyframes
+   供画布预览和导出 HTML 共用 */
+
+@keyframes pf-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pf-slide-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pf-slide-down {
+  from { opacity: 0; transform: translateY(-40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pf-slide-left {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pf-slide-right {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pf-zoom-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pf-bounce {
+  0% { opacity: 0; transform: scale(0.3); }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* 动画应用类（画布预览用） */
+.pf-animate-fade-in   { animation: pf-fade-in var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-slide-up  { animation: pf-slide-up var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-slide-down { animation: pf-slide-down var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-slide-left { animation: pf-slide-left var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-slide-right{ animation: pf-slide-right var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-zoom-in  { animation: pf-zoom-in var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }
+.pf-animate-bounce   { animation: pf-bounce var(--pf-duration, 600ms) var(--pf-delay, 0ms) var(--pf-easing, ease) both; }

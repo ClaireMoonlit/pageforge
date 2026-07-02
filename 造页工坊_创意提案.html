@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>造页工坊 PageForge · 创意提案</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0b0f1a;--bg2:#111827;--card:#151c2e;--line:#1f2937;
+    --t:#e5e7eb;--t2:#9ca3af;--t3:#6b7280;
+    --brand:#6366f1;--brand2:#8b5cf6;--brand3:#ec4899;
+    --ok:#10b981;--warn:#f59e0b;
+    --grad:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#ec4899 100%);
+  }
+  body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
+  a{color:var(--brand2);text-decoration:none}
+
+  .hero{position:relative;padding:96px 0 64px;text-align:center;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(600px circle at 50% 0,rgba(99,102,241,.18),transparent 60%)}
+  .badge{display:inline-block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--t2);background:rgba(255,255,255,.02);margin-bottom:24px}
+  .logo{font-size:56px;font-weight:800;letter-spacing:-1px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:12px}
+  .tagline{font-size:22px;color:var(--t);font-weight:500;margin-bottom:8px}
+  .sub{font-size:15px;color:var(--t2)}
+  .meta{margin-top:28px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .chip{padding:5px 12px;border:1px solid var(--line);border-radius:6px;font-size:12px;color:var(--t2);background:var(--bg2)}
+
+  section{padding:56px 0;border-top:1px solid var(--line)}
+  .sec-head{margin-bottom:28px}
+  .sec-num{display:inline-block;font-size:13px;font-weight:700;color:var(--brand2);letter-spacing:2px;margin-bottom:6px}
+  h2{font-size:30px;font-weight:700;color:var(--t);margin-bottom:8px}
+  .sec-desc{color:var(--t2);font-size:15px}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+  .card h3{font-size:15px;color:var(--t);margin-bottom:8px}
+  .card p{font-size:13px;color:var(--t2)}
+  .card .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;margin-top:10px}
+  .tag-red{background:rgba(239,68,68,.15);color:#fca5a5}
+  .tag-amber{background:rgba(245,158,11,.15);color:#fcd34d}
+  .tag-green{background:rgba(16,185,129,.15);color:#6ee7b7}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:12px 14px;text-align:center;border-bottom:1px solid var(--line)}
+  th{background:var(--bg2);color:var(--t2);font-weight:600;font-size:12px}
+  td{color:var(--t2)}
+  tr:last-child td{border-bottom:none}
+  .hl{color:var(--ok);font-weight:700}
+  .bad{color:#f87171}
+  .mid{color:var(--warn)}
+  tr.us td{background:rgba(99,102,241,.08);color:var(--t);font-weight:600}
+
+  .persona{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .p-item{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .p-ico{width:40px;height:40px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .p-item h4{font-size:14px;color:var(--t);margin-bottom:4px}
+  .p-item p{font-size:12px;color:var(--t2)}
+
+  .flow{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin:24px 0}
+  .step{flex:1;min-width:160px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center}
+  .step .n{font-size:11px;color:var(--brand2);font-weight:700;margin-bottom:6px}
+  .step h4{font-size:14px;color:var(--t);margin-bottom:4px}
+  .step p{font-size:12px;color:var(--t2)}
+  .arrow{color:var(--t3);font-size:20px}
+
+  .val{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .v-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px}
+  .v-card .ico{font-size:24px;margin-bottom:10px}
+  .v-card h3{font-size:15px;color:var(--t);margin-bottom:6px}
+  .v-card p{font-size:13px;color:var(--t2)}
+
+  .ai-box{background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(236,72,153,.08));border:1px solid var(--line);border-radius:14px;padding:24px}
+  .ai-list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:16px}
+  .ai-item{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--t2)}
+  .ai-item b{color:var(--t);display:block;margin-bottom:2px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--brand2);margin-top:7px;flex-shrink:0}
+  .pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+  .pill-core{background:rgba(16,185,129,.18);color:#6ee7b7}
+  .pill-opt{background:rgba(156,163,175,.18);color:#d1d5db}
+
+  .road{position:relative;padding-left:24px}
+  .road::before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--line)}
+  .r-item{position:relative;padding-bottom:22px}
+  .r-item::before{content:"";position:absolute;left:-24px;top:6px;width:14px;height:14px;border-radius:50%;background:var(--card);border:3px solid var(--brand2)}
+  .r-item h4{font-size:14px;color:var(--t);margin-bottom:4px}
+  .r-item .date{font-size:11px;color:var(--brand2);font-weight:700;margin-bottom:4px}
+  .r-item p{font-size:13px;color:var(--t2)}
+
+  footer{padding:48px 0 64px;border-top:1px solid var(--line);text-align:center}
+  .f-logo{font-size:20px;font-weight:800;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+  .f-sub{font-size:13px;color:var(--t3)}
+
+  @media(max-width:720px){
+    .grid3,.persona,.val,.ai-list{grid-template-columns:1fr}
+    .logo{font-size:40px}
+    .tagline{font-size:18px}
+    .flow{flex-direction:column}
+    .step{width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="badge">TRAE AI 创造力大赛 · 学习工作赛道 · 创意提案</div>
+    <div class="logo">造页工坊 PageForge</div>
+    <div class="tagline">像做 PPT 一样"造"网页</div>
+    <div class="sub">智能可视化 HTML 编辑器 · 让没有代码基础的人 10 分钟做出能用的网页</div>
+    <div class="meta">
+      <span class="chip">自由画布拖拽</span>
+      <span class="chip">智能吸附对齐</span>
+      <span class="chip">规则推断响应式</span>
+      <span class="chip">干净单文件 HTML 导出</span>
+      <span class="chip">无平台锁定</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">01 / 创意介绍</div>
+      <h2>一个被遗忘了二十年的梦</h2>
+      <div class="sec-desc">让普通人也能像做 PPT 一样做网页——这是 Dreamweaver 时代就有的需求，却至今没有工具真正做到。</div>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <h3>想解决什么问题</h3>
+        <p>"做个网页"对普通人仍是高门槛。Webflow 要懂 CSS，Wix 代码臃肿，Framer 不导出代码。市面所有工具都在"设计自由度"和"响应式"之间二选一。</p>
+        <span class="tag tag-red">行业级困局</span>
+      </div>
+      <div class="card">
+        <h3>为什么会想到做这个</h3>
+        <p>自己常需快速做落地页，找设计师要 1–2 周，学 Webflow 太陡，用 Wix 担心锁定。调研发现 Webflow 年营收 2 亿美元、Framer 站点 +400%、Wix 2.5 亿用户——需求真实巨大。</p>
+        <span class="tag tag-amber">需求验证</span>
+      </div>
+      <div class="card">
+        <h3>大概是什么产品</h3>
+        <p>Web 端智能可视化编辑器。用户像做 PPT 一样拖拽组件摆放，智能吸附对齐、规则推断实时转成响应式 HTML/CSS，一键导出干净单文件 HTML，可独立部署、无锁定。</p>
+        <span class="tag tag-green">产品形态</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">02 / 竞品对比</div>
+      <h2>四列同时打满的，市面没有</h2>
+      <div class="sec-desc">设计自由度 + 响应式 + 干净导出 + 无锁定——这是造页工坊的机会窗口。</div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>工具</th><th>上手门槛</th><th>设计自由度</th><th>响应式</th><th>代码导出</th><th>平台锁定</th><th>AI 能力</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Webflow</td><td class="bad">高</td><td class="mid">中</td><td class="hl">强</td><td class="hl">干净</td><td class="hl">弱</td><td class="bad">弱</td></tr>
+        <tr><td>Framer</td><td class="mid">中</td><td class="hl">高</td><td class="mid">中</td><td class="bad">不导出</td><td class="bad">强</td><td class="mid">中</td></tr>
+        <tr><td>Wix</td><td class="hl">低</td><td class="mid">中</td><td class="mid">中</td><td class="bad">臃肿</td><td class="bad">强</td><td class="mid">中</td></tr>
+        <tr><td>墨刀 AI</td><td class="hl">低</td><td class="mid">中</td><td class="mid">中</td><td class="mid">片段</td><td class="mid">中</td><td class="hl">强</td></tr>
+        <tr class="us"><td>造页工坊</td><td class="hl">极低</td><td class="hl">高</td><td class="hl">规则推断</td><td class="hl">干净单文件</td><td class="hl">无</td><td class="hl">可选</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">03 / 目标用户与痛点</div>
+      <h2>谁会用，什么时候用</h2>
+    </div>
+    <div class="persona">
+      <div class="p-item"><div class="p-ico">✍️</div><div><h4>内容创作者 / 自媒体 / 运营</h4><p>需快速做落地页、活动页、引流页。现状：找设计师慢、自己不会做。</p></div></div>
+      <div class="p-item"><div class="p-ico">🏪</div><div><h4>小微企业主 / 个体经营者</h4><p>需做产品介绍页、门店页。现状：外包贵、Wix 锁定、改不动。</p></div></div>
+      <div class="p-item"><div class="p-ico">🎓</div><div><h4>学生 / 求职者</h4><p>需做个人主页、作品集、简历页。现状：模板千篇一律、不会代码。</p></div></div>
+      <div class="p-item"><div class="p-ico">📋</div><div><h4>产品经理 / 设计师</h4><p>需快速验证想法、做高保真原型。现状：Figma 不出码、Webflow 太重。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">04 / 核心闭环</div>
+      <h2>三步造一个网页</h2>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="n">STEP 1</div><h4>拖拽摆放</h4><p>像做 PPT 一样在自由画布上摆组件，智能吸附对齐</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">STEP 2</div><h4>规则推断响应式</h4><p>根据元素位置关系推断同行/同列/嵌套，生成 Flex/Grid + 断点</p></div>
+      <div class="arrow">→</div>
+      <div class="step"><div class="n">STEP 3</div><h4>导出部署</h4><p>一键导出干净单文件 HTML，双击即可用，无锁定</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">05 / 价值与意义</div>
+      <h2>效率提升 10 倍</h2>
+    </div>
+    <div class="val">
+      <div class="v-card"><div class="ico">⚡</div><h3>效率提升</h3><p>"找设计师→沟通→设计稿→前端还原→部署"5 步数周，压缩为"拖拽→智能转换→导出"3 步数十分钟。</p></div>
+      <div class="v-card"><div class="ico">💰</div><h3>商业价值</h3><p>模板市场分佣 + 可选 AI Pro 订阅 + 企业版协作 + 一键托管增值。</p></div>
+      <div class="v-card"><div class="ico">🌍</div><h3>社会价值</h3><p>降低"造网页"门槛，让小微企业、个体、学生都能拥有网络门面，缩小数字鸿沟。</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">06 / 智能与 AI 能力</div>
+      <h2>招牌靠算法，AI 是加分项</h2>
+      <div class="sec-desc">招牌功能用纯本地算法实现，0 API 成本、0 延迟；AI 作为可选 Pro 功能，用参赛 Token 额度，成本可控时再启用。</div>
+    </div>
+    <div class="ai-box">
+      <div class="ai-list">
+        <div class="ai-item"><div class="dot"></div><div><b>智能吸附对齐<span class="pill pill-core">招牌</span></b>拖拽时吸附到网格、对齐线、其他元素边缘，参考 WPS/PPT 智能对齐，纯本地算法。</div></div>
+        <div class="ai-item"><div class="dot"></div><div><b>规则推断响应式<span class="pill pill-core">招牌</span></b>根据元素 x/y 重叠关系推断同行/同列/嵌套，生成 Flex/Grid + flex-wrap 断点，破解"自由画布 vs 响应式"难题。</div></div>
+        <div class="ai-item"><div class="dot"></div><div><b>干净 HTML 序列化<span class="pill pill-core">招牌</span></b>AST → 语义化 HTML + 内联 CSS，零运行时依赖，单文件可直接双击打开。</div></div>
+        <div class="ai-item"><div class="dot"></div><div><b>AI 整页生成<span class="pill pill-opt">可选 Pro</span></b>一句话描述需求，AI 生成完整可编辑页面骨架，用参赛 Token 额度。</div></div>
+        <div class="ai-item"><div class="dot"></div><div><b>AI 文案/配色<span class="pill pill-opt">可选 Pro</span></b>根据页面主题自动生成标题文案与配色方案，成本可控时启用。</div></div>
+        <div class="ai-item"><div class="dot"></div><div><b>创作全流程 vibe coding<span class="pill pill-core">过程</span></b>从创意到 Demo 全程用 TRAE IDE 对话式开发，契合大赛"用 AI 把创意造成作品"。</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-num">07 / 开发路线</div>
+      <h2>从创意到作品</h2>
+    </div>
+    <div class="road">
+      <div class="r-item"><div class="date">6.16 – 7.15 · 初赛</div><h4>可体验 Demo</h4><p>画布 + 拖拽 + 5 基础组件 + 属性面板 + 图层树 + 撤销重做 + 智能吸附 + 规则推断响应式 + HTML 导出 + 部署上线。</p></div>
+      <div class="r-item"><div class="date">7.21 – 8.09 · 复赛</div><h4>完整产品</h4><p>规则引擎优化 + 可选 AI Pro（整页生成/文案/配色）+ 模板市场雏形 + 多端预览 + 性能优化。</p></div>
+      <div class="r-item"><div class="date">8.21 – 8.22 · 决赛</div><h4>现场路演</h4><p>路演 PPT + 现场 Demo + 故事化讲解"一个被遗忘了二十年的梦"。</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="f-logo">造页工坊 PageForge</div>
+    <div class="f-sub">TRAE AI 创造力大赛 · 学习工作赛道 · 创意提案 HTML</div>
+    <div class="f-sub" style="margin-top:8px">世界很大，放手去造 · 人人都可以创造</div>
+  </div>
+</footer>
+
+</body>
+</html>

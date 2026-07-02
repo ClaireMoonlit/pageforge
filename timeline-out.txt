@@ -1,0 +1,589 @@
+[importHtml.ts] MODULE LOADED v10 - absolute position layout
+[htmlToNodes] assetFolderPrefix: assets-agency/ baseUrl: http://localhost:5173/imported-templates/
+[APPLY] tag.class .class: header.masthead .masthead-subheading -> __desc_of__masthead__masthead-subheading
+[APPLY] tag.class .class: header.masthead .masthead-heading -> __desc_of__masthead__masthead-heading
+[APPLY] tag.class .class: header.masthead .masthead-subheading -> __desc_of__masthead__masthead-subheading
+[APPLY] tag.class .class: header.masthead .masthead-heading -> __desc_of__masthead__masthead-heading
+[htmlToNodes] body children count: 15
+Timeline containers found: 21
+
+=== Timeline ===
+  id: imp_mr0k2zki_110
+  type: container
+  class: timeline
+  position: relative
+  display: undefined
+  width: 1176px
+  children count: 6
+  child[0]:
+    type: container
+    class: (no class)
+    position: relative
+    display: block
+    width: 1144px
+    height: undefined
+    x: 32, y: 0
+    minHeight: 170px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-image, text=
+    grandchild[1]: type=container, class=timeline-panel, text=2009-2011
+  child[1]:
+    type: container
+    class: timeline-inverted
+    position: relative
+    display: block
+    width: 1144px
+    height: undefined
+    x: 32, y: 186
+    minHeight: 170px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-image, text=
+    grandchild[1]: type=container, class=timeline-panel, text=March 2011
+  child[2]:
+    type: container
+    class: (no class)
+    position: relative
+    display: block
+    width: 1144px
+    height: undefined
+    x: 32, y: 372
+    minHeight: 170px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-image, text=
+    grandchild[1]: type=container, class=timeline-panel, text=December 2015
+  child[3]:
+    type: container
+    class: timeline-inverted
+    position: relative
+    display: block
+    width: 1144px
+    height: undefined
+    x: 32, y: 558
+    minHeight: 170px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-image, text=
+    grandchild[1]: type=container, class=timeline-panel, text=July 2020
+  child[4]:
+    type: container
+    class: timeline-inverted
+    position: relative
+    display: block
+    width: 1144px
+    height: undefined
+    x: 32, y: 744
+    minHeight: 170px
+    children count: 1
+    grandchild[0]: type=container, class=timeline-image, text=Be Part
+Of Our
+Story!
+  child[5]:
+    type: container
+    class: (no class)
+    position: absolute
+    display: undefined
+    width: 3px
+    height: 914px
+    x: 602, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkk_118
+  type: container
+  class: timeline-image
+  position: absolute
+  display: flex
+  width: 170px
+  children count: 1
+  child[0]:
+    type: image
+    class: rounded-circle img-fluid
+    position: relative
+    display: undefined
+    width: 85px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkk_119
+  type: container
+  class: timeline-panel
+  position: absolute
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-heading
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: 73.6px
+    children count: 2
+    grandchild[0]: type=heading, class=(no class), text=2009-2011
+    grandchild[1]: type=heading, class=subheading, text=Our Humble Beginnings
+  child[1]:
+    type: container
+    class: timeline-body
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 89.6
+    minHeight: 168px
+    children count: 1
+    grandchild[0]: type=text, class=text-muted, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zkl_121
+  type: container
+  class: timeline-heading
+  position: relative
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: heading
+    class: (no class)
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+  child[1]:
+    type: heading
+    class: subheading
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 44.8
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkl_122
+  type: container
+  class: timeline-body
+  position: relative
+  display: undefined
+  width: 469.03999999999996px
+  children count: 1
+  child[0]:
+    type: text
+    class: text-muted
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkj_114
+  type: container
+  class: timeline-inverted
+  position: relative
+  display: block
+  width: 1144px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-image
+    position: absolute
+    display: flex
+    width: 170px
+    height: 170px
+    x: 487, y: 0
+    minHeight: 58px
+    children count: 1
+    grandchild[0]: type=image, class=rounded-circle img-fluid, text=
+  child[1]:
+    type: container
+    class: timeline-panel
+    position: absolute
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 674.96, y: 0
+    minHeight: 333.6px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-heading, text=March 2011
+    grandchild[1]: type=container, class=timeline-body, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zkm_126
+  type: container
+  class: timeline-image
+  position: absolute
+  display: flex
+  width: 170px
+  children count: 1
+  child[0]:
+    type: image
+    class: rounded-circle img-fluid
+    position: relative
+    display: undefined
+    width: 50px
+    height: undefined
+    x: 20, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkm_127
+  type: container
+  class: timeline-panel
+  position: absolute
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-heading
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 20, y: 0
+    minHeight: 73.6px
+    children count: 2
+    grandchild[0]: type=heading, class=(no class), text=March 2011
+    grandchild[1]: type=heading, class=subheading, text=An Agency is Born
+  child[1]:
+    type: container
+    class: timeline-body
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 20, y: 89.6
+    minHeight: 224px
+    children count: 1
+    grandchild[0]: type=text, class=text-muted, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zkm_129
+  type: container
+  class: timeline-heading
+  position: relative
+  display: undefined
+  width: 349.03999999999996px
+  children count: 2
+  child[0]:
+    type: heading
+    class: (no class)
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+  child[1]:
+    type: heading
+    class: subheading
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 44.8
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkn_130
+  type: container
+  class: timeline-body
+  position: relative
+  display: undefined
+  width: 349.03999999999996px
+  children count: 1
+  child[0]:
+    type: text
+    class: text-muted
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkn_134
+  type: container
+  class: timeline-image
+  position: absolute
+  display: flex
+  width: 170px
+  children count: 1
+  child[0]:
+    type: image
+    class: rounded-circle img-fluid
+    position: relative
+    display: undefined
+    width: 85px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkn_135
+  type: container
+  class: timeline-panel
+  position: absolute
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-heading
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: 102.39999999999999px
+    children count: 2
+    grandchild[0]: type=heading, class=(no class), text=December 2015
+    grandchild[1]: type=heading, class=subheading, text=Transition to Full Service
+  child[1]:
+    type: container
+    class: timeline-body
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 118.39999999999999
+    minHeight: 168px
+    children count: 1
+    grandchild[0]: type=text, class=text-muted, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zko_137
+  type: container
+  class: timeline-heading
+  position: relative
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: heading
+    class: (no class)
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+  child[1]:
+    type: heading
+    class: subheading
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 44.8
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zko_138
+  type: container
+  class: timeline-body
+  position: relative
+  display: undefined
+  width: 469.03999999999996px
+  children count: 1
+  child[0]:
+    type: text
+    class: text-muted
+    position: relative
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkj_116
+  type: container
+  class: timeline-inverted
+  position: relative
+  display: block
+  width: 1144px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-image
+    position: absolute
+    display: flex
+    width: 170px
+    height: 170px
+    x: 487, y: 0
+    minHeight: 58px
+    children count: 1
+    grandchild[0]: type=image, class=rounded-circle img-fluid, text=
+  child[1]:
+    type: container
+    class: timeline-panel
+    position: absolute
+    display: undefined
+    width: 469.03999999999996px
+    height: undefined
+    x: 674.96, y: 0
+    minHeight: 362.4px
+    children count: 2
+    grandchild[0]: type=container, class=timeline-heading, text=July 2020
+    grandchild[1]: type=container, class=timeline-body, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zko_142
+  type: container
+  class: timeline-image
+  position: absolute
+  display: flex
+  width: 170px
+  children count: 1
+  child[0]:
+    type: image
+    class: rounded-circle img-fluid
+    position: relative
+    display: undefined
+    width: 50px
+    height: undefined
+    x: 20, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkp_143
+  type: container
+  class: timeline-panel
+  position: absolute
+  display: undefined
+  width: 469.03999999999996px
+  children count: 2
+  child[0]:
+    type: container
+    class: timeline-heading
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 20, y: 0
+    minHeight: 102.39999999999999px
+    children count: 2
+    grandchild[0]: type=heading, class=(no class), text=July 2020
+    grandchild[1]: type=heading, class=subheading, text=Phase Two Expansion
+  child[1]:
+    type: container
+    class: timeline-body
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 20, y: 118.39999999999999
+    minHeight: 224px
+    children count: 1
+    grandchild[0]: type=text, class=text-muted, text=Lorem ipsum dolor sit amet, consectetur adipisicin
+
+=== Timeline ===
+  id: imp_mr0k2zkp_145
+  type: container
+  class: timeline-heading
+  position: relative
+  display: undefined
+  width: 349.03999999999996px
+  children count: 2
+  child[0]:
+    type: heading
+    class: (no class)
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+  child[1]:
+    type: heading
+    class: subheading
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 44.8
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkq_146
+  type: container
+  class: timeline-body
+  position: relative
+  display: undefined
+  width: 349.03999999999996px
+  children count: 1
+  child[0]:
+    type: text
+    class: text-muted
+    position: relative
+    display: undefined
+    width: 349.03999999999996px
+    height: undefined
+    x: 0, y: 0
+    minHeight: undefined
+    children count: 0
+
+=== Timeline ===
+  id: imp_mr0k2zkj_117
+  type: container
+  class: timeline-inverted
+  position: relative
+  display: block
+  width: 1144px
+  children count: 1
+  child[0]:
+    type: container
+    class: timeline-image
+    position: absolute
+    display: flex
+    width: 170px
+    height: 170px
+    x: 487, y: 0
+    minHeight: 124px
+    children count: 1
+    grandchild[0]: type=heading, class=(no class), text=Be Part
+Of Our
+Story!
+
+=== Timeline ===
+  id: imp_mr0k2zkq_150
+  type: container
+  class: timeline-image
+  position: absolute
+  display: flex
+  width: 170px
+  children count: 1
+  child[0]:
+    type: heading
+    class: (no class)
+    position: relative
+    display: undefined
+    width: 100px
+    height: undefined
+    x: 20, y: 0
+    minHeight: undefined
+    children count: 0

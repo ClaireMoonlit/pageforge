@@ -1,0 +1,323 @@
+[importHtml.ts] MODULE LOADED v10 - absolute position layout
+[htmlToNodes] assetFolderPrefix: assets-agency/ baseUrl: http://localhost:5173/imported-templates/
+[APPLY] tag.class .class: header.masthead .masthead-subheading -> __desc_of__masthead__masthead-subheading
+[APPLY] tag.class .class: header.masthead .masthead-heading -> __desc_of__masthead__masthead-heading
+[APPLY] tag.class .class: header.masthead .masthead-subheading -> __desc_of__masthead__masthead-subheading
+[APPLY] tag.class .class: header.masthead .masthead-heading -> __desc_of__masthead__masthead-heading
+[htmlToNodes] body children count: 15
+Timeline count: 21
+
+=== Timeline Node ===
+  id: imp_mr0klzlk_110
+  class: timeline
+  x: 12 y: 108
+  width: 1176px
+  position: relative
+  padding: 0 padLeft: 2rem padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,paddingLeft,marginTop,marginBottom,position,padding,color,fontFamily,fontSize,fontWeight,lineHeight,width,minHeight
+  children count: 6
+  child[0]: class=(none) type=container w=1176px x=0
+    style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-inverted type=container w=1176px x=0
+    style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+    pad: undefined padLeft: undefined
+  child[2]: class=(none) type=container w=1176px x=0
+    style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+    pad: undefined padLeft: undefined
+  child[3]: class=timeline-inverted type=container w=1176px x=0
+    style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+    pad: undefined padLeft: undefined
+  child[4]: class=timeline-inverted type=container w=1176px x=0
+    style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+    pad: undefined padLeft: undefined
+  child[5]: class=(none) type=container w=3px x=586
+    style keys: position,x,y,width,height,backgroundColor,zIndex
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzln_118
+  class: timeline-image
+  x: 503 y: 0
+  width: 170px
+  position: absolute
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,textAlign,zIndex,display,alignItems,justifyContent,position,top,minHeight
+  children count: 1
+  child[0]: class=rounded-circle img-fluid type=image w=85px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzln_119
+  class: timeline-panel
+  x: 0 y: 0
+  width: 482.15999999999997px
+  position: absolute
+  padding: undefined padLeft: 100px padRight: 20px
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,paddingLeft,paddingRight,textAlign,position,top,minHeight
+  children count: 2
+  child[0]: class=timeline-heading type=container w=482.15999999999997px x=0
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-body type=container w=482.15999999999997px x=0
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzlo_121
+  class: timeline-heading
+  x: 0 y: 0
+  width: 482.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+  children count: 2
+  child[0]: class=(none) type=heading w=482.15999999999997px x=0
+    style keys: x,y,marginTop,marginBottom,fontFamily,fontWeight,lineHeight,fontSize,color,width,position
+    pad: undefined padLeft: undefined
+  child[1]: class=subheading type=heading w=482.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlr_122
+  class: timeline-body
+  x: 0 y: 89.6
+  width: 482.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+  children count: 1
+  child[0]: class=text-muted type=text w=482.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzll_114
+  class: timeline-inverted
+  x: 0 y: 186
+  width: 1176px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+  children count: 2
+  child[0]: class=timeline-image type=container w=170px x=503
+    style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-panel type=container w=482.15999999999997px x=693.84
+    style keys: x,y,padding,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,right,paddingRight,paddingLeft,position,top,minHeight
+    pad: 0 100px 20px 20px padLeft: 20px
+
+=== Timeline Node ===
+  id: imp_mr0klzlt_126
+  class: timeline-image
+  x: 503 y: 0
+  width: 170px
+  position: absolute
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+  children count: 1
+  child[0]: class=rounded-circle img-fluid type=image w=50px x=20
+
+=== Timeline Node ===
+  id: imp_mr0klzlu_127
+  class: timeline-panel
+  x: 693.84 y: 0
+  width: 482.15999999999997px
+  position: absolute
+  padding: 0 100px 20px 20px padLeft: 20px padRight: 100px
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,padding,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,right,paddingRight,paddingLeft,position,top,minHeight
+  children count: 2
+  child[0]: class=timeline-heading type=container w=362.15999999999997px x=20
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-body type=container w=362.15999999999997px x=20
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzlv_129
+  class: timeline-heading
+  x: 20 y: 0
+  width: 362.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+  children count: 2
+  child[0]: class=(none) type=heading w=362.15999999999997px x=0
+    style keys: x,y,marginTop,marginBottom,fontFamily,fontWeight,lineHeight,fontSize,color,textAlign,width,position
+    pad: undefined padLeft: undefined
+  child[1]: class=subheading type=heading w=362.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlv_130
+  class: timeline-body
+  x: 20 y: 89.6
+  width: 362.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+  children count: 1
+  child[0]: class=text-muted type=text w=362.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlw_134
+  class: timeline-image
+  x: 503 y: 0
+  width: 170px
+  position: absolute
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,textAlign,zIndex,display,alignItems,justifyContent,position,top,minHeight
+  children count: 1
+  child[0]: class=rounded-circle img-fluid type=image w=85px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlw_135
+  class: timeline-panel
+  x: 0 y: 0
+  width: 482.15999999999997px
+  position: absolute
+  padding: undefined padLeft: 100px padRight: 20px
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,paddingLeft,paddingRight,textAlign,position,top,minHeight
+  children count: 2
+  child[0]: class=timeline-heading type=container w=482.15999999999997px x=0
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-body type=container w=482.15999999999997px x=0
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzlw_137
+  class: timeline-heading
+  x: 0 y: 0
+  width: 482.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+  children count: 2
+  child[0]: class=(none) type=heading w=482.15999999999997px x=0
+    style keys: x,y,marginTop,marginBottom,fontFamily,fontWeight,lineHeight,fontSize,color,width,position
+    pad: undefined padLeft: undefined
+  child[1]: class=subheading type=heading w=482.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlx_138
+  class: timeline-body
+  x: 0 y: 118.39999999999999
+  width: 482.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,lineHeight,width,position,minHeight
+  children count: 1
+  child[0]: class=text-muted type=text w=482.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlm_116
+  class: timeline-inverted
+  x: 0 y: 558
+  width: 1176px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+  children count: 2
+  child[0]: class=timeline-image type=container w=170px x=503
+    style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-panel type=container w=482.15999999999997px x=693.84
+    style keys: x,y,padding,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,right,paddingRight,paddingLeft,position,top,minHeight
+    pad: 0 100px 20px 20px padLeft: 20px
+
+=== Timeline Node ===
+  id: imp_mr0klzlx_142
+  class: timeline-image
+  x: 503 y: 0
+  width: 170px
+  position: absolute
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+  children count: 1
+  child[0]: class=rounded-circle img-fluid type=image w=50px x=20
+
+=== Timeline Node ===
+  id: imp_mr0klzly_143
+  class: timeline-panel
+  x: 693.84 y: 0
+  width: 482.15999999999997px
+  position: absolute
+  padding: 0 100px 20px 20px padLeft: 20px padRight: 100px
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,padding,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,right,paddingRight,paddingLeft,position,top,minHeight
+  children count: 2
+  child[0]: class=timeline-heading type=container w=362.15999999999997px x=20
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+  child[1]: class=timeline-body type=container w=362.15999999999997px x=20
+    style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzly_145
+  class: timeline-heading
+  x: 20 y: 0
+  width: 362.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+  children count: 2
+  child[0]: class=(none) type=heading w=362.15999999999997px x=0
+    style keys: x,y,marginTop,marginBottom,fontFamily,fontWeight,lineHeight,fontSize,color,textAlign,width,position
+    pad: undefined padLeft: undefined
+  child[1]: class=subheading type=heading w=362.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlz_146
+  class: timeline-body
+  x: 20 y: 118.39999999999999
+  width: 362.15999999999997px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,color,fontFamily,fontSize,fontWeight,textAlign,lineHeight,width,position,minHeight
+  children count: 1
+  child[0]: class=text-muted type=text w=362.15999999999997px x=0
+
+=== Timeline Node ===
+  id: imp_mr0klzlm_117
+  class: timeline-inverted
+  x: 0 y: 744
+  width: 1176px
+  position: relative
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,position,minHeight,marginBottom,color,fontFamily,fontSize,fontWeight,lineHeight,display,overflow,width
+  children count: 1
+  child[0]: class=timeline-image type=container w=170px x=503
+    style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+    pad: undefined padLeft: undefined
+
+=== Timeline Node ===
+  id: imp_mr0klzm0_150
+  class: timeline-image
+  x: 503 y: 0
+  width: 170px
+  position: absolute
+  padding: undefined padLeft: undefined padRight: undefined
+  marginLeft: undefined marginRight: undefined
+  All style keys: x,y,textAlign,color,fontFamily,fontSize,fontWeight,lineHeight,width,height,backgroundColor,borderRadius,border,zIndex,display,alignItems,justifyContent,position,top,minHeight
+  children count: 1
+  child[0]: class=(none) type=heading w=100px x=20
+    style keys: x,y,marginTop,marginBottom,fontFamily,fontWeight,lineHeight,fontSize,color,textAlign,width,position
+    pad: undefined padLeft: undefined
