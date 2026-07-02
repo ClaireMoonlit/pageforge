@@ -183,25 +183,21 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
         </div>
       )
     case 'input':
-      return (
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            minHeight: 40,
-            display: 'flex',
-            alignItems: 'center',
-            padding: '10px 14px',
-            borderRadius: 'inherit',
-            border: '1px solid #d1d5db',
-            backgroundColor: '#ffffff',
-            color: node.props.text ? '#374151' : '#9ca3af',
-            fontSize: 'inherit',
-          }}
-        >
-          {node.props.text || node.props.placeholder || '输入框占位'}
-        </div>
-      )
+	      return (
+	        <div
+	          style={{
+	            width: '100%',
+	            height: '100%',
+	            minHeight: 40,
+	            display: 'flex',
+	            alignItems: 'center',
+	            color: node.props.text ? '#374151' : '#9ca3af',
+	            fontSize: 'inherit',
+	          }}
+	        >
+	          {node.props.text || node.props.placeholder || '输入框占位'}
+	        </div>
+	      )
     case 'iframe':
       return node.props.src ? (
         <iframe

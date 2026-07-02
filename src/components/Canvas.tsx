@@ -287,7 +287,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         style={{
           width: `calc(${canvas.width} * ${zoom} + 24px)`,
           height: `calc(${canvas.height} * ${zoom} + 24px)`,
-          margin: `${24 + 32}px auto ${24}px`,
+          margin: `${24}px auto`,
           position: 'relative',
           transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
           cursor,

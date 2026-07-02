@@ -135,6 +135,7 @@ export const componentLib: ComponentDef[] = [
     defaultProps: { placeholder: '请输入内容...', text: '' },
     defaultStyle: {
       width: '280px',
+      minHeight: '40px',
       fontSize: '14px',
       color: '#374151',
       padding: '10px 14px',
