@@ -1,0 +1,785 @@
+{
+  "id": "sb-clean-blog",
+  "name": "StartBootstrap Clean Blog",
+  "nodes": [
+    {
+      "id": "sbt_mqwkvs06_1",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 0,
+        "position": "relative",
+        "display": "flex",
+        "flexWrap": "wrap",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "padding": "var(--bs-navbar-padding-y) var(--bs-navbar-padding-x)",
+        "width": "1200px",
+        "minHeight": "268px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs06_2",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "268px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs06_3",
+              "type": "text",
+              "props": {
+                "text": "Start Bootstrap"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "color": "var(--bs-navbar-brand-color)",
+                "textDecoration": "none",
+                "fontSize": "var(--bs-navbar-brand-font-size)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs06_4",
+              "type": "button",
+              "props": {
+                "text": "Menu"
+              },
+              "style": {
+                "x": 0,
+                "y": 44,
+                "borderRadius": "0",
+                "margin": "0",
+                "fontFamily": "inherit",
+                "fontSize": "var(--bs-navbar-toggler-font-size)",
+                "lineHeight": "1",
+                "padding": "var(--bs-navbar-toggler-padding-y) var(--bs-navbar-toggler-padding-x)",
+                "color": "var(--bs-navbar-color)",
+                "backgroundColor": "transparent",
+                "border": "var(--bs-border-width) solid var(--bs-navbar-toggler-border-color)",
+                "width": "1200px"
+              },
+              "children": [],
+              "visible": true
+            },
+            {
+              "id": "sbt_mqwkvs06_5",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 108,
+                "flexGrow": "1",
+                "alignItems": "center",
+                "width": "1200px",
+                "minHeight": "160px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs06_6",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "display": "flex",
+                    "flexDirection": "column",
+                    "width": "1200px",
+                    "minHeight": "160px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs06_7",
+                      "type": "text",
+                      "props": {
+                        "text": "Home"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs06_8",
+                      "type": "text",
+                      "props": {
+                        "text": "About"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 44,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs06_9",
+                      "type": "text",
+                      "props": {
+                        "text": "Sample Post"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 88,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs06_10",
+                      "type": "text",
+                      "props": {
+                        "text": "Contact"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 132,
+                        "width": "1200px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs07_11",
+      "type": "container",
+      "props": {
+        "text": "Clean Blog",
+        "level": 1
+      },
+      "style": {
+        "x": 0,
+        "y": 292,
+        "width": "1200px",
+        "minHeight": "72px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs07_12",
+          "type": "container",
+          "props": {
+            "text": "Clean Blog",
+            "level": 1
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "position": "relative",
+            "minHeight": "72px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs07_13",
+              "type": "container",
+              "props": {
+                "text": "Clean Blog",
+                "level": 1
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "72px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs07_14",
+                  "type": "container",
+                  "props": {
+                    "text": "Clean Blog",
+                    "level": 1
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "699.9999999600001px",
+                    "minHeight": "72px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_15",
+                      "type": "container",
+                      "props": {
+                        "text": "Clean Blog",
+                        "level": 1
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "width": "699.9999999600001px",
+                        "minHeight": "72px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs07_16",
+                          "type": "heading",
+                          "props": {
+                            "text": "Clean Blog",
+                            "level": 1
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "fontFamily": "\"Open Sans\",-apple-system,BlinkMacSystemFont,\"Segoe UI\",Roboto,\"Helvetica Neue\",Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Segoe UI Symbol\",\"Noto Color Emoji\"",
+                            "fontWeight": "800",
+                            "lineHeight": "1.2",
+                            "fontSize": "calc(1.375rem + 1.5vw)",
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs07_17",
+                          "type": "text",
+                          "props": {
+                            "text": "A Blog Theme by Start Bootstrap"
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 44,
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs07_18",
+      "type": "container",
+      "props": {
+        "text": "Man must explore, and this is exploration at its greatest",
+        "level": 2,
+        "subtitle": "Posted by\n                            Start Bootstrap\n                            on September 24, 2023"
+      },
+      "style": {
+        "x": 0,
+        "y": 388,
+        "width": "1200px",
+        "minHeight": "856.8px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs07_19",
+          "type": "container",
+          "props": {
+            "text": "Man must explore, and this is exploration at its greatest",
+            "level": 2,
+            "subtitle": "Posted by\n                            Start Bootstrap\n                            on September 24, 2023"
+          },
+          "style": {
+            "x": 0,
+            "y": 0,
+            "justifyContent": "center",
+            "width": "1200px",
+            "minHeight": "856.8px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs07_20",
+              "type": "container",
+              "props": {
+                "text": "Man must explore, and this is exploration at its greatest",
+                "level": 2,
+                "subtitle": "Posted by\n                            Start Bootstrap\n                            on September 24, 2023"
+              },
+              "style": {
+                "x": 0,
+                "y": 0,
+                "flex": "0 0 auto",
+                "width": "699.9999999600001px",
+                "minHeight": "856.8px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs07_21",
+                  "type": "container",
+                  "props": {
+                    "text": "Man must explore, and this is exploration at its greatest",
+                    "level": 2,
+                    "subtitle": "Posted by\n                            Start Bootstrap\n                            on September 24, 2023"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "width": "699.9999999600001px",
+                    "minHeight": "152px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_22",
+                      "type": "text",
+                      "props": {
+                        "text": "Man must explore, and this is exploration at its greatest\n                            Problems look mighty small from 150 miles up"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "var(--bs-link-color)",
+                        "textDecoration": "none",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs07_23",
+                      "type": "text",
+                      "props": {
+                        "text": "Posted by\n                            Start Bootstrap\n                            on September 24, 2023"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 97.6,
+                        "margin": "2rem 0",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_24",
+                  "type": "divider",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 168,
+                    "margin": "1rem 0",
+                    "color": "inherit",
+                    "border": "0",
+                    "opacity": "1",
+                    "width": "699.9999999600001px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_25",
+                  "type": "container",
+                  "props": {
+                    "text": "I believe every human has a finite number of heartbeats. I don't intend to waste any of mine.",
+                    "level": 2,
+                    "subtitle": "Posted by\n                            Start Bootstrap\n                            on September 18, 2023"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 214,
+                    "width": "699.9999999600001px",
+                    "minHeight": "124.80000000000001px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_26",
+                      "type": "text",
+                      "props": {
+                        "text": "I believe every human has a finite number of heartbeats. I don't intend to waste any of mine."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "var(--bs-link-color)",
+                        "textDecoration": "none",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs07_27",
+                      "type": "text",
+                      "props": {
+                        "text": "Posted by\n                            Start Bootstrap\n                            on September 18, 2023"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 70.4,
+                        "margin": "2rem 0",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_28",
+                  "type": "divider",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 354.8,
+                    "margin": "1rem 0",
+                    "color": "inherit",
+                    "border": "0",
+                    "opacity": "1",
+                    "width": "699.9999999600001px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_29",
+                  "type": "container",
+                  "props": {
+                    "text": "Science has not yet mastered prophecy",
+                    "level": 2,
+                    "subtitle": "Posted by\n                            Start Bootstrap\n                            on August 24, 2023"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 400.8,
+                    "width": "699.9999999600001px",
+                    "minHeight": "152px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_30",
+                      "type": "text",
+                      "props": {
+                        "text": "Science has not yet mastered prophecy\n                            We predict too much for the next year and yet far too little for the next ten."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "var(--bs-link-color)",
+                        "textDecoration": "none",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs07_31",
+                      "type": "text",
+                      "props": {
+                        "text": "Posted by\n                            Start Bootstrap\n                            on August 24, 2023"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 97.6,
+                        "margin": "2rem 0",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_32",
+                  "type": "divider",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 568.8,
+                    "margin": "1rem 0",
+                    "color": "inherit",
+                    "border": "0",
+                    "opacity": "1",
+                    "width": "699.9999999600001px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_33",
+                  "type": "container",
+                  "props": {
+                    "text": "Failure is not an option",
+                    "level": 2,
+                    "subtitle": "Posted by\n                            Start Bootstrap\n                            on July 8, 2023"
+                  },
+                  "style": {
+                    "x": 0,
+                    "y": 614.8,
+                    "width": "699.9999999600001px",
+                    "minHeight": "152px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_34",
+                      "type": "text",
+                      "props": {
+                        "text": "Failure is not an option\n                            Many say exploration is part of our destiny, but it’s actually our duty to future generations."
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "var(--bs-link-color)",
+                        "textDecoration": "none",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs07_35",
+                      "type": "text",
+                      "props": {
+                        "text": "Posted by\n                            Start Bootstrap\n                            on July 8, 2023"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 97.6,
+                        "margin": "2rem 0",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_36",
+                  "type": "divider",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 782.8,
+                    "margin": "1rem 0",
+                    "color": "inherit",
+                    "border": "0",
+                    "opacity": "1",
+                    "width": "699.9999999600001px"
+                  },
+                  "children": [],
+                  "visible": true
+                },
+                {
+                  "id": "sbt_mqwkvs07_37",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 828.8,
+                    "display": "flex",
+                    "justifyContent": "flex-end",
+                    "width": "699.9999999600001px",
+                    "minHeight": "28px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs07_38",
+                      "type": "text",
+                      "props": {
+                        "text": "Older Posts →"
+                      },
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "color": "var(--bs-btn-color)",
+                        "textDecoration": "none",
+                        "display": "inline-block",
+                        "padding": "var(--bs-btn-padding-y) var(--bs-btn-padding-x)",
+                        "fontFamily": "var(--bs-btn-font-family)",
+                        "fontSize": "var(--bs-btn-font-size)",
+                        "fontWeight": "var(--bs-btn-font-weight)",
+                        "lineHeight": "var(--bs-btn-line-height)",
+                        "textAlign": "center",
+                        "border": "var(--bs-btn-border-width) solid var(--bs-btn-border-color)",
+                        "backgroundColor": "var(--bs-btn-bg)",
+                        "width": "699px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    },
+    {
+      "id": "sbt_mqwkvs08_39",
+      "type": "container",
+      "props": {},
+      "style": {
+        "x": 0,
+        "y": 1268.8,
+        "width": "1200px",
+        "minHeight": "192px"
+      },
+      "children": [
+        {
+          "id": "sbt_mqwkvs08_40",
+          "type": "container",
+          "props": {},
+          "style": {
+            "x": 0,
+            "y": 0,
+            "width": "1200px",
+            "minHeight": "192px"
+          },
+          "children": [
+            {
+              "id": "sbt_mqwkvs08_41",
+              "type": "container",
+              "props": {},
+              "style": {
+                "x": 0,
+                "y": 0,
+                "justifyContent": "center",
+                "width": "1200px",
+                "minHeight": "192px"
+              },
+              "children": [
+                {
+                  "id": "sbt_mqwkvs08_42",
+                  "type": "container",
+                  "props": {},
+                  "style": {
+                    "x": 0,
+                    "y": 0,
+                    "flex": "0 0 auto",
+                    "width": "699.9999999600001px",
+                    "minHeight": "192px"
+                  },
+                  "children": [
+                    {
+                      "id": "sbt_mqwkvs08_43",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 0,
+                        "textAlign": "center",
+                        "width": "699.9999999600001px",
+                        "minHeight": "116px"
+                      },
+                      "children": [
+                        {
+                          "id": "sbt_mqwkvs08_44",
+                          "type": "text",
+                          "props": {
+                            "text": ""
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 0,
+                            "display": "inline-block",
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs08_45",
+                          "type": "text",
+                          "props": {
+                            "text": ""
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 44,
+                            "display": "inline-block",
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        },
+                        {
+                          "id": "sbt_mqwkvs08_46",
+                          "type": "text",
+                          "props": {
+                            "text": ""
+                          },
+                          "style": {
+                            "x": 0,
+                            "y": 88,
+                            "display": "inline-block",
+                            "width": "699.9999999600001px"
+                          },
+                          "children": [],
+                          "visible": true
+                        }
+                      ],
+                      "visible": true
+                    },
+                    {
+                      "id": "sbt_mqwkvs08_47",
+                      "type": "container",
+                      "props": {},
+                      "style": {
+                        "x": 0,
+                        "y": 132,
+                        "fontSize": ".875em",
+                        "textAlign": "center",
+                        "color": "#6c757d",
+                        "fontStyle": "italic",
+                        "width": "699.9999999600001px"
+                      },
+                      "children": [],
+                      "visible": true
+                    }
+                  ],
+                  "visible": true
+                }
+              ],
+              "visible": true
+            }
+          ],
+          "visible": true
+        }
+      ],
+      "visible": true
+    }
+  ],
+  "canvas": {
+    "width": "1200px",
+    "height": "1333px",
+    "backgroundColor": "#ffffff"
+  }
+}
