@@ -304,10 +304,72 @@ function calcMaxBottom(nodes: CanvasNode[], parentX: number = 0, parentY: number
   return maxBottom
 }
 
+/**
+ * 将顶层节点按 Y 轴重叠关系分组为"行"。
+ * 用于生成响应式 CSS：同一行的元素在平板端保持并排，手机端才堆叠。
+ */
+function groupRows(nodes: CanvasNode[]): CanvasNode[][] {
+  const visible = nodes.filter((n) => n.visible !== false)
+  if (visible.length <= 1) return [visible]
+
+  const items = visible.map((n) => ({
+    node: n,
+    y: n.style.y ?? 0,
+    h: parseFloat(String(n.style.height || n.style.minHeight || '40')) || 40,
+  }))
+  items.sort((a, b) => a.y - b.y)
+
+  const rows: (typeof items)[] = []
+  for (const item of items) {
+    let placed = false
+    for (const row of rows) {
+      const rowTop = Math.min(...row.map((r) => r.y))
+      const rowBottom = Math.max(...row.map((r) => r.y + r.h))
+      if (item.y < rowBottom + 20 && item.y + item.h > rowTop - 20) {
+        row.push(item)
+        placed = true
+        break
+      }
+    }
+    if (!placed) rows.push([item])
+  }
+  return rows.map((row) => row.map((r) => r.node))
+}
+
+/** 生成响应式 CSS */
+function responsiveCSS(_rows: CanvasNode[][]): string {
+  return `/* ═══ 响应式布局 ═══ */
+/* 平板：保持行内并排，允许换行 */
+@media(min-width:769px) and (max-width:1024px){
+  .pf-root{max-width:100%!important;padding:24px}
+  .pf-item{max-width:100%!important}
+  .pf-item img,.pf-item video,.pf-item iframe{max-width:100%!important;height:auto!important}
+}
+/* 手机：垂直堆叠，全宽，适当间距 */
+@media(max-width:768px){
+  .pf-root{max-width:100%!important;padding:16px;min-height:auto!important}
+  .pf-item{position:relative!important;left:auto!important;top:auto!important;width:100%!important;max-width:100%!important;height:auto!important;margin-bottom:24px}
+  .pf-item:last-child{margin-bottom:0}
+  .pf-item img,.pf-item video,.pf-item iframe{max-width:100%!important;height:auto!important}
+  .pf-item[data-pf-type="button"]{text-align:center;justify-content:center!important}
+  .pf-item[data-pf-type="container"]{display:flex!important;flex-direction:column!important;gap:16px;padding:16px}
+  .pf-item .pf-item{margin-bottom:16px}
+  .pf-item .pf-item:last-child{margin-bottom:0}
+  .pf-item[data-pf-type="navbar"]{flex-direction:column!important;gap:12px;text-align:center}
+  .pf-item[data-pf-type="grid"]{grid-template-columns:1fr!important}
+  .pf-item[data-pf-type="form"]{width:100%!important}
+  .pf-item[data-pf-type="form"] input,.pf-item[data-pf-type="form"] textarea{width:100%!important;box-sizing:border-box}
+  .pf-item[data-pf-type="heading"]{word-break:break-word}
+  .pf-item[data-pf-type="text"]{word-break:break-word}
+}`
+}
+
 /** 构建完整单文件 HTML 文档（递归保持树结构，桌面端绝对定位 + 移动端堆叠） */
 export function buildHtml(nodes: CanvasNode[], canvas?: CanvasConfig): string {
   let zi = 0
   const visibleNodes = nodes.filter((n) => n.visible !== false)
+  const rows = groupRows(visibleNodes)
+
   const body = visibleNodes.map((n) => {
     zi += 1
     return nodeToHtml(n, 2, zi)
@@ -334,16 +396,13 @@ export function buildHtml(nodes: CanvasNode[], canvas?: CanvasConfig): string {
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>PageForge 导出</title>
 ${fontLink ? fontLink + '\n' : ''}<style>
-				  *{box-sizing:border-box}
-				  h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}
-				  p{margin:0}
-				  body{margin:0;padding:0;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;color:#333}
-				  .pf-root{position:relative;width:100%;max-width:${cw};margin:0 auto;min-height:${rootMinHeight}px;background:${bg}}
-				  .pf-item{position:absolute}
-				  @media(max-width:768px){
-				    .pf-root{max-width:100%}
-				    .pf-item{position:relative!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;max-width:100%}
-				  }
+*{box-sizing:border-box}
+h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}
+p{margin:0}
+body{margin:0;padding:0;font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;-webkit-font-smoothing:antialiased;line-height:1.5;color:#333}
+.pf-root{position:relative;width:100%;max-width:${cw};margin:0 auto;min-height:${rootMinHeight}px;background:${bg}}
+.pf-item{position:absolute}
+${responsiveCSS(rows)}
 </style>
 </head>
 <body>
