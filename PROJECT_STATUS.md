@@ -219,6 +219,43 @@ interface CanvasNode {
 
 ---
 
+### 5.16 库拖拽"到处飞"（上下左右偏移，预览与落点不一致）（2026-07-01 ~ 2026-07-03）
+
+**现象**：从组件库拖拽组件到画布，松手后落点位置相对预览位置偏移（上下左右都有），且拖拽预览样式与落点样式明显不同。
+
+**第一性原理分析**：dnd-kit v6.3.1 的 `DragOverlay` 内部定位机制为：
+```
+最终位置 = PositionedOverlay（pos:fixed, top:initialRect.top, left:initialRect.left）
+          + CSS transform: translate3d(modifierX, modifierY, 0)
+```
+其中 `initialRect` = **冻结的** `activeNodeRect`（库项在 DOM 中的实际位置，如 `left:8, top:88`）。modifier 返回的是**相对 initialRect 的 delta**，不是绝对屏幕位置。
+
+**根因 1 — modifier 返回绝对位置而非 delta（上下偏移 88px）**：
+- 旧 modifier 返回 `(cursor - halfW, cursor - halfH)` 当作绝对屏幕位置
+- dnd-kit 将此值叠加到 `initialRect.top`（88px）上 → 最终位置额外偏移 88px（库项距顶距离）
+- **修复**：改为 `(cursor - halfW - baseLeft, cursor - halfH - baseTop)`，返回正确的 delta
+
+**根因 2 — 落点用 overlay 中心，节点按左上角定位（上下左右偏移）**：
+- modifier 把 overlay **中心** 贴到光标 → 用户看到组件居中于光标
+- `onDragEnd` 用 `r.left + r.width/2`（= overlay 中心 = 光标）作为落点
+- 但节点按 **左上角** 定位（`style.x` / `style.y`）→ 落点相对预览向右下偏移半个尺寸
+- **修复**：改用 `r.left` / `r.top`（overlay 左上角）计算落点，与节点左上角定位一致
+
+**根因 3 — `snapOffset` 在重置后被读取（吸附偏移永远为零）**：
+- `onDragEnd` 中先执行 `snapOffsetRef.current = {x:0, y:0}` 重置，再 `const snapOff = snapOffsetRef.current`
+- 导致吸附偏移永不生效，snap 视觉反馈存在但落点缺失
+- **修复**：`const snapOff = { ...snapOffsetRef.current }` 移到重置之前
+
+**根因 4 — 预览样式与落点不一致**：
+- 预览 div 有 `position: absolute; left:0; top:0` + `boxShadow`
+- DragOverlay wrapper 尺寸固定为库项尺寸（191x40），实际组件尺寸更大（如标题 32px 字号 ~ 300x50）
+- 预览的视觉权重和溢出行为与落点节点不同
+- **修复**：去掉 `position: absolute` 和 `boxShadow`，让 DragOverlay 自然包裹内容，预览 = 落点
+
+**涉及文件**：`src/App.tsx`（onDragEnd 落点计算、centerLibraryOnCursor modifier、DragOverlay 预览样式）
+
+---
+
 ## 6. 交互功能
 
 PageForge 现在支持零代码配置交互效果，导出 HTML 自带 vanilla JS 运行时。
@@ -283,7 +320,7 @@ interface InteractionConfig {
 
 ### 6.4 元素 ID 查看入口
 
-- **图层树**（`src/components/LayerTree.tsx`）：每个图层条目末尾追加 `…{id.slice(-4)}`
+- **图层树**（`src/components/LayerTree.tsx`）：每个图层条目末尾追加 `...{id.slice(-4)}`
 - **Inspector 顶部**（`src/components/Inspector.tsx`）：显示完整 ID 并提供复制按钮
 - **targetId 输入**：从文本框改为下拉选择器，列出全部节点（含嵌套深度、容器标记、ID 后 4 位）
 
@@ -311,6 +348,7 @@ interface InteractionConfig {
 ### ✅ 已完成（本次迭代）
 
 - ~~响应式导出~~：`groupRows` 分行 + 三层断点 CSS（桌面/平板/手机）已在 `exportHtml.ts` 实现，见 5.15
+- ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
 
 ---
 
@@ -322,12 +360,18 @@ interface InteractionConfig {
 - `dragOriginRef` 存储**绝对画布坐标**（含父级偏移），确保所有拖拽计算在同一坐标系
 - `nodeToCss` 排除所有定位属性（`x`/`y`/`position`/`left`/`top`/`right`/`bottom`），定位由 `CanvasElement` 的 `left`/`top` 单独设置
 
-### 8.2 拖拽架构
+### 8.2 拖拽架构（重要！）
 - `DndContext` + `pointerWithin` 碰撞检测
-- 库拖拽：`centerLibraryOnCursor` modifier 把预览居中到光标
-- 画布拖拽：`applySnap` modifier 同步吸附偏移
+- **dnd-kit DragOverlay 定位机制**（v6.3.1）：
+  - `PositionedOverlay` 是 `position: fixed` 元素，`top/left` 设为 **冻结的** `initialRect`（库项在 DOM 中的位置，首次测量后不变）
+  - modifier 的返回值是**相对 initialRect 的 delta**，叠加到 CSS `translate3d()` 上，而非绝对屏幕位置
+  - 这是"往上飞 88px"的根因：旧 modifier 返回绝对位置，被 dnd-kit 叠加到 `initialRect.top`（库项距顶 88px）上
+- **库拖拽**：`centerLibraryOnCursor` modifier 返回 `(cursor - halfW - baseLeft, cursor - halfH - baseTop)` 作为 delta，DragOverlay 左上角对齐到 `(cursor - halfW, cursor - halfH)`
+- **画布拖拽**：`applySnap` modifier 同步吸附偏移
+- **落点计算**：`onDragEnd` 用 `r.left` / `r.top`（overlay 左上角，与节点左上角定位一致），除以 `zoom` 转画布坐标
+- **吸附偏移**：`snapOffsetRef` 必须在重置前保存，否则吸附永不生效
 - `onDragMove` 实时计算吸附参考线（`snapping.ts`）
-- `DragOverlay` 通过 `renderPreviewTree` 递归渲染预览
+- `DragOverlay` 通过 `renderPreviewTree` 递归渲染预览（预览 div 无 `position: absolute` 和 `boxShadow`，确保与落点视觉一致）
 
 ### 8.3 HTML 导入策略
 - 不做完整 CSS 引擎（成本太高）
