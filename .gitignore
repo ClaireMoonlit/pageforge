@@ -27,3 +27,7 @@ debug-*.html
 debug-*.txt
 DEBUG_*.md
 out.txt
+
+# Process / prompt scratch
+TRAE_Work_*.md
+interactive-html-*.md
