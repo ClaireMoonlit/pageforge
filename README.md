@@ -1,83 +1,145 @@
-# 造页工坊 PageForge · TRAE AI 创造力大赛报名帖
+# 🏗️ 造页工坊 PageForge
 
-> 本文件为报名帖正文草稿，严格按官方「报名帖怎么写」模板编写。
-> 标签、标题、正文四部分齐全。提交时请将本文正文复制到社区发帖框，并上传同目录下 `造页工坊_创意提案.html` 作为创意产物附件。
+> 像做 PPT 一样"造"网页 —— 自由画布拖拽 + 智能吸附对齐 + 一键导出响应式 HTML
 
----
-
-## 【标签】
-
-`学习工作`
-
-## 【标题】
-
-【学习工作赛道】造页工坊 —— 像做 PPT 一样"造"网页的智能可视化 HTML 编辑器
-
-## 【正文】
-
-### 1. 创意名称 + 创意介绍
-
-**创意名称：** 造页工坊（PageForge）
-
-**想解决什么问题：**
-当今"做个网页"对普通人仍是高门槛任务。Webflow 虽强大但需理解 Flexbox、Grid、z-index 等 CSS 概念；Wix 零门槛但生成臃肿代码、强平台锁定；Framer 体验最好却不导出生产级代码。市面所有 HTML 编辑工具都在"设计自由度"和"响应式布局"之间做取舍——没有任何工具真正做到"打开就能用、像拖 PPT 一样做网页、导出一份干净的 HTML 文件"。我们想用"智能吸附 + 规则推断"打破这个困局，让没有代码基础的人也能 10 分钟做出一个能用、能导出、响应式的网页。
-
-**为什么会想到做这个：**
-我在日常工作中经常需要快速制作落地页、活动页、个人主页，但找设计师排期要 1–2 周，自己学 Webflow 学习成本太高，用 Wix 又担心代码质量和锁定。调研发现 Webflow 2024 年营收突破 2 亿美元、Framer 2025 年站点数暴涨 400%、Wix 全球用户超 2.5 亿——需求真实且巨大，但"像 PPT 一样自由摆放 + 导出干净响应式 HTML"这个组合至今无人做到。而 TRAE AI 创造力大赛的核心理念正是"人人都可以创造"，借助 TRAE IDE 的 vibe coding 能力，普通人也能把这类复杂工具一步步造出来，让更多普通人跨越代码门槛。
-
-**大概是什么产品：**
-一款 Web 端的智能可视化 HTML 编辑器。用户像做 PPT 一样在自由画布上拖拽组件（标题、图片、按钮、卡片、表单等）摆放布局，拖拽时智能吸附对齐、放下后规则推断自动转化为响应式 HTML/CSS，并支持一键导出干净的生产级单文件 HTML，可独立部署、无平台锁定。
-
-### 2. 目标用户及痛点
-
-**面向哪些用户：**
-- 没有代码基础的内容创作者、自媒体、运营人员（需快速做落地页、活动页）
-- 小微企业主、个体经营者（需做产品介绍页、门店页）
-- 学生、求职者（需做个人主页、作品集、简历页）
-- 非前端开发者（产品经理、设计师，需快速验证想法）
-
-**在什么场景下使用：**
-- 新产品/活动上线，需 1 小时内做出落地页
-- 自媒体引流，需快速做一个图文引流页
-- 求职季，需做一份在线作品集/简历页
-- 创业初期，需快速搭建产品官网雏形
-
-**当前痛点：**
-- 找设计师/外包：周期长（1–2 周）、成本高（单页数百到数千元）、改一轮慢
-- 自己学 Webflow：要理解 Flexbox、Grid、层叠上下文，学习曲线陡，非设计师难以上手
-- 用 Wix/凡客建站：生成代码臃肿（大量内联样式、jQuery 依赖）、强平台锁定、无法独立部署
-- 用 Framer：体验好但不导出生产级代码，只能托管在 Framer
-- 用代码沙盒：必须会写代码，完全不适合普通人
-
-### 3. 价值与意义
-
-**效率提升：**
-原本需"找设计师 → 沟通需求 → 设计稿 → 前端还原 → 部署"的 5 步数周流程，造页工坊可压缩为"拖拽摆放 → 智能转换 → 导出部署"的 3 步数十分钟流程，效率提升 10 倍以上。让普通人从"想法"到"上线"的距离缩短到一个下午。
-
-**商业价值：**
-- 模板市场：付费行业模板（电商、教育、SaaS），与设计师分佣
-- 可选 AI Pro 订阅：AI 整页生成、AI 文案、AI 配色等增值功能（参赛 Token 额度内可控）
-- 企业版：团队协作、品牌设计系统、私有化部署
-- 托管增值：一键部署到 Vercel / 对象存储的托管服务
-
-**社会价值：**
-降低"造网页"门槛，让小微企业、个体创作者、学生群体都能拥有自己的网络门面，缩小数字鸿沟，呼应大赛"人人都可以创造"的理念。
-
-### 4. 创意产物 HTML 文件
-
-附件：`造页工坊_创意提案.html`（同目录下，单文件，可直接浏览器打开预览）
-
-> 说明：本创意产物 HTML 的内容草稿由我整理撰写，最终提交版本建议在 TRAE Work 中以 Auto 模式重新生成或基于此草稿微调，以满足"全程使用 TRAE Work/IDE 创作并保留创作过程材料"的合规要求。
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178c6.svg)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5-646cff.svg)](https://vitejs.dev/)
 
 ---
 
-## 提交 Checklist
+## 这是什么
 
-- [ ] 确认 TRAE 中国版账号与本社区账号为同一手机号
-- [ ] 在「大赛报名专区」发新帖，话题标签选 `学习工作`
-- [ ] 标题：复制上方【标题】
-- [ ] 正文：复制上方【正文】四部分
-- [ ] 上传 `造页工坊_创意提案.html` 作为附件
-- [ ] 保留 TRAE Work 生成 HTML 时的对话截图 / Session ID（用于初赛创作过程材料）
-- [ ] 等官方审核（次日工作日）
-- [ ] 审核通过后到 https://www.trae.cn/ai-creativity/result 领取 99 元速通 Pro 月卡
+造页工坊是一款**浏览器内的可视化网页搭建工具**。无需写一行代码，像做 PPT 一样在自由画布上拖拽组件，智能吸附对齐，规则推断自动转化为响应式 HTML/CSS，一键导出干净的生产级单文件 HTML，可独立部署、无平台锁定。
+
+### 核心闭环
+
+```
+拖拽组件 → 自由摆放 → 智能吸附对齐 → 规则推断转响应式 → 一键导出 HTML
+```
+
+---
+
+## 功能
+
+- 🎨 **自由画布**：绝对定位自由摆放，所见即所得
+- 🧲 **智能吸附**：拖拽时自动识别对齐参考线
+- 📱 **响应式导出**：桌面保持绝对定位、平板自适应、手机全宽堆叠，三层断点自动适配
+- 🧩 **9 套模板**：一键导入 Start Bootstrap 系列模板，开箱即用
+- ⚡ **交互支持**：零代码配置链接、点击、悬停、入场动画，导出 HTML 自带 vanilla JS 运行时
+- 👁️ **编辑器内预览**：不导出也能预览交互效果
+- 🔄 **撤销/重做**：完整的历史记录
+- 📋 **复制粘贴**：跨画布节点复制
+- 🖌️ **格式刷**：一键复制样式
+- 🏷️ **多选对齐**：Shift 多选 → 左/中/右/上/中/下对齐 + 等距分布
+- 📏 **标尺 + 辅助线**：画布标尺，拖拽创建辅助线
+
+---
+
+## 快速开始
+
+```bash
+# 克隆仓库
+git clone https://github.com/ClaireMoonlit/pageforge.git
+cd pageforge
+
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run dev
+
+# 打开浏览器访问
+# http://localhost:5173（默认）或终端输出的实际地址
+```
+
+### 运行测试
+
+```bash
+npx tsx scripts/test-export.ts
+```
+
+### 在线体验
+
+🌐 **[GitHub Pages Demo](https://clairemoonlit.github.io/pageforge/)**
+
+---
+
+## 技术栈
+
+| 类别 | 选型 |
+|------|------|
+| 构建 | Vite 5 |
+| 框架 | React 18 + TypeScript |
+| 状态 | Zustand + Immer + zundo（撤销/重做） |
+| 拖拽 | @dnd-kit/core + @dnd-kit/sortable |
+| HTML 解析 | JSDOM（运行时导入）+ 内置 CSS 解析器 |
+| 样式 | 原生 CSS + Tailwind（仅工具类） |
+
+---
+
+## 项目结构
+
+```
+PageForge/
+├── src/
+│   ├── App.tsx                  # 三栏布局 + 拖拽上下文
+│   ├── components/
+│   │   ├── Toolbar.tsx          # 顶部工具栏
+│   │   ├── ComponentPanel.tsx   # 左：组件库 / 模板
+│   │   ├── Canvas.tsx           # 中：自由画布 + 标尺
+│   │   ├── CanvasElement.tsx    # 节点渲染 + 拖拽 + 预览
+│   │   ├── NodeRenderer.tsx     # 节点 → React 元素
+│   │   ├── Inspector.tsx        # 右：属性面板
+│   │   ├── LayerTree.tsx        # 右上：层级树
+│   │   ├── AlignToolbar.tsx     # 多选对齐工具栏
+│   │   ├── Ruler.tsx            # 画布标尺
+│   │   └── Icon.tsx             # 智能图标组件
+│   ├── utils/
+│   │   ├── importHtml.ts        # HTML 解析（~1611 行）
+│   │   ├── exportHtml.ts        # 节点 → 响应式 HTML 导出
+│   │   ├── interactionRuntime.ts # 零依赖 vanilla JS 运行时
+│   │   ├── layoutRules.ts       # 规则推断引擎
+│   │   ├── iconPaths.ts         # 图标 SVG 路径
+│   │   └── snapping.ts          # 拖拽吸附辅助线
+│   ├── store/
+│   │   └── editorStore.ts       # Zustand 单一数据源
+│   ├── types/
+│   │   └── index.ts             # 类型定义
+│   └── data/
+│       ├── componentLib.ts      # 11 个内置组件
+│       ├── importedTemplates.ts # 9 套导入模板
+│       └── templates.ts         # 内置空白模板
+├── public/
+│   └── imported-templates/      # 运行时模板资源
+├── scripts/
+│   └── test-export.ts           # 导出功能测试
+└── PROJECT_STATUS.md            # 项目状态交接文档
+```
+
+---
+
+## 文档
+
+- [PROJECT_STATUS.md](./PROJECT_STATUS.md) — 项目状态交接文档（修复记录、技术决策、待办）
+- [docs/contest-entry.md](./docs/contest-entry.md) — TRAE AI 创造力大赛报名帖
+- [.trae/documents/contest-entry.md](./.trae/documents/contest-entry.md) — 报名帖（初版）
+
+---
+
+## 开发
+
+> 新对话接入时，建议让 AI 读取 `PROJECT_STATUS.md` 了解项目上下文。
+
+```bash
+npm run dev      # 启动开发服务器
+npm run build    # 构建生产版本
+npm run preview  # 预览构建产物
+```
+
+---
+
+## License
+
+MIT
