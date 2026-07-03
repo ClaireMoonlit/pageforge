@@ -73,7 +73,7 @@ PageForge/
 │   │   ├── Inspector.tsx          # 右：属性面板（顶部展示完整 ID + 复制按钮）
 │   │   ├── AlignToolbar.tsx       # 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布）
 │   │   ├── AlignInfoOverlay.tsx   # 多选对齐信息浮层
-│   │   ├── Ruler.tsx              # 画布标尺（水平/垂直，辅助线）
+│   │   ├── Ruler.tsx              # 画布标尺（水平/垂直，拖拽创建辅助线）
 │   │   ├── Icon.tsx               # 智能图标（SVG/emoji 自适应，AutoIcon）
 │   │   └── Icons.tsx              # 内联 SVG 图标库（含 IconEye）
 │   └── utils/
@@ -416,11 +416,14 @@ interface InteractionConfig {
 | [src/utils/interactionRuntime.ts](file:///d:/My%20Projects/PageForge/src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
 | [src/utils/iconPaths.ts](file:///d:/My%20Projects/PageForge/src/utils/iconPaths.ts) | - | 图标 SVG 路径数据 |
 | [src/utils/layoutRules.ts](file:///d:/My%20Projects/PageForge/src/utils/layoutRules.ts) | ~130 | 规则推断引擎：inferLayout Y 轴重叠分行、getLayoutHint 布局提示 |
-| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正 |
+| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
 | [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~500+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 |
 | [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
 | [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1200+ | 属性面板 + 交互配置 + ID 复制 |
-| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | - | 工具栏（含预览按钮） |
+| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | - | 工具栏（含预览按钮 + AlignToolbar） |
+| [src/components/AlignToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
+| [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
+| [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
 | [src/components/LayerTree.tsx](file:///d:/My%20Projects/PageForge/src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
 | [src/store/editorStore.ts](file:///d:/My%20Projects/PageForge/src/store/editorStore.ts) | ~600+ | 状态管理（新增预览模式状态） |
 | [src/types/index.ts](file:///d:/My%20Projects/PageForge/src/types/index.ts) | ~154 | 类型定义（含 InteractionConfig） |
@@ -434,7 +437,7 @@ interface InteractionConfig {
 ```bash
 cd "d:\My Projects\PageForge"
 npm install
-npm run dev    # 启动 Vite，默认 http://localhost:5173（当前配置 http://localhost:5175/pageforge/）
+npm run dev    # 启动 Vite，默认 http://localhost:5173
 ```
 
 调试脚本：

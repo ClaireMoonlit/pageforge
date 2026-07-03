@@ -58,5 +58,6 @@ imported-templates/*.mjs
 imported-templates/*.cjs
 imported-templates/out/
 
-# Old docs
+# Old docs / contest
 docs/
+.trae/documents/

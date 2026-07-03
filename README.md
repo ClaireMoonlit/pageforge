@@ -120,14 +120,6 @@ PageForge/
 
 ---
 
-## 文档
-
-- [PROJECT_STATUS.md](./PROJECT_STATUS.md) — 项目状态交接文档（修复记录、技术决策、待办）
-- [docs/contest-entry.md](./docs/contest-entry.md) — TRAE AI 创造力大赛报名帖
-- [.trae/documents/contest-entry.md](./.trae/documents/contest-entry.md) — 报名帖（初版）
-
----
-
 ## 开发
 
 > 新对话接入时，建议让 AI 读取 `PROJECT_STATUS.md` 了解项目上下文。
