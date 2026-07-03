@@ -407,36 +407,17 @@ export function TemplatePanel() {
 
               {tab === 'paste' && (
                 <div className="flex flex-col gap-3">
-                  {/* 行为说明卡：解释两种检测规则 */}
-                  <div className="rounded-lg border border-ink-600 bg-ink-900/60 overflow-hidden">
-                    <div className="px-3 py-2 border-b border-ink-600 flex items-center gap-2">
-                      <span className="text-sm">📋</span>
-                      <span className="text-sm font-medium text-gray-200">导入行为说明</span>
-                    </div>
-                    <div className="grid grid-cols-2 divide-x divide-ink-600">
-                      <div className="p-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                          <span className="text-xs font-semibold text-red-300">完整页面</span>
-                          <span className="text-xs text-gray-500 ml-auto">→ 替换画布</span>
-                        </div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          HTML 中包含 <code className="text-gray-300 bg-ink-700 px-1 rounded">pf-root</code>、<code className="text-gray-300 bg-ink-700 px-1 rounded">&lt;html&gt;</code> 或 <code className="text-gray-300 bg-ink-700 px-1 rounded">&lt;body&gt;</code> 标签时识别为完整页面。
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1.5">导入会清空当前画布上的所有内容。</p>
-                      </div>
-                      <div className="p-3">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                          <span className="text-xs font-semibold text-green-300">组件片段</span>
-                          <span className="text-xs text-gray-500 ml-auto">→ 追加到画布</span>
-                        </div>
-                        <p className="text-xs text-gray-400 leading-relaxed">
-                          单独的 <code className="text-gray-300 bg-ink-700 px-1 rounded">&lt;div&gt;</code>、<code className="text-gray-300 bg-ink-700 px-1 rounded">&lt;section&gt;</code> 等块级元素片段。
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1.5">导入会保留当前内容，新组件追加到底部。</p>
-                      </div>
-                    </div>
+                  {/* 行为说明：两种检测规则 */}
+                  <div className="px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-relaxed">
+                    <span className="text-gray-200 font-medium">导入规则：</span>
+                    HTML 含
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">pf-root</code>
+                    /
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">&lt;html&gt;</code>
+                    /
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">&lt;body&gt;</code>
+                    标记时识别为<span className="text-yellow-400 mx-0.5">完整页面</span>（替换画布），
+                    否则为<span className="text-gray-300 mx-0.5">组件片段</span>（追加到底部）。
                   </div>
 
                   {/* 实时检测指示器 */}
@@ -444,31 +425,31 @@ export function TemplatePanel() {
                     const detected = detectCompletePage(pasteHtml)
                     const canReplace = nodes.length > 0
                     return (
-                      <div className={`flex items-center gap-2 px-3 py-2 rounded text-xs ${
-                        detected
-                          ? (canReplace ? 'bg-yellow-900/30 text-yellow-300 border border-yellow-700/50' : 'bg-ink-700/50 text-gray-300')
-                          : 'bg-green-900/20 text-green-300 border border-green-700/40'
+                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs ${
+                        detected && canReplace
+                          ? 'bg-ink-700/50 text-yellow-400'
+                          : 'bg-ink-700/50 text-gray-300'
                       }`}>
                         {detected ? (
                           <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                               <line x1="12" y1="9" x2="12" y2="13" />
                               <line x1="12" y1="17" x2="12.01" y2="17" />
                             </svg>
                             <span>
-                              已识别为<span className="font-semibold mx-1">完整页面</span>
-                              {canReplace ? '（当前画布有内容，导入时会弹窗确认）' : '（当前画布为空，将直接替换）'}
+                              完整页面
+                              {canReplace ? ' — 导入时将弹出确认' : ' — 画布为空，直接替换'}
                             </span>
                           </>
                         ) : (
                           <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                             <span>
-                              已识别为<span className="font-semibold mx-1">组件片段</span>
-                              {nodes.length > 0 ? '（将追加到当前画布底部）' : '（画布为空，将直接添加）'}
+                              组件片段
+                              {nodes.length > 0 ? ' — 将追加到画布底部' : ' — 画布为空，直接添加'}
                             </span>
                           </>
                         )}
@@ -569,19 +550,33 @@ export function TemplatePanel() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 标题栏 */}
-            <div className="flex items-center gap-2 px-5 py-3 border-b border-ink-600 bg-yellow-900/20">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400">
-                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              <h3 className="text-gray-100 font-semibold text-base">即将清空当前画布</h3>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-ink-600">
+              <div className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400 shrink-0">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <h3 className="text-gray-100 font-semibold text-sm">即将清空当前画布</h3>
+              </div>
+              <button
+                onClick={() => setPendingImport(null)}
+                className="text-gray-400 hover:text-white text-lg leading-none"
+              >
+                ✕
+              </button>
             </div>
 
             {/* 内容 */}
             <div className="px-5 py-4 text-sm text-gray-300 leading-relaxed space-y-3">
               <p>
-                检测到您粘贴的 HTML 包含 <code className="text-gray-200 bg-ink-700 px-1 rounded">pf-root</code> / <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;html&gt;</code> / <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;body&gt;</code> 标记，会被识别为<span className="text-yellow-300 font-semibold mx-1">完整页面</span>。
+                检测到您粘贴的 HTML 含
+                <code className="text-gray-200 bg-ink-700 px-1 rounded">pf-root</code>
+                /
+                <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;html&gt;</code>
+                /
+                <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;body&gt;</code>
+                标记，会被识别为<span className="text-yellow-400">完整页面</span>。
               </p>
               <div className="px-3 py-2 bg-ink-900 border border-ink-600 rounded text-xs space-y-1">
                 <div className="flex items-center justify-between text-gray-400">
@@ -594,7 +589,7 @@ export function TemplatePanel() {
                 </div>
               </div>
               <p className="text-gray-400 text-xs">
-                如果直接导入，<span className="text-red-300">当前画布上的 {nodes.length} 个节点将被全部清空</span>（可通过撤销恢复）。
+                如果直接导入，<span className="text-yellow-400">当前画布上的 {nodes.length} 个节点将被全部清空</span>（可通过撤销恢复）。
                 如果您只想把内容追加到现有画布，请选择"作为片段追加"。
               </p>
             </div>
@@ -624,7 +619,7 @@ export function TemplatePanel() {
                     setPendingImport(null)
                   }
                 }}
-                className="px-5 py-2 rounded-lg text-sm font-medium bg-red-600 hover:bg-red-500 text-white transition-colors"
+                className="px-5 py-2 rounded-lg text-sm font-medium bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 transition-colors"
               >
                 仍要替换
               </button>
