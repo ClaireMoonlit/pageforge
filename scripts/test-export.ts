@@ -169,3 +169,32 @@ const outPath = path.resolve(__dirname, '../test-export-output.html')
 fs.writeFileSync(outPath, html, 'utf-8')
 console.log(`已保存到: ${outPath}`)
 console.log('用浏览器打开该文件，然后调整窗口大小测试响应式效果')
+
+// ---- 测试 5: 导出 → 再导入 roundtrip ----
+console.log('\n=== 测试 5: 导出 → 再导入 roundtrip ===')
+import { htmlToNodes } from '../src/utils/importHtml'
+import { pageTemplates } from '../src/data/templates'
+
+const saas = pageTemplates.find((p) => p.id === 'saas-landing')
+if (saas) {
+  const exportedHtml = buildHtml(saas.nodes, saas.canvas)
+  // 提取 body 内容（去掉 outerHtml 包装）
+  const bodyMatch = exportedHtml.match(/<body[^>]*>([\s\S]*)<\/body>/)
+  const bodyHtml = bodyMatch ? bodyMatch[1] : exportedHtml
+  const reparsed = htmlToNodes(bodyHtml)
+  console.log(`原节点数: ${saas.nodes.length}`)
+  console.log(`回导节点数: ${reparsed.length}`)
+  let mismatch = 0
+  for (let i = 0; i < Math.max(saas.nodes.length, reparsed.length); i++) {
+    const a = saas.nodes[i]
+    const b = reparsed[i]
+    if (!a || !b) { mismatch++; continue }
+    if (a.type !== b.type || a.props.text !== b.props.text) {
+      console.log(`  diff[${i}]: ${a.type} "${a.props.text?.slice(0, 20) ?? ''}" → ${b.type} "${b.props.text?.slice(0, 20) ?? ''}"`)
+      mismatch++
+    }
+  }
+  console.log(mismatch === 0 ? '✓ 类型与文本完全一致' : `✗ ${mismatch} 处不一致`)
+} else {
+  console.log('saas-landing 模板不存在，跳过 roundtrip 测试')
+}

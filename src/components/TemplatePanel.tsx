@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useEditorStore } from '@/store/editorStore'
 import { pageTemplates } from '@/data/templates'
 import { importedTemplates, type ImportedTemplateMeta } from '@/data/importedTemplates'
@@ -11,8 +11,24 @@ export function TemplatePanel() {
   const [pasteHtml, setPasteHtml] = useState('')
   const [error, setError] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [uploadFileName, setUploadFileName] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const loadTemplate = useEditorStore((s) => s.loadTemplate)
+  const addNodes = useEditorStore((s) => s.addNodes)
   const nodes = useEditorStore((s) => s.nodes)
+
+  /** 根据解析结果估算所需的画布高度（取所有根节点底部最大值，再加 40px 留白） */
+  const computeCanvasHeight = (parsed: CanvasNode[]): string => {
+    let maxBottom = 0
+    for (const n of parsed) {
+      const y = n.style?.y ?? 0
+      const minH = parseInt(String(n.style?.minHeight ?? '0'), 10) || 0
+      const h = parseInt(String(n.style?.height ?? '0'), 10) || 0
+      const bottom = y + Math.max(minH, h)
+      if (bottom > maxBottom) maxBottom = bottom
+    }
+    return `${Math.max(800, maxBottom + 40)}px`
+  }
 
   const handlePreset = useCallback(
     (index: number) => {
@@ -57,18 +73,89 @@ export function TemplatePanel() {
           setError('未能解析到有效元素，请检查 HTML 内容。')
           return
         }
-        loadTemplate(parsed, {
-          backgroundColor: '#ffffff',
-          width: '1200px',
-          height: '2000px',
-        })
+
+        // 判断是否完整页面导入（包含 pf-root 或含完整 HTML 结构）
+        const isCompletePage =
+          /\bpf-root\b/.test(html) ||
+          /<html[\s>]/i.test(html) ||
+          /<body[\s>]/i.test(html)
+
+        if (isCompletePage) {
+          // 完整页面 → 替换当前画布
+          loadTemplate(parsed, {
+            backgroundColor: '#ffffff',
+            width: '1200px',
+            height: computeCanvasHeight(parsed),
+          })
+        } else {
+          // 组件片段 → 追加到现有画布，自动偏移避免重叠
+          const existingBottom = nodes.reduce((max, n) => {
+            const y = (n.style?.y ?? 0) as number
+            const h = parseFloat(String(n.style?.height ?? '40')) || 40
+            return Math.max(max, y + h)
+          }, 0)
+          const offsetY = existingBottom > 0 ? existingBottom + 40 : 0
+          const offsetNodes = parsed.map((n) => ({
+            ...n,
+            style: {
+              ...n.style,
+              y: ((n.style?.y ?? 0) as number) + offsetY,
+            },
+          }))
+          const newHeight = computeCanvasHeight([...nodes, ...offsetNodes])
+          addNodes(offsetNodes, { height: newHeight })
+        }
         setOpen(false)
       } catch (e) {
         setError('解析失败：' + (e instanceof Error ? e.message : '未知错误'))
       }
     },
-    [loadTemplate],
+    [loadTemplate, addNodes, nodes],
   )
+
+  /** 读取上传的 HTML 文件并触发导入（支持 .html / .htm / 文本文件） */
+  const handleFileUpload = useCallback(
+    async (file: File) => {
+      setError('')
+      setUploadFileName(file.name)
+      try {
+        const text = await file.text()
+        if (!text.trim()) {
+          setError('文件内容为空。')
+          return
+        }
+        handleImport(text)
+      } catch (e) {
+        setError('读取文件失败：' + (e instanceof Error ? e.message : '未知错误'))
+      }
+    },
+    [handleImport],
+  )
+
+  const onFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (file) handleFileUpload(file)
+      // 重置 input，允许重复选择同名文件
+      e.target.value = ''
+    },
+    [handleFileUpload],
+  )
+
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLLabelElement>) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const file = e.dataTransfer.files?.[0]
+      if (file) handleFileUpload(file)
+    },
+    [handleFileUpload],
+  )
+
+  const onDragOver = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
 
   // 从内联 HTML 重新生成（用最新 importHtml 逻辑，覆盖旧 JSON 的内容）
   const handleReimportFromHtml = useCallback(
@@ -280,24 +367,80 @@ export function TemplatePanel() {
                     </div>
                   )}
                   <p className="text-gray-400 text-xs">
-                    将网页 HTML 代码粘贴到下方，系统会自动解析内联样式并转换为 PageForge 节点。复杂布局（如多栏）建议分多次导入。
+                    将网页 HTML 代码粘贴到下方，或直接上传 <code className="text-gray-300">.html / .htm</code> 文件，系统会自动解析内联样式并转换为 PageForge 节点。复杂布局（如多栏）建议分多次导入。
                   </p>
+
+                  {/* 文件上传 / 拖拽区 */}
+                  <label
+                    onDrop={onDrop}
+                    onDragOver={onDragOver}
+                    className="flex flex-col items-center justify-center gap-1 px-4 py-5 border-2 border-dashed border-ink-600 hover:border-brand-500 rounded-lg cursor-pointer transition-colors bg-ink-900/40"
+                  >
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-400"
+                      aria-hidden="true"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                    <span className="text-sm text-gray-200">
+                      点击或拖拽 HTML 文件到此处上传
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      支持 .html / .htm
+                    </span>
+                    {uploadFileName && (
+                      <span className="text-xs text-brand-400 mt-1">
+                        已选择：{uploadFileName}
+                      </span>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".html,.htm,text/html"
+                      onChange={onFileChange}
+                      className="hidden"
+                    />
+                  </label>
+
                   <textarea
                     value={pasteHtml}
                     onChange={(e) => { setPasteHtml(e.target.value); setError('') }}
-                    placeholder="在此粘贴 HTML 代码..."
-                    className="w-full h-64 bg-ink-900 border border-ink-600 rounded-lg p-3 text-sm text-gray-200 font-mono resize-none focus:outline-none focus:border-brand-400"
+                    placeholder="或在此粘贴 HTML 代码..."
+                    className="w-full h-56 bg-ink-900 border border-ink-600 rounded-lg p-3 text-sm text-gray-200 font-mono resize-none focus:outline-none focus:border-brand-400"
                     spellCheck={false}
                   />
                   {error && (
                     <div className="text-red-400 text-xs px-1">{error}</div>
                   )}
-                  <button
-                    onClick={handlePasteImport}
-                    className="self-end px-6 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-white transition-colors"
-                  >
-                    导入
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setPasteHtml('')
+                        setUploadFileName('')
+                        setError('')
+                      }}
+                      className="px-4 py-2 rounded-lg text-sm text-gray-300 hover:bg-ink-700 transition-colors"
+                    >
+                      清空
+                    </button>
+                    <button
+                      onClick={handlePasteImport}
+                      disabled={!pasteHtml.trim()}
+                      className="px-6 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      导入
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

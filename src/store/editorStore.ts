@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -84,6 +84,8 @@ interface EditorState {
   selectNodes: (ids: string[]) => void
   clearCanvas: () => void
   loadTemplate: (nodes: CanvasNode[], canvas: CanvasConfig) => void
+  /** 追加节点到现有画布（用于导入组件片段，不清空已有内容） */
+  addNodes: (nodes: CanvasNode[], canvas?: Partial<CanvasConfig>) => void
   /** 格式刷：激活/取消 */
   setFormatBrush: (style: NodeStyle | null) => void
   /** 设置画布缩放 */
@@ -537,6 +539,17 @@ export const useEditorStore = create<EditorState>()(
           state.selectedId = null
           state.selectedIds = []
           state.formatBrushStyle = null
+        })
+      },
+
+      addNodes: (nodes, canvasPatch) => {
+        set((state) => {
+          state.nodes = [...state.nodes, ...nodes]
+          if (canvasPatch) {
+            Object.assign(state.canvas, canvasPatch)
+          }
+          state.selectedId = null
+          state.selectedIds = []
         })
       },
 

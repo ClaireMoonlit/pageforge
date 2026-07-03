@@ -1030,8 +1030,10 @@ function buildElement(
   } else if (type === 'text') {
     props.text = getText(el)
   } else if (type === 'image') {
-    props.src = resolveUrl(el.getAttribute('src') || '')
-    props.alt = el.getAttribute('alt') || ''
+    // 外层 src（裸 <img data-pf-type>） 或内层 <img> src（PageForge 导出格式：<div data-pf-type><img/></div>）
+    const innerImg = el.tagName.toLowerCase() === 'img' ? (el as HTMLImageElement) : el.querySelector('img')
+    props.src = resolveUrl(el.getAttribute('src') || innerImg?.getAttribute('src') || '')
+    props.alt = el.getAttribute('alt') || innerImg?.getAttribute('alt') || ''
   } else if (type === 'button') {
     props.text = getText(el)
   } else if (type === 'input') {
@@ -1040,8 +1042,14 @@ function buildElement(
   } else if (type === 'divider') {
     // 无内容
   } else if (type === 'video') {
-    props.src = resolveUrl(el.getAttribute('src') || '')
-    props.poster = el.getAttribute('poster') || ''
+    // 外层或内层 <video> src
+    const innerVid = el.tagName.toLowerCase() === 'video' ? (el as HTMLVideoElement) : el.querySelector('video')
+    props.src = resolveUrl(el.getAttribute('src') || innerVid?.getAttribute('src') || '')
+    props.poster = el.getAttribute('poster') || innerVid?.getAttribute('poster') || ''
+  } else if (type === 'iframe') {
+    const innerIframe = el.tagName.toLowerCase() === 'iframe' ? (el as HTMLIFrameElement) : el.querySelector('iframe')
+    props.src = resolveUrl(el.getAttribute('src') || innerIframe?.getAttribute('src') || '')
+    props.alt = el.getAttribute('title') || innerIframe?.getAttribute('title') || ''
   } else if (type === 'container') {
     // 容器：尝试提取标题和副标题模式
     const h = el.querySelector('h1, h2, h3, h4, h5, h6')
@@ -1052,6 +1060,22 @@ function buildElement(
     }
     if (p) {
       props.subtitle = getText(p)
+    }
+  } else if (type === 'navbar') {
+    // 提取 logo：第一个 span（或第一段文本）
+    const firstSpan = el.querySelector('span, a')
+    if (firstSpan) {
+      const logoText = (firstSpan.textContent || '').trim()
+      if (logoText) props.logo = logoText
+    }
+    // 提取 navLinks：收集容器内所有 <span>/<a> 的文本（logo 之外的）
+    const linkTexts: string[] = []
+    el.querySelectorAll('span, a').forEach((n) => {
+      const t = (n.textContent || '').trim()
+      if (t && t !== props.logo) linkTexts.push(t)
+    })
+    if (linkTexts.length > 0) {
+      props.navLinks = linkTexts.join(',')
     }
   }
 
