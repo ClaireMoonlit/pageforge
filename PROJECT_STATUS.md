@@ -41,9 +41,13 @@ PageForge/
 │       ├── ready-agency.html      # 真实 HTML 源
 │       ├── agency.json            # 预解析缓存
 │       └── assets-*/              # 模板图片资源
-├── scripts/                        # 调试脚本 + 测试脚本
-│   ├── test-export.ts             # 导出功能自动化测试
-│   └── debug-*.mts                # 调试脚本
+├── imported-templates/             # 模板源文件（HTML + CSS，非运行时）
+│   ├── README.md
+│   ├── ready-*.html               # 处理后的模板 HTML
+│   ├── sb-*.html                  # 原始 Bootstrap 模板
+│   └── *.min.css                  # 模板 CSS
+├── scripts/                        # 测试脚本
+│   └── test-export.ts             # 导出功能自动化测试
 ├── src/
 │   ├── main.tsx
 │   ├── App.tsx                    # 三栏布局 + 拖拽上下文（DndContext）
@@ -59,15 +63,18 @@ PageForge/
 │   │   ├── templates.ts           # 内置空白模板
 │   │   └── importedTemplates.ts   # 9 套导入模板的元信息
 │   ├── components/
-│   │   ├── Toolbar.tsx            # 顶部工具栏（包含"预览"入口）
+│   │   ├── Toolbar.tsx            # 顶部工具栏（预览 + AlignToolbar）
 │   │   ├── ComponentPanel.tsx     # 左：组件库 / 模板
 │   │   ├── TemplatePanel.tsx      # 模板导入面板
-│   │   ├── Canvas.tsx             # 中：自由画布
+│   │   ├── Canvas.tsx             # 中：自由画布（含 Ruler 标尺）
 │   │   ├── CanvasElement.tsx      # 画布节点渲染 + resize 手柄 + 预览模式交互
 │   │   ├── NodeRenderer.tsx       # 节点 → React 元素 + nodeToCss + renderPreviewTree
 │   │   ├── LayerTree.tsx          # 右上：层级树（末尾展示节点 ID 后 4 位）
 │   │   ├── Inspector.tsx          # 右：属性面板（顶部展示完整 ID + 复制按钮）
+│   │   ├── AlignToolbar.tsx       # 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布）
 │   │   ├── AlignInfoOverlay.tsx   # 多选对齐信息浮层
+│   │   ├── Ruler.tsx              # 画布标尺（水平/垂直，辅助线）
+│   │   ├── Icon.tsx               # 智能图标（SVG/emoji 自适应，AutoIcon）
 │   │   └── Icons.tsx              # 内联 SVG 图标库（含 IconEye）
 │   └── utils/
 │       ├── importHtml.ts          # HTML 解析（~1611 行，核心难点）
@@ -427,13 +434,12 @@ interface InteractionConfig {
 ```bash
 cd "d:\My Projects\PageForge"
 npm install
-npm run dev    # 启动 Vite，默认 http://localhost:5173
+npm run dev    # 启动 Vite，默认 http://localhost:5173（当前配置 http://localhost:5175/pageforge/）
 ```
 
 调试脚本：
 ```bash
 npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
-npx tsx scripts/debug-import.ts
 ```
 
 ---

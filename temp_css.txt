@@ -1,6 +1,0 @@
-﻿
-/**
- * Minified by jsDelivr using clean-css v5.3.3.
- * Original file: /gh/StartBootstrap/startbootstrap-agency@master/dist/css/styles.css
- *
- * Do NOT use SRI with dynamically generated files! More i

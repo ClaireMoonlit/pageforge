@@ -7,6 +7,12 @@ node_modules
 dist
 out
 
+# Build artifacts
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
+vite.config.ts.timestamp-*.mjs
+
 # Logs
 *.log
 dev-*.log
@@ -27,7 +33,30 @@ debug-*.html
 debug-*.txt
 DEBUG_*.md
 out.txt
+about-out.txt
+temp_css.txt
+timeline-out.txt
+
+# One-off debug scripts
+check-*.mts
+check-*.ts
+get-timeline-css.mjs
+scripts/check-*.ts
+scripts/check-*.mts
+scripts/debug-*.mts
+scripts/find-*.cjs
+scripts/inspect-*.ts
 
 # Process / prompt scratch
 TRAE_Work_*.md
 interactive-html-*.md
+造页工坊*.html
+造页工坊*.zip
+
+# Template build artifacts (imported-templates workspace)
+imported-templates/*.mjs
+imported-templates/*.cjs
+imported-templates/out/
+
+# Old docs
+docs/
