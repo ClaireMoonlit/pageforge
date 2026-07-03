@@ -1,10 +1,29 @@
+# Dependencies
 node_modules
-dist
-*.local
-.uploads
-work_output*
-*.zip
-.DS_Store
-*.log
 .npm-cache
 .vite
+
+# Build output
+dist
+out
+
+# Logs
+*.log
+dev-*.log
+
+# Environment & OS
+*.local
+.DS_Store
+.uploads
+
+# Temp / scratch
+work_output*
+work_output*/
+*.zip
+test-*.html
+test-*.cjs
+test-*.mjs
+debug-*.html
+debug-*.txt
+DEBUG_*.md
+out.txt
