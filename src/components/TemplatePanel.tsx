@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { useEditorStore } from '@/store/editorStore'
 import { pageTemplates } from '@/data/templates'
 import { importedTemplates, type ImportedTemplateMeta } from '@/data/importedTemplates'
-import { htmlToNodes } from '@/utils/importHtml'
+import { htmlToNodes, extractCanvasConfig } from '@/utils/importHtml'
 import type { CanvasNode, CanvasConfig } from '@/types'
 
 export function TemplatePanel() {
@@ -12,19 +12,34 @@ export function TemplatePanel() {
   const [error, setError] = useState('')
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [uploadFileName, setUploadFileName] = useState('')
-  /** 待确认的导入：检测到完整页面且画布非空时弹出二次确认 */
+  /** 待确认的导入：导入会清空画布时弹出二次确认。
+   *  source: 'html' 表示来自粘贴/上传的 HTML 导入（带"作为片段追加"选项）
+   *          'preset' / 'imported' / 'reimport' 表示来自模板（只有"取消 / 确认替换"） */
   const [pendingImport, setPendingImport] = useState<{
-    html: string
-    isCompletePage: boolean
-    parsedCount: number
+    source: 'html' | 'preset' | 'imported' | 'reimport'
+    html?: string
+    presetIndex?: number
+    meta?: ImportedTemplateMeta
+    parsedCount?: number
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  /** 粘贴 textarea 引用：用于根据内容动态调整高度（自适应 + 最大高度限制） */
+  const pasteTextareaRef = useRef<HTMLTextAreaElement>(null)
   const loadTemplate = useEditorStore((s) => s.loadTemplate)
   const addNodes = useEditorStore((s) => s.addNodes)
   const nodes = useEditorStore((s) => s.nodes)
 
-  /** 根据解析结果估算所需的画布高度（取所有根节点底部最大值，再加 40px 留白） */
-  const computeCanvasHeight = (parsed: CanvasNode[]): string => {
+  /**
+   * 根据解析结果估算所需的画布高度。
+   * - 若提供了 extractedHeight（从原 HTML 中提取），优先使用它；
+   * - 否则取所有根节点底部最大值再加 40px 留白；
+   * - 最小不低于 400px（避免画布过小）。
+   */
+  const computeCanvasHeight = (parsed: CanvasNode[], extractedHeight?: string): string => {
+    if (extractedHeight) {
+      const h = parseInt(String(extractedHeight).replace(/px$/i, ''), 10)
+      if (h > 0) return `${h}px`
+    }
     let maxBottom = 0
     for (const n of parsed) {
       const y = n.style?.y ?? 0
@@ -33,7 +48,7 @@ export function TemplatePanel() {
       const bottom = y + Math.max(minH, h)
       if (bottom > maxBottom) maxBottom = bottom
     }
-    return `${Math.max(800, maxBottom + 40)}px`
+    return `${Math.max(400, maxBottom + 40)}px`
   }
 
   /** 判断 HTML 是否为完整页面（含 pf-root / <html> / <body> 标记） */
@@ -64,10 +79,14 @@ export function TemplatePanel() {
 
         if (isCompletePage) {
           // 完整页面 → 替换当前画布
+          // 优先从 HTML 中还原画布配置（data-pf-canvas-* / .pf-root style），
+          // 缺失字段时回退到默认或基于节点位置计算
+          const extracted = extractCanvasConfig(html)
+          const canvasH = computeCanvasHeight(parsed, extracted.height)
           loadTemplate(parsed, {
-            backgroundColor: '#ffffff',
-            width: '1200px',
-            height: computeCanvasHeight(parsed),
+            backgroundColor: extracted.backgroundColor,
+            width: extracted.width,
+            height: canvasH,
           })
         } else {
           // 组件片段 → 追加到现有画布，自动偏移避免重叠
@@ -99,9 +118,11 @@ export function TemplatePanel() {
 
   /**
    * 入口：先解析 HTML，若检测到完整页面且画布非空，则弹出确认；否则直接导入。
+   * @returns true 表示导入流程已成功启动（含弹确认框的情况）；
+   *          false 表示导入失败（如解析错误或空内容）
    */
   const handleImport = useCallback(
-    (html: string) => {
+    (html: string): boolean => {
       const isCompletePage = detectCompletePage(html)
       // 仅在"完整页面"且"画布非空"时弹确认
       if (isCompletePage && nodes.length > 0) {
@@ -111,24 +132,31 @@ export function TemplatePanel() {
         } catch {
           parsedCount = 0
         }
-        setPendingImport({ html, isCompletePage, parsedCount })
-        return
+        if (parsedCount === 0) {
+          setError('未能解析到有效元素，请检查 HTML 内容。')
+          return false
+        }
+        setPendingImport({ source: 'html', html, parsedCount })
+        return true
       }
-      performImport(html)
+      return performImport(html)
     },
     [nodes.length, performImport],
   )
 
-  const handlePreset = useCallback(
-    (index: number) => {
-      const t = pageTemplates[index]
+  /** 实际执行预设模板加载（handlePreset 确认后调用） */
+  const applyPreset = useCallback(
+    (presetIndex: number) => {
+      const t = pageTemplates[presetIndex]
+      if (!t) return
       loadTemplate(t.nodes, t.canvas)
       setOpen(false)
     },
     [loadTemplate],
   )
 
-  const handleImported = useCallback(
+  /** 实际执行开源模板加载（handleImported 确认后调用） */
+  const applyImported = useCallback(
     async (meta: ImportedTemplateMeta) => {
       setLoadingId(meta.id)
       setError('')
@@ -136,13 +164,13 @@ export function TemplatePanel() {
         const res = await fetch(meta.jsonPath)
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
-        const nodes = data.nodes as CanvasNode[]
+        const ns = data.nodes as CanvasNode[]
         const canvas = (data.canvas || meta.canvas) as CanvasConfig
-        if (!nodes || nodes.length === 0) {
+        if (!ns || ns.length === 0) {
           setError('模板数据为空。')
           return
         }
-        loadTemplate(nodes, canvas)
+        loadTemplate(ns, canvas)
         setOpen(false)
       } catch (e) {
         setError('加载失败：' + (e instanceof Error ? e.message : '未知错误'))
@@ -151,6 +179,79 @@ export function TemplatePanel() {
       }
     },
     [loadTemplate],
+  )
+
+  /** 实际执行从内联 HTML 重新生成（handleReimportFromHtml 确认后调用） */
+  const applyReimport = useCallback(
+    async (meta: ImportedTemplateMeta) => {
+      if (!meta.htmlPath) return
+      setLoadingId(meta.id)
+      setError('')
+      try {
+        const res = await fetch(meta.htmlPath)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const html = await res.text()
+        const baseUrl = meta.htmlPath.substring(0, meta.htmlPath.lastIndexOf('/') + 1)
+        const parsed = htmlToNodes(html, baseUrl)
+        if (parsed.length === 0) throw new Error('解析结果为空')
+        // 优先从 HTML 中还原画布配置（精确）
+        const extracted = extractCanvasConfig(html)
+        const finalCanvas: CanvasConfig = {
+          ...meta.canvas,
+          backgroundColor: extracted.backgroundColor,
+          width: extracted.width,
+          height: computeCanvasHeight(parsed, extracted.height),
+        }
+        loadTemplate(parsed, finalCanvas)
+        setOpen(false)
+      } catch (e) {
+        setError('重新生成失败：' + (e instanceof Error ? e.message : '未知错误'))
+      } finally {
+        setLoadingId(null)
+      }
+    },
+    [loadTemplate],
+  )
+
+  /** 确认弹窗 → 确认替换（依赖 applyPreset / applyImported / applyReimport，故声明在它们之后） */
+  const confirmReplace = useCallback(() => {
+    if (!pendingImport) return
+    if (pendingImport.source === 'html' && pendingImport.html) {
+      performImport(pendingImport.html, 'replace')
+    } else if (pendingImport.source === 'preset' && pendingImport.presetIndex !== undefined) {
+      applyPreset(pendingImport.presetIndex)
+    } else if (pendingImport.source === 'imported' && pendingImport.meta) {
+      applyImported(pendingImport.meta)
+    } else if (pendingImport.source === 'reimport' && pendingImport.meta) {
+      applyReimport(pendingImport.meta)
+    }
+    setPendingImport(null)
+  }, [pendingImport, performImport, applyPreset, applyImported, applyReimport])
+
+  const handlePreset = useCallback(
+    (index: number) => {
+      const t = pageTemplates[index]
+      // 画布非空时弹确认
+      if (nodes.length > 0) {
+        setPendingImport({ source: 'preset', presetIndex: index, parsedCount: t.nodes.length })
+        return
+      }
+      loadTemplate(t.nodes, t.canvas)
+      setOpen(false)
+    },
+    [loadTemplate, nodes.length],
+  )
+
+  const handleImported = useCallback(
+    (meta: ImportedTemplateMeta) => {
+      // 画布非空时弹确认
+      if (nodes.length > 0) {
+        setPendingImport({ source: 'imported', meta })
+        return
+      }
+      applyImported(meta)
+    },
+    [applyImported, nodes.length],
   )
 
   /** 读取上传的 HTML 文件并触发导入（支持 .html / .htm / 文本文件） */
@@ -164,7 +265,13 @@ export function TemplatePanel() {
           setError('文件内容为空。')
           return
         }
-        handleImport(text)
+        const ok = handleImport(text)
+        // 导入流程已启动（成功直接导入 / 弹出确认框均算 ok）→ 清空文件名，
+        // 允许用户立即重新选择新文件而无需先点"清空"。
+        // 真正解析失败（ok=false）时保留文件名，方便用户查看/重试。
+        if (ok) {
+          setUploadFileName('')
+        }
       } catch (e) {
         setError('读取文件失败：' + (e instanceof Error ? e.message : '未知错误'))
       }
@@ -199,45 +306,15 @@ export function TemplatePanel() {
 
   // 从内联 HTML 重新生成（用最新 importHtml 逻辑，覆盖旧 JSON 的内容）
   const handleReimportFromHtml = useCallback(
-    async (meta: ImportedTemplateMeta) => {
+    (meta: ImportedTemplateMeta) => {
       if (!meta.htmlPath) return
-      setLoadingId(meta.id)
-      setError('')
-      try {
-        const res = await fetch(meta.htmlPath)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const html = await res.text()
-        const baseUrl = meta.htmlPath.substring(0, meta.htmlPath.lastIndexOf('/') + 1)
-        const parsed = htmlToNodes(html, baseUrl)
-        if (parsed.length === 0) throw new Error('解析结果为空')
-        // 根据所有根节点累积高度动态调整画布
-        let totalH = 0
-        for (const n of parsed) {
-          const bottom = (n.style.y ?? 0) + (parseInt(String(n.style.minHeight ?? '0'), 10) || 0)
-          totalH = Math.max(totalH, bottom)
-        }
-        console.log('[TemplatePanel] totalH from all roots:', totalH)
-        const finalCanvas: CanvasConfig = {
-          ...meta.canvas,
-          height: `${Math.max(800, totalH + 40)}px`,
-        }
-        console.log('[TemplatePanel] finalCanvas height:', finalCanvas.height)
-        // 验证子节点 position
-        if (parsed[0]?.children) {
-          const sample = parsed[0].children.slice(0, 3)
-          sample.forEach((c: any, i: number) => {
-            console.log(`[TemplatePanel] child[${i}]: type=${c.type} position=${c.style?.position} x=${c.style?.x} y=${c.style?.y} w=${c.style?.width}`)
-          })
-        }
-        loadTemplate(parsed, finalCanvas)
-        setOpen(false)
-      } catch (e) {
-        setError('重新生成失败：' + (e instanceof Error ? e.message : '未知错误'))
-      } finally {
-        setLoadingId(null)
+      if (nodes.length > 0) {
+        setPendingImport({ source: 'reimport', meta })
+        return
       }
+      applyReimport(meta)
     },
-    [loadTemplate],
+    [applyReimport, nodes.length],
   )
 
   const handlePasteImport = useCallback(() => {
@@ -245,8 +322,19 @@ export function TemplatePanel() {
       setError('请先粘贴 HTML 代码。')
       return
     }
-    handleImport(pasteHtml)
+    const ok = handleImport(pasteHtml)
+    if (ok) {
+      setPasteHtml('')
+    }
   }, [pasteHtml, handleImport])
+
+  /** 粘贴 textarea：内容变化时自适应高度（最小 192px，最大 384px，超出时 textarea 自身内部滚动） */
+  useEffect(() => {
+    const el = pasteTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(Math.max(el.scrollHeight, 192), 384) + 'px'
+  }, [pasteHtml])
 
   // Escape 关闭弹窗
   useEffect(() => {
@@ -270,7 +358,7 @@ export function TemplatePanel() {
         onClick={() => setOpen(true)}
         className="px-3 py-1.5 rounded text-sm bg-ink-700 hover:bg-ink-600 text-gray-200 transition-colors"
       >
-        模板/导入
+        导入
       </button>
 
       {open && (
@@ -282,7 +370,7 @@ export function TemplatePanel() {
             {/* 标题栏 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-ink-600">
               <h2 className="text-gray-100 font-semibold text-base">
-                {tab === 'preset' ? '选择模板' : tab === 'imported' ? '开源模板' : '粘贴 HTML 导入'}
+                {tab === 'preset' ? '选择模板' : tab === 'imported' ? '开源模板' : 'HTML 导入'}
               </h2>
               <button
                 onClick={() => setOpen(false)}
@@ -322,16 +410,16 @@ export function TemplatePanel() {
                     : 'text-gray-400 border-transparent hover:text-gray-200'
                 }`}
               >
-                粘贴 HTML
+                导入 HTML
               </button>
             </div>
 
-            {/* 内容区 */}
+            {/* 内容区：内容多时内部滚动（弹窗 max-h 限制） */}
             <div className="flex-1 overflow-y-auto p-5">
               {tab === 'preset' && (
                 <>
                   {nodes.length > 0 && (
-                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-yellow-400">
+                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-300 leading-loose tracking-wide">
                       加载模板将替换当前画布内容，可通过撤销恢复。
                     </div>
                   )}
@@ -357,7 +445,7 @@ export function TemplatePanel() {
               {tab === 'imported' && (
                 <>
                   {nodes.length > 0 && (
-                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-yellow-400">
+                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-300 leading-loose tracking-wide">
                       加载模板将替换当前画布内容，可通过撤销恢复。
                     </div>
                   )}
@@ -408,16 +496,16 @@ export function TemplatePanel() {
               {tab === 'paste' && (
                 <div className="flex flex-col gap-3">
                   {/* 行为说明：两种检测规则 */}
-                  <div className="px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-relaxed">
+                  <div className="px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-loose tracking-wide">
                     <span className="text-gray-200 font-medium">导入规则：</span>
                     HTML 含
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">pf-root</code>
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">pf-root</code>
                     /
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">&lt;html&gt;</code>
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">&lt;html&gt;</code>
                     /
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-0.5">&lt;body&gt;</code>
-                    标记时识别为<span className="text-yellow-400 mx-0.5">完整页面</span>（替换画布），
-                    否则为<span className="text-gray-300 mx-0.5">组件片段</span>（追加到底部）。
+                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">&lt;body&gt;</code>
+                    标记时识别为<span className="text-gray-200 mx-1">完整页面</span>（替换画布），
+                    否则为<span className="text-gray-300 mx-1">组件片段</span>（追加到底部）。
                   </div>
 
                   {/* 实时检测指示器 */}
@@ -425,14 +513,10 @@ export function TemplatePanel() {
                     const detected = detectCompletePage(pasteHtml)
                     const canReplace = nodes.length > 0
                     return (
-                      <div className={`flex items-center gap-1.5 px-3 py-2 rounded text-xs ${
-                        detected && canReplace
-                          ? 'bg-ink-700/50 text-yellow-400'
-                          : 'bg-ink-700/50 text-gray-300'
-                      }`}>
+                      <div className="flex items-center gap-1.5 px-3 py-2 rounded text-xs leading-loose tracking-wide bg-ink-700/50 text-gray-300">
                         {detected ? (
                           <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-400">
                               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                               <line x1="12" y1="9" x2="12" y2="13" />
                               <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -444,7 +528,7 @@ export function TemplatePanel() {
                           </>
                         ) : (
                           <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-400">
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                             <span>
@@ -457,15 +541,19 @@ export function TemplatePanel() {
                     )
                   })()}
 
-                  <p className="text-gray-400 text-xs">
-                    将网页 HTML 代码粘贴到下方，或直接上传 <code className="text-gray-300">.html / .htm</code> 文件，系统会自动解析内联样式并转换为 PageForge 节点。复杂布局（如多栏）建议分多次导入。
+                  <p className="text-gray-400 text-xs leading-loose tracking-wide">
+                    将网页 HTML 代码粘贴到下方，或直接上传 <code className="text-gray-300">.html / .htm</code> 文件（二选一），系统会自动解析内联样式并转换为 PageForge 节点。复杂布局（如多栏）建议分多次导入。
                   </p>
 
-                  {/* 文件上传 / 拖拽区 */}
+                  {/* 文件上传 / 拖拽区：粘贴框有内容时禁用，避免双输入源冲突 */}
                   <label
-                    onDrop={onDrop}
+                    onDrop={pasteHtml.trim() ? undefined : onDrop}
                     onDragOver={onDragOver}
-                    className="flex flex-col items-center justify-center gap-1 px-4 py-5 border-2 border-dashed border-ink-600 hover:border-brand-500 rounded-lg cursor-pointer transition-colors bg-ink-900/40"
+                    className={`flex flex-col items-center justify-center gap-1 px-4 py-5 border-2 border-dashed rounded-lg transition-colors ${
+                      pasteHtml.trim()
+                        ? 'border-ink-700 bg-ink-900/20 cursor-not-allowed opacity-50'
+                        : 'border-ink-600 hover:border-brand-500 cursor-pointer bg-ink-900/40'
+                    }`}
                   >
                     <svg
                       width="24"
@@ -499,17 +587,24 @@ export function TemplatePanel() {
                       type="file"
                       accept=".html,.htm,text/html"
                       onChange={onFileChange}
+                      disabled={!!pasteHtml.trim()}
                       className="hidden"
                     />
                   </label>
 
                   <textarea
+                    ref={pasteTextareaRef}
                     value={pasteHtml}
                     onChange={(e) => { setPasteHtml(e.target.value); setError('') }}
                     placeholder="或在此粘贴 HTML 代码..."
-                    className="w-full h-56 bg-ink-900 border border-ink-600 rounded-lg p-3 text-sm text-gray-200 font-mono resize-none focus:outline-none focus:border-brand-400"
+                    className="w-full min-h-48 max-h-[50vh] bg-ink-900 border border-ink-600 rounded-lg p-3 text-sm text-gray-200 font-mono resize-none focus:outline-none focus:border-brand-400 overflow-y-auto"
                     spellCheck={false}
                   />
+                  {pasteHtml.trim() && (
+                    <p className="text-gray-500 text-xs leading-loose tracking-wide px-1">
+                      已启用粘贴模式：上方文件上传已禁用，如需上传请先清空。
+                    </p>
+                  )}
                   {error && (
                     <div className="text-red-400 text-xs px-1">{error}</div>
                   )}
@@ -539,7 +634,7 @@ export function TemplatePanel() {
         </div>
       )}
 
-      {/* 二次确认弹窗：检测到完整页面 + 画布非空 */}
+      {/* 二次确认弹窗：导入会清空画布时弹出 */}
       {pendingImport && (
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60"
@@ -552,12 +647,12 @@ export function TemplatePanel() {
             {/* 标题栏 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-ink-600">
               <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-yellow-400 shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 shrink-0">
                   <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <h3 className="text-gray-100 font-semibold text-sm">即将清空当前画布</h3>
+                <h3 className="text-gray-100 font-semibold text-sm tracking-wide">即将清空当前画布</h3>
               </div>
               <button
                 onClick={() => setPendingImport(null)}
@@ -567,34 +662,47 @@ export function TemplatePanel() {
               </button>
             </div>
 
-            {/* 内容 */}
-            <div className="px-5 py-4 text-sm text-gray-300 leading-relaxed space-y-3">
-              <p>
-                检测到您粘贴的 HTML 含
-                <code className="text-gray-200 bg-ink-700 px-1 rounded">pf-root</code>
-                /
-                <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;html&gt;</code>
-                /
-                <code className="text-gray-200 bg-ink-700 px-1 rounded">&lt;body&gt;</code>
-                标记，会被识别为<span className="text-yellow-400">完整页面</span>。
-              </p>
-              <div className="px-3 py-2 bg-ink-900 border border-ink-600 rounded text-xs space-y-1">
-                <div className="flex items-center justify-between text-gray-400">
-                  <span>当前画布节点数</span>
-                  <span className="text-gray-200 font-mono">{nodes.length}</span>
+            {/* 内容：HTML 源 → 详细说明；模板源 → 简洁提示 */}
+            {pendingImport.source === 'html' ? (
+              <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-3">
+                <p>
+                  检测到您粘贴的 HTML 含
+                  <code className="text-gray-200 bg-ink-700 px-1 rounded mx-1">pf-root</code>
+                  /
+                  <code className="text-gray-200 bg-ink-700 px-1 rounded mx-1">&lt;html&gt;</code>
+                  /
+                  <code className="text-gray-200 bg-ink-700 px-1 rounded mx-1">&lt;body&gt;</code>
+                  标记，会被识别为<span className="text-gray-200 mx-1">完整页面</span>。
+                </p>
+                <div className="px-3 py-2 bg-ink-900 border border-ink-600 rounded text-xs space-y-1 leading-loose">
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>当前画布节点数</span>
+                    <span className="text-gray-200 font-mono">{nodes.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>待导入节点数</span>
+                    <span className="text-gray-200 font-mono">{pendingImport.parsedCount}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-gray-400">
-                  <span>待导入节点数</span>
-                  <span className="text-gray-200 font-mono">{pendingImport.parsedCount}</span>
-                </div>
+                <p className="text-gray-400 text-xs leading-loose tracking-wide">
+                  如果直接导入，当前画布上的 {nodes.length} 个节点将被全部清空（可通过撤销恢复）。
+                  如果您只想把内容追加到现有画布，请选择"作为片段追加"。
+                </p>
               </div>
-              <p className="text-gray-400 text-xs">
-                如果直接导入，<span className="text-yellow-400">当前画布上的 {nodes.length} 个节点将被全部清空</span>（可通过撤销恢复）。
-                如果您只想把内容追加到现有画布，请选择"作为片段追加"。
-              </p>
-            </div>
+            ) : (
+              <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
+                <p>
+                  {pendingImport.source === 'preset'
+                    ? '当前预设模板'
+                    : pendingImport.source === 'imported'
+                      ? '当前开源模板'
+                      : '重新生成的模板'}
+                  加载后，画布上的 {nodes.length} 个节点将被全部替换（可通过撤销恢复）。
+                </p>
+              </div>
+            )}
 
-            {/* 操作按钮 */}
+            {/* 操作按钮：HTML 源 3 个，模板源 2 个 */}
             <div className="flex justify-end gap-2 px-5 py-3 border-t border-ink-600 bg-ink-900/40">
               <button
                 onClick={() => setPendingImport(null)}
@@ -602,26 +710,24 @@ export function TemplatePanel() {
               >
                 取消
               </button>
+              {pendingImport.source === 'html' && (
+                <button
+                  onClick={() => {
+                    if (pendingImport.html && performImport(pendingImport.html, 'append')) {
+                      setPendingImport(null)
+                    }
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm text-gray-200 hover:bg-ink-700 border border-ink-600 transition-colors"
+                  title={`将内容作为组件片段追加到画布底部（保留现有 ${nodes.length} 个节点）`}
+                >
+                  作为片段追加
+                </button>
+              )}
               <button
-                onClick={() => {
-                  if (performImport(pendingImport.html, 'append')) {
-                    setPendingImport(null)
-                  }
-                }}
-                className="px-4 py-2 rounded-lg text-sm text-gray-200 hover:bg-ink-700 border border-ink-600 transition-colors"
-                title="将内容作为组件片段追加到画布底部（保留现有 {nodes.length} 个节点）"
-              >
-                作为片段追加
-              </button>
-              <button
-                onClick={() => {
-                  if (performImport(pendingImport.html, 'replace')) {
-                    setPendingImport(null)
-                  }
-                }}
+                onClick={confirmReplace}
                 className="px-5 py-2 rounded-lg text-sm font-medium bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 transition-colors"
               >
-                仍要替换
+                {pendingImport.source === 'html' ? '仍要替换' : '确认替换'}
               </button>
             </div>
           </div>

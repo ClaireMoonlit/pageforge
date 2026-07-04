@@ -1,4 +1,4 @@
-import type { CanvasNode, ComponentType, NodeStyle } from '@/types'
+import type { CanvasConfig, CanvasNode, ComponentType, NodeStyle } from '@/types'
 
 let idCounter = 0
 function nid(): string {
@@ -158,10 +158,10 @@ function extractRules(css: string): Array<{ selector: string; body: string }> {
         const selector = css.substring(selectorStart, blockStart - 1).trim()
         const body = css.substring(blockStart, i).trim()
         if (selector && body) {
-          // 如果是 @media 或其他 at-rule，递归提取内部规则
+          // 如果是 @media 或其他 at-rule，跳过（画布是固定宽度设计面，不适用响应式断点）
           if (selector.startsWith('@media') || selector.startsWith('@supports')) {
-            // 提取媒体条件（后续可用于响应式判断，目前直接应用内部所有规则）
-            rules.push(...extractRules(body))
+            // 不递归提取 @media 内部规则，避免响应式样式（如 width:100%!important）
+            // 污染桌面端画布
           } else if (!selector.startsWith('@')) {
             rules.push({ selector, body })
           }
@@ -185,15 +185,20 @@ function applyRulesToMap(
     const selectors = selRaw.split(',').map((s) => s.trim())
     const parsed = parseStyleString(body)
     for (const sel of selectors) {
-      // :root / html / * 块只收集 --xxx CSS 变量
-      if (/^(:root|html|\*)$/i.test(sel)) {
-        const vars = map.get('__vars__') || {}
-        for (const [k, v] of Object.entries(parsed)) {
-          if (k.startsWith('--')) vars[k] = v
-        }
-        map.set('__vars__', vars)
-        continue
-      }
+      // :root / html / * 块收集 --xxx CSS 变量 + box-sizing 等关键重置属性
+	      if (/^(:root|html|\*)$/i.test(sel)) {
+	        const vars = map.get('__vars__') || {}
+	        for (const [k, v] of Object.entries(parsed)) {
+	          if (k.startsWith('--')) {
+	            vars[k] = v
+	          } else if (k === 'boxSizing') {
+	            // 保存 box-sizing 到全局 key，后续在 buildElement 中应用
+	            vars['__box_sizing__'] = v
+	          }
+	        }
+	        map.set('__vars__', vars)
+	        continue
+	      }
       // 跳过伪类、伪元素、属性选择器
       if (sel.includes(':') || sel.includes('[')) continue
 
@@ -1040,8 +1045,23 @@ function buildElement(
     props.placeholder = el.getAttribute('placeholder') || ''
     props.text = (el as HTMLInputElement).value || el.getAttribute('value') || ''
   } else if (type === 'divider') {
-    // 无内容
-  } else if (type === 'video') {
+	    // 无内容
+	  } else if (type === 'card') {
+	    // Card 结构：外层 div > 两个内层 div（标题 + 副标题）
+	    const innerDivs = el.querySelectorAll(':scope > div')
+	    if (innerDivs.length >= 1) {
+	      props.text = getText(innerDivs[0])
+	      const titleCss = parseStyleString(innerDivs[0].getAttribute('style') || '')
+	      if (titleCss.fontSize) props.titleFontSize = titleCss.fontSize
+	      if (titleCss.color) props.titleColor = titleCss.color
+	    }
+	    if (innerDivs.length >= 2) {
+	      props.subtitle = getText(innerDivs[1])
+	      const subCss = parseStyleString(innerDivs[1].getAttribute('style') || '')
+	      if (subCss.fontSize) props.subtitleFontSize = subCss.fontSize
+	      if (subCss.color) props.subtitleColor = subCss.color
+	    }
+	  } else if (type === 'video') {
     // 外层或内层 <video> src
     const innerVid = el.tagName.toLowerCase() === 'video' ? (el as HTMLVideoElement) : el.querySelector('video')
     props.src = resolveUrl(el.getAttribute('src') || innerVid?.getAttribute('src') || '')
@@ -1085,10 +1105,25 @@ function buildElement(
   if (style.width) {
     effectiveW = cssW
   }
-  // 根容器受 max-width 约束
+  // 根容器受 max-width 约束（用 resolveWidth 正确处理百分比值如 100%）
   if (isRoot && style.maxWidth) {
-    const mw = parseFloat(style.maxWidth)
+    const mw = resolveWidth(style.maxWidth, parentW)
     if (!isNaN(mw) && mw < effectiveW) effectiveW = mw
+  }
+
+  // 🔍 追踪 effectiveW 计算
+  if (type === 'container' || type === 'text') {
+    console.log('[PF-BUILD-EFFW]', {
+      id: el.id || '(no id)',
+      type,
+      tag,
+      parentW,
+      styleWidth: style.width,
+      cssW,
+      effectiveW,
+      isRoot,
+      isPfExport: !!pfType,
+    })
   }
 
   // PageForge 导出格式：从 inline style 的 left/top 提取坐标
@@ -1099,19 +1134,38 @@ function buildElement(
 
   const isPfExport = !!pfType
 
+  // 计算宽度
+  const widthComputed = isPfExport
+    ? (style.width
+        ? { width: resolveWidth(style.width, parentW) + 'px' }
+        : (type === 'text'
+          ? { width: Math.max(80, parentW) + 'px' }
+          : {}))
+    : ((style.width || (style.display !== 'inline-block' && style.display !== 'inline-flex'))
+      ? { width: effectiveW + 'px' }
+      : { width: 'auto' as any })
+
+  if (type === 'text' && isPfExport) {
+    console.log('[PF-IMPORT-WIDTH]', {
+      id: el.id || '(no id)',
+      type,
+      parentW,
+      styleWidth: style.width,
+      hasWidth: !!style.width,
+      computedWidth: widthComputed,
+      pfLeft,
+      pfTop,
+      textPreview: (el.textContent || '').substring(0, 40),
+      // 🔍 第一性原理：打印 style 中所有尺寸相关属性
+      styleKeys: Object.keys(style).filter(k => ['width','height','minHeight','maxWidth','display','position','padding','fontSize','lineHeight','boxSizing'].includes(k)).reduce((acc, k) => ({ ...acc, [k]: style[k] }), {} as Record<string,string>),
+    })
+  }
+
   const nodeStyleBase: Record<string, unknown> = {
     x: pfLeft ?? 0,
     y: pfTop ?? 0,
     ...style,
-    // PF 导出元素：保留原始宽度（含 undefined → 画布使用 fit-content），
-    // 不强制覆盖为 effectiveW，否则无显式宽度的元素（如 heading、button）
-    // 会被拉宽到父容器宽度，与画布预览不一致。
-    // 非 PF 元素（模板导入）：按流式布局规则计算宽度。
-    ...(isPfExport
-      ? (style.width ? { width: resolveWidth(style.width, parentW) + 'px' } : {})
-      : ((style.width || (style.display !== 'inline-block' && style.display !== 'inline-flex'))
-        ? { width: effectiveW + 'px' }
-        : { width: 'auto' as any })),
+    ...widthComputed,
     // 根节点保持 absolute（CanvasElement 的 isRoot 处理）；
     // 非根节点：仅当 CSS 显式声明 absolute/fixed 时才 absolute，其余用 relative 参与 flex/flow 布局
     ...(isRoot ? {} : (style.position === 'absolute' || style.position === 'fixed' ? {} : { position: 'relative' as any })),
@@ -1149,6 +1203,14 @@ function populateChildren(
   if (parentNode.type !== 'container' || parentEl.children.length === 0) return
 
   const childW = Math.max(100, parentEffectiveW - parentPad.left - parentPad.right)
+  console.log('[PF-IMPORT-CHILDW]', {
+    parentId: parentEl.id || parentEl.className || '(no id)',
+    parentEffectiveW,
+    padLeft: parentPad.left,
+    padRight: parentPad.right,
+    childW,
+    childrenCount: parentEl.children.length,
+  })
   let childY = parentPad.top
   const childX = parentPad.left
 
@@ -1359,9 +1421,20 @@ function populateChildren(
         continue
       }
       // 对于 css absolute/fixed 元素，使用 left/right/top 决定位置，不覆盖 x/y
-      if (isCssAbs) {
-        // 计算 x/y 由 left/top/right/bottom 决定
-        const cw = resolveWidth(built.node.style.width, childW)
+	      if (isCssAbs) {
+	        const cw = resolveWidth(built.node.style.width, childW)
+	        // PF 导出元素：保留 buildElement 中已设置的绝对坐标（来自 left/top），不覆盖
+	        // 关键：HTML 的 `left:Xpx` 是相对父容器 padding box（外缘）的，
+	        // PageForge 渲染时 `left:node.style.x` 同样相对 padding box（CSS 规范），
+	        // 因此 childX/childY（= parentPad）不应当加到 PF 元素的坐标上。
+	        if (isPfExport) {
+	          // 宽度已在 buildElement 中设置；不做任何覆盖
+	          populateChildren(child, built.node, built.style, built.pad, cw, cssMap, built.localVars, built.childStyles, built.inheritedStyle)
+	          parentNode.children.push(built.node)
+	          continue
+	        }
+	        // 非 PF 元素：根据 left/right/top 决定位置
+	        // 计算 x/y 由 left/top/right/bottom 决定
         if (built.style.left !== undefined || built.style.right !== undefined) {
           if (built.style.right !== undefined && built.style.left === undefined) {
             built.node.style.x = childX + childW - cw
@@ -1471,6 +1544,16 @@ function parseElement(
   inheritedStyle: Record<string, string> = {},
 ): CanvasNode {
   const built = buildElement(el, parentW, cssMap, isRoot, {}, {}, inheritedStyle)
+  console.log('[PF-PARSE-CALL]', {
+    id: el.id || '(no id)',
+    tag: el.tagName.toLowerCase(),
+    type: built.type,
+    parentW,
+    effectiveW: built.effectiveW,
+    isRoot,
+    pad: built.pad,
+    styleWidth: built.style.width,
+  })
   populateChildren(built.el, built.node, built.style, built.pad, built.effectiveW, cssMap, built.localVars, built.childStyles, built.inheritedStyle)
   return built.node
 }
@@ -1531,6 +1614,67 @@ function detectAssetFolderPrefix(doc: Document): string {
   }
   // 从 body background 或其他属性检测
   return ''
+}
+
+/**
+ * 从 PageForge 导出的 HTML 中提取画布配置（背景色、宽度、高度）。
+ * 优先读取 .pf-root 上的 data-pf-canvas-* 属性（精确还原原始画布配置），
+ * 若缺失则回退到 <style> 块中的 .pf-root{min-height;max-width;background}。
+ * 如果不是 PF 导出格式（缺少 .pf-root），则返回默认配置。
+ */
+export function extractCanvasConfig(html: string): CanvasConfig {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
+  const root = doc.querySelector('.pf-root') as HTMLElement | null
+  if (!root) {
+    return {
+      backgroundColor: '#ffffff',
+      width: '1200px',
+      height: '800px',
+    }
+  }
+
+  // 1. 优先使用 data-pf-canvas-* 属性（导出时精确写入）
+  const dataW = root.getAttribute('data-pf-canvas-width')
+  const dataH = root.getAttribute('data-pf-canvas-height')
+  const dataBg = root.getAttribute('data-pf-canvas-bg')
+  if (dataW && dataH) {
+    return {
+      backgroundColor: dataBg || '#ffffff',
+      width: dataW,
+      height: dataH,
+    }
+  }
+
+  // 2. 回退：从内联 style 解析
+  const inlineStyle = root.getAttribute('style') || ''
+  const parsed = parseStyleString(inlineStyle)
+  // 3. 也尝试从 <style> 块中的 .pf-root 选择器获取
+  const styleEls = doc.querySelectorAll('style')
+  for (const el of styleEls) {
+    const css = (el.textContent || '').trim()
+    const m = css.match(/\.pf-root\s*\{([^}]+)\}/)
+    if (m) {
+      const inner = m[1]
+      const cssParsed = parseStyleString(inner)
+      for (const [k, v] of Object.entries(cssParsed)) {
+        if (!parsed[k]) parsed[k] = v
+      }
+    }
+  }
+
+  const bg = parsed.background || parsed.backgroundColor || '#ffffff'
+  const maxW = parsed.maxWidth || '1200px'
+  let height = '800px'
+  if (parsed.minHeight) {
+    const h = parseInt(String(parsed.minHeight).replace(/px$/i, ''), 10)
+    if (h > 0) height = `${h}px`
+  }
+  return {
+    backgroundColor: bg,
+    width: maxW,
+    height,
+  }
 }
 
 /**

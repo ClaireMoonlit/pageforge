@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -65,6 +65,12 @@ interface EditorState {
   zoom: number
   /** 最近一次对齐/分布操作信息 */
   lastAlignInfo: { type: 'align' | 'distribute'; direction: 'h' | 'v'; gap: number; bounds: { from: number; to: number; crossStart: number; crossEnd: number } } | null
+  /** 左侧组件库面板是否折叠（true=折叠成窄条，false=展开） */
+  leftPanelCollapsed: boolean
+  /** 右侧属性/画布设置面板是否折叠 */
+  rightPanelCollapsed: boolean
+  /** 标尺光标定位线是否显示（按 R 切换） */
+  rulerCursorVisible: boolean
 
   addNode: (type: ComponentType, x: number, y: number, parentId?: string) => string
   removeNode: (id: string) => void
@@ -114,6 +120,12 @@ interface EditorState {
   setPreviewDisplay: (id: string, display: string) => void
   /** 清除所有预览临时 display 状态 */
   clearPreviewDisplay: () => void
+  /** 切换左侧组件库面板折叠状态 */
+  toggleLeftPanel: () => void
+  /** 切换右侧属性面板折叠状态 */
+  toggleRightPanel: () => void
+  /** 切换标尺光标定位线显隐 */
+  toggleRulerCursor: () => void
 }
 
 /** 递归查找并就地更新节点（支持嵌套） */
@@ -161,6 +173,9 @@ export const useEditorStore = create<EditorState>()(
       previewDisplayOverrides: {},
       zoom: 1,
       lastAlignInfo: null,
+      leftPanelCollapsed: false,
+      rightPanelCollapsed: false,
+      rulerCursorVisible: true,
 
       addNode: (type, x, y, parentId) => {
         const def = findComponentDef(type)
@@ -522,6 +537,21 @@ export const useEditorStore = create<EditorState>()(
       clearPreviewDisplay: () =>
         set((state) => {
           state.previewDisplayOverrides = {}
+        }),
+
+      toggleLeftPanel: () =>
+        set((state) => {
+          state.leftPanelCollapsed = !state.leftPanelCollapsed
+        }),
+
+      toggleRightPanel: () =>
+        set((state) => {
+          state.rightPanelCollapsed = !state.rightPanelCollapsed
+        }),
+
+      toggleRulerCursor: () =>
+        set((state) => {
+          state.rulerCursorVisible = !state.rulerCursorVisible
         }),
 
       clearCanvas: () =>

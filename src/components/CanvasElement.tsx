@@ -104,6 +104,42 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     }
   }, [editing, node.type, node.id])
 
+  // 🔍 第一性原理：渲染后测量 text 元素的实际尺寸
+  useEffect(() => {
+    if (node.type !== 'text') return
+    const el = elRef.current
+    if (!el) return
+    // 延迟一帧等待布局完成
+    const raf = requestAnimationFrame(() => {
+      const r = el.getBoundingClientRect()
+      const cs = getComputedStyle(el)
+      console.log('[PF-RENDER-TEXT]', {
+        id: node.id.slice(-8),
+        text: (node.props.text as string || '').substring(0, 30),
+        // 节点 style 中存储的值
+        storedWidth: node.style.width,
+        storedPosition: node.style.position,
+        // 实际渲染尺寸
+        renderedW: r.width.toFixed(0),
+        renderedH: r.height.toFixed(0),
+        // 计算样式
+        computedW: cs.width,
+        computedH: cs.height,
+        boxSizing: cs.boxSizing,
+        display: cs.display,
+        fontSize: cs.fontSize,
+        lineHeight: cs.lineHeight,
+        // overflow 状态
+        scrollW: el.scrollWidth,
+        scrollH: el.scrollHeight,
+        // 父容器信息
+        parentW: el.parentElement ? el.parentElement.getBoundingClientRect().width.toFixed(0) : 'N/A',
+        parentBoxSizing: el.parentElement ? getComputedStyle(el.parentElement).boxSizing : 'N/A',
+      })
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [node.type, node.id, node.style.width, node.style.position, node.props.text])
+
   const isTextEditable = TEXT_EDITABLE.has(node.type)
 
   useEffect(() => {
@@ -344,6 +380,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
         ? 'text'
         : 'move',
     minWidth: 1,
+    boxSizing: 'border-box',
     overflow: 'visible',
     outline: previewMode
       ? 'none'
@@ -386,6 +423,27 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       }
 
   const showHandles = isSelected && !editing && !draggable.isDragging && !previewMode
+
+  // 🔍 第一性原理：在渲染前打印 text 元素的最终 style
+  if (node.type === 'text' && !previewMode) {
+    console.log('[PF-CANVAS-STYLE]', {
+      id: node.id.slice(-8),
+      text: (node.props.text as string || '').substring(0, 30),
+      isAbsPos,
+      isRoot,
+      declaredPosition,
+      nodeStyleWidth: node.style.width,
+      nodeStylePosition: node.style.position,
+      nodeToCssWidth: (nodeToCss(node.style) as any).width,
+      finalStyleWidth: style.width,
+      finalStylePosition: style.position,
+      finalStyleLeft: style.left,
+      finalStyleTop: style.top,
+      finalStyleBoxSizing: style.boxSizing,
+      finalStyleDisplay: style.display,
+      hasFitContent: (style as any).width === 'fit-content',
+    })
+  }
 
   return (
     <div

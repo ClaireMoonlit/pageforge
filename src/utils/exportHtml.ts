@@ -406,7 +406,7 @@ ${responsiveCSS(rows)}
 </style>
 </head>
 <body>
-  <div class="pf-root">
+  <div class="pf-root" data-pf-canvas-width="${canvas?.width ?? '1200px'}" data-pf-canvas-height="${canvas?.height ?? '800px'}" data-pf-canvas-bg="${bg}">
 ${body}
   </div>${runtimeScript}
 </body>

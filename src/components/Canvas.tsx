@@ -31,6 +31,8 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const resetZoom = useEditorStore((s) => s.resetZoom)
   const updateNodeStyle = useEditorStore((s) => s.updateNodeStyle)
   const updateCanvas = useEditorStore((s) => s.updateCanvas)
+  const rulerCursorVisible = useEditorStore((s) => s.rulerCursorVisible)
+  const toggleRulerCursor = useEditorStore((s) => s.toggleRulerCursor)
 
   const innerRef = useRef<HTMLDivElement | null>(null)
 
@@ -138,26 +140,39 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 	    const raf = requestAnimationFrame(() => {
 	      const rootEls = innerRef.current?.children
 	      if (!rootEls || rootEls.length === 0) return
-	      // 只修正画布直接子节点（根节点）
-	      // ⚠️ 关键：只自动堆叠 y===0 的节点（模板导入时所有节点 y=0），
-	      // 跳过显式放置的节点（拖拽/手动放置的节点 y≠0），避免覆盖用户操作。
+	      // 分类根节点：
+	      // - A 类（自动堆叠）：x===0 && y===0，是模板导入时按顺序纵向排列的节点
+	      // - B 类（显式放置）：x!==0（如两栏布局的右栏）或 y!==0（用户拖拽放置的节点），
+	      //   这类节点应保持原位，不参与纵向堆叠计算，也不影响画布高度
 	      const curZoom = useEditorStore.getState().zoom
-	      const newYs: number[] = new Array(nodes.length).fill(0)
 	      const heights: number[] = new Array(nodes.length).fill(0)
-	      let y = 0
-	      const GAP = 24
-	      let maxBottom = 0
+	      // 第一步：测量所有根节点实际高度（不假设顺序，仅记录）
 	      for (let i = 0; i < rootEls.length && i < nodes.length; i++) {
 	        const el = rootEls[i] as HTMLElement
 	        const r = el.getBoundingClientRect()
 	        // getBoundingClientRect 返回屏幕空间像素（受 canvas transform: scale(zoom) 影响），
 	        // 除以 zoom 转为画布空间，与 style.y（画布空间）对齐
-	        const h = r.height / curZoom
-	        heights[i] = h
-	        newYs[i] = y
-	        y += h + GAP
-	        maxBottom = Math.max(maxBottom, y)
+	        heights[i] = r.height / curZoom
 	      }
+	      // 第二步：仅对 A 类节点计算新的 y 值（按 A 类节点在原数组中的相对顺序累加）
+	      const newYs: number[] = new Array(nodes.length).fill(0)
+	      const GAP = 24
+	      let y = 0
+	      let autoPlacedCount = 0
+	      for (let i = 0; i < nodes.length; i++) {
+	        const cur = nodes[i].style?.y ?? 0
+	        const curX = nodes[i].style?.x ?? 0
+	        if (cur !== 0 || curX !== 0) {
+	          // B 类节点：不参与堆叠，使用原 y
+	          newYs[i] = cur
+	          continue
+	        }
+	        // A 类节点：按顺序累加 y
+	        newYs[i] = y
+	        y += heights[i] + GAP
+	        autoPlacedCount += 1
+	      }
+	      const maxBottom = y
 	      // 用 (heights + y 计划值) 作为「测量指纹」，避免 React maximum update depth
 	      const measurementKey = newYs.map((yi, i) => `${i}:${yi}:${heights[i].toFixed(1)}`).join('|')
 	      if (measurementKey === lastMeasuredKeyRef.current) {
@@ -165,13 +180,15 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 	        return
 	      }
 	      lastMeasuredKeyRef.current = measurementKey
-	      // 应用新的 y 值：仅更新 y===0 的节点（模板导入），
-	      // 用户显式放置的节点（y≠0）保持原位不被覆盖
+	      // 应用新的 y 值：仅更新 A 类节点（x===0 且 y===0），
+	      // B 类节点（x≠0 的并列布局节点，如两栏布局的右栏；或 y≠0 的用户放置节点）保持原位
 	      const updates: Array<{ id: string; y: number }> = []
 	      for (let i = 0; i < nodes.length; i++) {
 	        const cur = nodes[i].style?.y ?? 0
-	        // 只自动堆叠 y===0 的节点（模板导入特征）
-	        if (cur !== 0) continue
+	        const curX = nodes[i].style?.x ?? 0
+	        // 只自动堆叠 A 类节点（x===0 且 y===0），
+	        // 跳过 B 类节点（x≠0 的并列布局节点 或 y≠0 的用户放置节点）
+	        if (cur !== 0 || curX !== 0) continue
 	        if (Math.abs(cur - newYs[i]) > 0.5) {
 	          updates.push({ id: nodes[i].id, y: newYs[i] })
 	        }
@@ -190,10 +207,13 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 	          }
 	        })
 	      }
-	      // 调整画布高度以适应内容（仅当存在 y===0 的模板导入节点时才调整）
-	      // 重复/拖拽放置的节点（y≠0）不应触发画布高度变更
-	      const hasAutoPlaced = nodes.some(n => (n.style?.y ?? 0) === 0)
-	      if (hasAutoPlaced) {
+	      // 调整画布高度以适应 A 类节点堆叠的总高度。
+		      // 只在确实存在 A 类节点、且不存在 B 类根节点时才调整画布高度：
+		      // - autoPlacedCount > 0：有需要自动堆叠的节点
+		      // - !hasBClassRoot：没有 x≠0 的并列布局节点（即纯纵向堆叠场景）
+		      // 存在 B 类根节点时（如两栏布局），画布高度由模板/用户指定，不应被自动覆盖。
+		      const hasBClassRoot = nodes.some((n) => (n.style?.x ?? 0) !== 0)
+		      if (autoPlacedCount > 0 && !hasBClassRoot) {
 	        const curH = parseInt(canvas.height) || 0
 	        const desiredH = Math.max(800, Math.ceil(maxBottom + 24))
 	        if (Math.abs(desiredH - curH) > 1) {
@@ -218,8 +238,18 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         backgroundSize: '20px 20px',
       }}
     >
-      {/* 缩放控件 */}
-      <div className="sticky top-2 left-0 right-0 z-50 flex justify-center pointer-events-none">
+      {/* 缩放/工具控件：固定在画布视口底部居中。
+          用 position:fixed 保证不被父级 flex 布局影响，始终贴底居中。 */}
+      <div
+        className="flex justify-center pointer-events-none"
+        style={{
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 12,
+          zIndex: 50,
+        }}
+      >
         <div className="inline-flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-1.5 py-1 pointer-events-auto">
           <button
             className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded text-lg font-bold"
@@ -245,7 +275,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           <div className="w-px h-4 bg-gray-200 mx-0.5" />
           <button
             className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
-              panMode ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'
+              panMode ? 'bg-gray-200 text-gray-500' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
             }`}
             onClick={() => setPanMode((v) => !v)}
             title={panMode ? '手型模式（已激活）' : '手型工具（快捷键：空格）'}
@@ -255,6 +285,20 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
               <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2" />
               <path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8" />
               <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+            </svg>
+          </button>
+          <button
+            className={`w-7 h-7 flex items-center justify-center rounded transition-colors ${
+              rulerCursorVisible ? 'bg-gray-200 text-gray-500' : 'text-gray-300 hover:bg-gray-100 hover:text-gray-500'
+            }`}
+            onClick={toggleRulerCursor}
+            title={rulerCursorVisible ? '关闭定位线' : '开启定位线'}
+            aria-label={rulerCursorVisible ? '关闭定位线' : '开启定位线'}
+          >
+            {/* 十字线图标：竖线 + 横线，象征"定位线" */}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="2" x2="12" y2="22" />
+              <line x1="2" y1="12" x2="22" y2="12" />
             </svg>
           </button>
           <div className="w-px h-4 bg-gray-200 mx-0.5" />
@@ -282,12 +326,14 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         </div>
       </div>
 
-      {/* 画布页：外层 wrapper 用缩放后的尺寸撑开布局空间并居中，内层承载原始尺寸 + transform:scale */}
+      {/* 画布页：外层 wrapper 用缩放后的尺寸撑开布局空间并居中，内层承载原始尺寸 + transform:scale。
+          margin 只保留左右和底部内边距，上方贴顶以让画布初始就顶到上方不空。
+          4 周各预留 24px 给标尺。 */}
       <div
         style={{
-          width: `calc(${canvas.width} * ${zoom} + 24px)`,
-          height: `calc(${canvas.height} * ${zoom} + 24px)`,
-          margin: `${24}px auto`,
+          width: `calc(${canvas.width} * ${zoom} + 48px)`,
+          height: `calc(${canvas.height} * ${zoom} + 48px)`,
+          margin: `0 auto ${24}px`,
           position: 'relative',
           transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
           cursor,
@@ -298,24 +344,44 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         onMouseUp={handlePanEnd}
         onMouseLeave={handlePanEnd}
       >
-        {/* 标尺角 */}
+        {/* 4 个标尺角（左上 / 右上 / 左下 / 右下） */}
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 24,
-            height: 24,
-            backgroundColor: '#1e1e2e',
-            zIndex: 52,
-            borderRight: '1px solid #374151',
-            borderBottom: '1px solid #374151',
+            top: 0, left: 0, width: 24, height: 24,
+            backgroundColor: '#1e1e2e', zIndex: 52,
+            borderRight: '1px solid #374151', borderBottom: '1px solid #374151',
           }}
         />
-        {/* 水平标尺 */}
-        <Ruler orientation="horizontal" canvasRef={innerRef} />
-        {/* 垂直标尺 */}
-        <Ruler orientation="vertical" canvasRef={innerRef} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, right: 0, width: 24, height: 24,
+            backgroundColor: '#1e1e2e', zIndex: 52,
+            borderLeft: '1px solid #374151', borderBottom: '1px solid #374151',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0, left: 0, width: 24, height: 24,
+            backgroundColor: '#1e1e2e', zIndex: 52,
+            borderRight: '1px solid #374151', borderTop: '1px solid #374151',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0, right: 0, width: 24, height: 24,
+            backgroundColor: '#1e1e2e', zIndex: 52,
+            borderLeft: '1px solid #374151', borderTop: '1px solid #374151',
+          }}
+        />
+        {/* 4 边标尺（画布四周） */}
+        <Ruler orientation="horizontal" edge="top" canvasRef={innerRef} />
+        <Ruler orientation="horizontal" edge="bottom" canvasRef={innerRef} />
+        <Ruler orientation="vertical" edge="left" canvasRef={innerRef} />
+        <Ruler orientation="vertical" edge="right" canvasRef={innerRef} />
 
         {/* 画布 */}
         <div

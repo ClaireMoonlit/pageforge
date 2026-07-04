@@ -428,7 +428,34 @@ export function Inspector() {
   const canvas = useEditorStore((s) => s.canvas)
   const updateCanvas = useEditorStore((s) => s.updateCanvas)
   const allNodes = useEditorStore((s) => s.nodes)
+  const collapsed = useEditorStore((s) => s.rightPanelCollapsed)
+  const toggle = useEditorStore((s) => s.toggleRightPanel)
   const [borderCustom, setBorderCustom] = useState(false)
+
+  // 折叠态：仅显示窄条 + 展开按钮
+  // 展开按钮：左箭头 (<<) → 表示"把面板展开到左侧"
+  if (collapsed) {
+    return (
+      <div className="w-10 shrink-0 bg-ink-800 border-l border-ink-700 flex flex-col items-center pt-3 transition-all duration-200">
+        <button
+          onClick={toggle}
+          className="w-8 h-8 flex items-center justify-center rounded text-gray-300 hover:text-gray-100 hover:bg-ink-700 transition-colors"
+          title="展开属性面板"
+          aria-label="展开属性面板"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <div
+          className="mt-3 text-[11px] text-gray-500 tracking-wider"
+          style={{ writingMode: 'vertical-rl' }}
+        >
+          属性
+        </div>
+      </div>
+    )
+  }
 
   /** 递归收集所有节点（带缩进深度），供 targetId 下拉使用 */
   const flatNodes: { id: string; label: string; depth: number; isContainer: boolean }[] = []
@@ -443,9 +470,19 @@ export function Inspector() {
 
   if (!selected) {
     return (
-      <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto">
-        <div className="p-3 border-b border-ink-700">
+      <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
+        <div className="p-3 border-b border-ink-700 flex items-center justify-between">
           <span className="text-sm text-gray-200">画布设置</span>
+          <button
+            onClick={toggle}
+            className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-100 hover:bg-ink-700 transition-colors"
+            title="收起属性面板"
+            aria-label="收起属性面板"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         </div>
         <div className="p-3 space-y-3">
           <div className="text-xs text-gray-500">未选中元素时编辑画布属性</div>
@@ -485,19 +522,35 @@ export function Inspector() {
               placeholder="800"
             />
           </Field>
-          <div className="flex gap-2 pt-1">
-            {(['1280x720', '1200x800', '1024x768', '1920x1080'] as const).map((preset) => {
-              const [w, h] = preset.split('x')
-              return (
-                <button
-                  key={preset}
-                  onClick={() => updateCanvas({ width: `${w}px`, height: `${h}px` })}
-                  className="flex-1 px-2 py-1 rounded text-xs bg-ink-700 hover:bg-ink-600 text-gray-300"
-                >
-                  {preset}
-                </button>
-              )
-            })}
+          <div className="flex flex-col gap-2 pt-1">
+            <div className="flex gap-2">
+              {(['1280x720', '1200x800'] as const).map((preset) => {
+                const [w, h] = preset.split('x')
+                return (
+                  <button
+                    key={preset}
+                    onClick={() => updateCanvas({ width: `${w}px`, height: `${h}px` })}
+                    className="flex-1 px-2 py-1 rounded text-xs bg-ink-700 hover:bg-ink-600 text-gray-300"
+                  >
+                    {preset}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-2">
+              {(['1024x768', '1920x1080'] as const).map((preset) => {
+                const [w, h] = preset.split('x')
+                return (
+                  <button
+                    key={preset}
+                    onClick={() => updateCanvas({ width: `${w}px`, height: `${h}px` })}
+                    className="flex-1 px-2 py-1 rounded text-xs bg-ink-700 hover:bg-ink-600 text-gray-300"
+                  >
+                    {preset}
+                  </button>
+                )
+              })}
+            </div>
           </div>
           <div className="pt-2 border-t border-ink-700 text-xs text-gray-600 leading-relaxed">
             提示：选中元素后可编辑其属性；双击元素可直接改文字；拖拽手柄可调大小。
@@ -510,15 +563,29 @@ export function Inspector() {
   const hasText = selected.props.text !== undefined
 
   return (
-    <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto">
+    <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
       <div className="p-3 border-b border-ink-700 flex items-center justify-between">
-        <span className="text-sm text-gray-200">属性 · {selected.type}</span>
-        <button
-          onClick={() => removeNode(selected.id)}
-          className="text-xs text-red-400 hover:text-red-300"
-        >
-          删除
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-200">属性 · {selected.type}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => removeNode(selected.id)}
+            className="text-xs text-red-400 hover:text-red-300 px-1.5 py-0.5 rounded hover:bg-ink-700 transition-colors"
+          >
+            删除
+          </button>
+          <button
+            onClick={toggle}
+            className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-gray-100 hover:bg-ink-700 transition-colors"
+            title="收起属性面板"
+            aria-label="收起属性面板"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        </div>
       </div>
       <div className="px-3 pt-2 pb-1 border-b border-ink-700/50 flex items-center gap-2">
         <span className="text-[10px] text-gray-500 shrink-0">ID</span>
