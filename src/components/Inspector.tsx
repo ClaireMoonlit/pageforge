@@ -85,6 +85,8 @@ function NumberUnitField({
 }) {
   const parsed = parseNumericValue(value, freeUnit ? 0 : 0, freeUnit ? (units[0] ?? 'px') : fixedUnit)
   const unit = freeUnit ? parsed.unit : fixedUnit
+  // 未显式设置的属性显示空占位符，而非 0
+  const isUnset = value === undefined || value === null || value === ''
 
   const apply = useCallback(
     (newVal: number, newUnit: string) => {
@@ -103,13 +105,13 @@ function NumberUnitField({
       <div className="flex items-center gap-1">
         <input
           type="number"
-          value={unit === 'auto' ? '' : parsed.val}
+          value={isUnset ? '' : (unit === 'auto' ? '' : parsed.val)}
           onChange={(e) => {
             const v = parseFloat(e.target.value)
             if (!isNaN(v)) apply(v, unit)
           }}
           className={inputCls + ' flex-1'}
-          placeholder={placeholder || (unit === 'auto' ? 'auto' : '')}
+          placeholder={isUnset ? (placeholder || 'auto') : (placeholder || (unit === 'auto' ? 'auto' : ''))}
           min={min}
           max={max}
           step={step}
