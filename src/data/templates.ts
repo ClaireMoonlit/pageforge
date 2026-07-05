@@ -245,20 +245,21 @@ export const pageTemplates: PageTemplate[] = [
         { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Less, but better. We remove until nothing else can be removed — then add the one thing that makes it sing.' }, style: { x: 28, y: 58, width: '344px', fontSize: '15px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fLora } },
       ], visible: true, props: {}, style: { x: 760, y: 480, width: '400px', minHeight: '150px', padding: '28px', backgroundColor: C.claudeSurface, borderRadius: '8px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
 
-      // 底部数据条 — 三列等分，避免与按钮重叠（y=480 的 border-top 切到按钮底部 499）
+      // 底部数据条 — 三列等分，border 上下完整包住数值+文本
+      // 容器高 168px：padding-top 24 + 数值(48高) 24 + 文本(18高) 24 + padding-bottom 24 + 上下 border 间距
       {
         id: nid(), type: 'container', children: [
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '4.9', level: 1 }, style: { x: 0, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Average rating' }, style: { x: 0, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '12k', level: 1 }, style: { x: 207, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Projects shipped' }, style: { x: 207, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '8+', level: 1 }, style: { x: 414, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Years experience' }, style: { x: 414, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '4.9', level: 1 }, style: { x: 0, y: 28, width: '207px', fontSize: '44px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Average rating' }, style: { x: 0, y: 92, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '12k', level: 1 }, style: { x: 207, y: 28, width: '207px', fontSize: '44px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Projects shipped' }, style: { x: 207, y: 92, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '8+', level: 1 }, style: { x: 414, y: 28, width: '207px', fontSize: '44px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Years experience' }, style: { x: 414, y: 92, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
         ], visible: true, props: {},
-        style: { x: 80, y: 520, width: '621px', minHeight: '95px', padding: '24px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder, borderBottom: '1px solid ' + C.claudeBorder },
+        style: { x: 80, y: 520, width: '621px', minHeight: '168px', padding: '28px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder, borderBottom: '1px solid ' + C.claudeBorder },
       },
     ],
-    canvas: { backgroundColor: C.claudeCanvas, width: '1200px', height: '700px' },
+    canvas: { backgroundColor: C.claudeCanvas, width: '1200px', height: '760px' },
   },
 
   // ═══════════════════════════════════════════════
