@@ -106,14 +106,17 @@ function NumberUnitField({
           value={unit === 'auto' ? '' : parsed.val}
           onChange={(e) => {
             const v = parseFloat(e.target.value)
-            if (!isNaN(v)) apply(v, unit)
+            if (!isNaN(v)) {
+              // 当前是 auto 时输入数值 → 自动切到第一个非 auto 单位
+              const u = unit === 'auto' ? (units.find(u => u !== 'auto') ?? 'px') : unit
+              apply(v, u)
+            }
           }}
           className={inputCls + ' flex-1'}
           placeholder={placeholder || (unit === 'auto' ? 'auto' : '')}
           min={min}
           max={max}
           step={step}
-          disabled={unit === 'auto'}
         />
         {freeUnit ? (
           <select
