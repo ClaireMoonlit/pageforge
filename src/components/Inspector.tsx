@@ -957,9 +957,9 @@ export function Inspector() {
         <SectionLabel label="尺寸与间距" />
         <NumberUnitField
           label="宽度"
-          value={selected.style.width ?? 'auto'}
+          value={selected.style.width ?? '0px'}
           onChange={(v) => updateNodeStyle(selected.id, { width: v })}
-          units={['px', '%', 'vw', 'auto']}
+          units={['px', '%', 'vw']}
           min={0}
           max={9999}
           step={10}
@@ -967,9 +967,9 @@ export function Inspector() {
         />
         <NumberUnitField
           label="高度"
-          value={selected.style.height ?? 'auto'}
+          value={selected.style.height ?? '0px'}
           onChange={(v) => updateNodeStyle(selected.id, { height: v })}
-          units={['px', '%', 'vh', 'auto']}
+          units={['px', '%', 'vh']}
           min={0}
           max={9999}
           step={10}
