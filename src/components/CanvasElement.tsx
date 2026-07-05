@@ -449,6 +449,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
   return (
     <div
       ref={setRefs}
+      id={node.id}
       data-node-id={node.id}
       data-render-debug={node.type + '#' + node.id.slice(-4)}
       style={style}
