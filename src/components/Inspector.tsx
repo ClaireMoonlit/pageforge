@@ -435,7 +435,17 @@ export function Inspector() {
   const allNodes = useEditorStore((s) => s.nodes)
   const collapsed = useEditorStore((s) => s.rightPanelCollapsed)
   const toggle = useEditorStore((s) => s.toggleRightPanel)
+  const zoom = useEditorStore((s) => s.zoom)
   const [borderCustom, setBorderCustom] = useState(false)
+
+  // 当未显式设置宽高时，从 DOM 读取实际渲染尺寸作为默认值
+  const renderedSize = (() => {
+    if (!selected) return null
+    const el = document.getElementById(selected.id)
+    if (!el) return null
+    const r = el.getBoundingClientRect()
+    return { w: Math.round(r.width / zoom), h: Math.round(r.height / zoom) }
+  })()
 
   // 折叠态：仅显示窄条 + 展开按钮
   // 展开按钮：左箭头 (<<) → 表示"把面板展开到左侧"
@@ -957,7 +967,7 @@ export function Inspector() {
         <SectionLabel label="尺寸与间距" />
         <NumberUnitField
           label="宽度"
-          value={selected.style.width ?? '0px'}
+          value={selected.style.width ?? (renderedSize ? `${renderedSize.w}px` : '0px')}
           onChange={(v) => updateNodeStyle(selected.id, { width: v })}
           units={['px', '%', 'vw']}
           min={0}
@@ -967,7 +977,7 @@ export function Inspector() {
         />
         <NumberUnitField
           label="高度"
-          value={selected.style.height ?? '0px'}
+          value={selected.style.height ?? (renderedSize ? `${renderedSize.h}px` : '0px')}
           onChange={(v) => updateNodeStyle(selected.id, { height: v })}
           units={['px', '%', 'vh']}
           min={0}
