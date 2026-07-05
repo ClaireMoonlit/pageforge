@@ -224,10 +224,10 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'divider', children: [], visible: true, props: {}, style: { x: 80, y: 340, width: '120px', height: '2px', backgroundColor: C.claudeAccent, display: 'block' } },
 
       // 长副标题 — 18px / line-height: 1.65，Lora 衬线
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'We build tools for people who think deeply. Every pixel, every interaction, every word — considered with care.' }, style: { x: 80, y: 370, width: '580px', fontSize: '18px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.65', padding: '0', fontFamily: C.fLora } },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'We build tools for people who think deeply. Every pixel, every interaction, every word — considered with care.' }, style: { x: 80, y: 360, width: '580px', fontSize: '18px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.65', padding: '0', fontFamily: C.fLora } },
 
-      // CTA — 赤陶底，白字
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Explore our work —' }, style: { x: 80, y: 460, fontSize: '15px', fontWeight: '500', color: C.white, backgroundColor: C.claudeAccent, padding: '12px 28px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fLora } },
+      // CTA — 赤陶底，白字（y=430 与副标题底部 419 留 11px，与下方数据条顶部 494 留 25px）
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Explore our work —' }, style: { x: 80, y: 430, fontSize: '15px', fontWeight: '500', color: C.white, backgroundColor: C.claudeAccent, padding: '12px 28px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fLora } },
 
       // 右侧三张编号卡片 — 暖米色表面，赤陶编号
       { id: nid(), type: 'container', children: [
@@ -245,8 +245,8 @@ export const pageTemplates: PageTemplate[] = [
         { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Less, but better. We remove until nothing else can be removed — then add the one thing that makes it sing.' }, style: { x: 28, y: 58, width: '344px', fontSize: '15px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fLora } },
       ], visible: true, props: {}, style: { x: 760, y: 480, width: '400px', minHeight: '150px', padding: '28px', backgroundColor: C.claudeSurface, borderRadius: '8px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
 
-      // 底部数据条 — 三列等分，border 上下完整包住数值+文本
-      // 容器高 168px：padding-top 24 + 数值(48高) 24 + 文本(18高) 24 + padding-bottom 24 + 上下 border 间距
+      // 底部数据条 — y=494，底部 494+168=662 与第三张卡片底部对齐，顶部分割线距按钮 25px
+      // 容器高 168px：padding-top 28 + 数值(44高) 28 + 间距 20 + 文本(13高) 92 + padding-bottom 28
       {
         id: nid(), type: 'container', children: [
           { id: nid(), type: 'heading', children: [], visible: true, props: { text: '4.9', level: 1 }, style: { x: 0, y: 28, width: '207px', fontSize: '44px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
@@ -256,10 +256,10 @@ export const pageTemplates: PageTemplate[] = [
           { id: nid(), type: 'heading', children: [], visible: true, props: { text: '8+', level: 1 }, style: { x: 414, y: 28, width: '207px', fontSize: '44px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
           { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Years experience' }, style: { x: 414, y: 92, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
         ], visible: true, props: {},
-        style: { x: 80, y: 520, width: '621px', minHeight: '168px', padding: '28px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder, borderBottom: '1px solid ' + C.claudeBorder },
+        style: { x: 80, y: 494, width: '621px', minHeight: '168px', padding: '28px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder, borderBottom: '1px solid ' + C.claudeBorder },
       },
     ],
-    canvas: { backgroundColor: C.claudeCanvas, width: '1200px', height: '760px' },
+    canvas: { backgroundColor: C.claudeCanvas, width: '1200px', height: '720px' },
   },
 
   // ═══════════════════════════════════════════════
