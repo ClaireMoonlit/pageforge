@@ -136,13 +136,13 @@ export const pageTemplates: PageTemplate[] = [
     nodes: [
       // Nav
       { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Forge' }, style: { x: 80, y: 28, fontSize: '18px', fontWeight: '700', color: C.sDark, textAlign: 'left', letterSpacing: '-0.02em', padding: '0', fontFamily: C.fSpace } },
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: '免费试用' }, style: { x: 1020, y: 22, fontSize: '14px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '8px 20px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: '免费试用' }, style: { x: 1020, y: 22, width: '100px', height: '36px', fontSize: '14px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '8px 0', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
 
       // Hero
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '用拖拽搭建你的网页', level: 1 }, style: { x: 200, y: 110, width: '800px', fontSize: '48px', fontWeight: '800', color: C.sDark, textAlign: 'center', letterSpacing: '-0.03em', padding: '0', fontFamily: C.fSpace } },
       { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需代码，10 分钟创建专业落地页。一键导出 HTML，部署到任何地方。' }, style: { x: 220, y: 195, width: '760px', fontSize: '18px', color: C.sGray, textAlign: 'center', lineHeight: '1.65', padding: '0', fontFamily: C.fInter } },
       // Hero 按钮：x=500 让 240 宽按钮居中在 1200 画布中心（600 - 120 = 480 ≈ 500，给一点视觉偏移修正 padding 收缩）
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: '开始免费使用 →' }, style: { x: 500, y: 270, width: '200px', fontSize: '16px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '14px 36px', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: '开始免费使用 →' }, style: { x: 500, y: 270, width: '200px', height: '50px', fontSize: '16px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '14px 0', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
       { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需信用卡 · 永久免费版可用' }, style: { x: 460, y: 330, width: '280px', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
 
       // 数据条（4 列严格等分：1040px / 4 = 260px 每列，x=0/260/520/780）
@@ -199,7 +199,7 @@ export const pageTemplates: PageTemplate[] = [
           { id: nid(), type: 'heading', children: [], visible: true, props: { text: '准备好开始了吗？', level: 2 }, style: { x: 280, y: 40, width: '480px', fontSize: '26px', fontWeight: '700', color: C.white, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
           { id: nid(), type: 'text', children: [], visible: true, props: { text: '免费注册，10 分钟创建你的第一个页面。' }, style: { x: 280, y: 88, width: '480px', fontSize: '15px', color: '#c7d2fe', textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
           // CTA 按钮 width=240：left = 520 - 120 = 400
-          { id: nid(), type: 'button', children: [], visible: true, props: { text: '立即免费开始' }, style: { x: 400, y: 120, width: '240px', fontSize: '16px', fontWeight: '600', color: C.sPrimary, backgroundColor: C.white, padding: '12px 32px', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
+          { id: nid(), type: 'button', children: [], visible: true, props: { text: '立即免费开始' }, style: { x: 400, y: 120, width: '240px', height: '48px', fontSize: '16px', fontWeight: '600', color: C.sPrimary, backgroundColor: C.white, padding: '12px 0', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
         ],
       },
     ],
@@ -227,7 +227,7 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'text', children: [], visible: true, props: { text: 'We build tools for people who think deeply. Every pixel, every interaction, every word — considered with care.' }, style: { x: 80, y: 360, width: '580px', fontSize: '18px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.65', padding: '0', fontFamily: C.fLora } },
 
       // CTA — 赤陶底，白字（y=430 与副标题底部 419 留 11px，与下方数据条顶部 494 留 25px）
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Explore our work —' }, style: { x: 80, y: 430, fontSize: '15px', fontWeight: '500', color: C.white, backgroundColor: C.claudeAccent, padding: '12px 28px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fLora } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Explore our work —' }, style: { x: 80, y: 430, width: '210px', height: '48px', fontSize: '15px', fontWeight: '500', color: C.white, backgroundColor: C.claudeAccent, padding: '12px 0', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fLora } },
 
       // 右侧三张编号卡片 — 暖米色表面，赤陶编号
       { id: nid(), type: 'container', children: [
@@ -281,8 +281,8 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'text', children: [], visible: true, props: { text: 'A page builder for developers who think in commits, branches, and clean diffs. Version your pages like code.' }, style: { x: 80, y: 260, width: '520px', fontSize: '16px', color: C.ghMuted, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fInter } },
 
       // 双按钮
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Star on GitHub' }, style: { x: 80, y: 350, fontSize: '14px', fontWeight: '600', color: C.white, backgroundColor: '#238636', padding: '10px 22px', borderRadius: '6px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(240,246,252,0.1)', fontFamily: C.fInter } },
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Read the docs' }, style: { x: 260, y: 350, fontSize: '14px', fontWeight: '600', color: '#c9d1d9', backgroundColor: '#21262d', padding: '10px 22px', borderRadius: '6px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #30363d', fontFamily: C.fInter } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Star on GitHub' }, style: { x: 80, y: 350, width: '150px', height: '40px', fontSize: '14px', fontWeight: '600', color: C.white, backgroundColor: '#238636', padding: '10px 0', borderRadius: '6px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(240,246,252,0.1)', fontFamily: C.fInter } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Read the docs' }, style: { x: 260, y: 350, width: '140px', height: '40px', fontSize: '14px', fontWeight: '600', color: '#c9d1d9', backgroundColor: '#21262d', padding: '10px 0', borderRadius: '6px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #30363d', fontFamily: C.fInter } },
 
       // 三张磨砂玻璃卡片
       { id: nid(), type: 'container', children: [
@@ -327,8 +327,8 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'text', children: [], visible: true, props: { text: 'A design studio focused on brand identity, digital products, and typographic systems. Based in Zurich, working worldwide.' }, style: { x: 80, y: 340, width: '500px', fontSize: '16px', color: C.swissMuted, textAlign: 'left', lineHeight: '1.7', padding: '0', fontFamily: C.fHelvetica } },
 
       // 全大写直角按钮 — 统一宽度 220px，x=80/320 gap=20px
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'START A PROJECT' }, style: { x: 80, y: 450, width: '220px', fontSize: '13px', fontWeight: '700', color: C.white, backgroundColor: C.swissAccent, padding: '16px 0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', fontFamily: C.fHelvetica } },
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'VIEW WORK' }, style: { x: 320, y: 450, width: '220px', fontSize: '13px', fontWeight: '700', color: C.swissDark, backgroundColor: 'transparent', padding: '16px 0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', border: '2px solid #1d1d1d', fontFamily: C.fHelvetica } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'START A PROJECT' }, style: { x: 80, y: 450, width: '220px', height: '48px', fontSize: '13px', fontWeight: '700', color: C.white, backgroundColor: C.swissAccent, padding: '0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', fontFamily: C.fHelvetica } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'VIEW WORK' }, style: { x: 320, y: 450, width: '220px', height: '48px', fontSize: '13px', fontWeight: '700', color: C.swissDark, backgroundColor: 'transparent', padding: '0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', border: '2px solid #1d1d1d', fontFamily: C.fHelvetica } },
 
       // 右侧大数字装饰 — 72px 浅灰
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '2014', level: 1 }, style: { x: 820, y: 120, width: '200px', fontSize: '72px', fontWeight: '800', color: '#e8e8e8', textAlign: 'right', padding: '0', fontFamily: C.fHelvetica } },
