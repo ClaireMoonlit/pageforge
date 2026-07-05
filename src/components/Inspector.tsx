@@ -85,8 +85,6 @@ function NumberUnitField({
 }) {
   const parsed = parseNumericValue(value, freeUnit ? 0 : 0, freeUnit ? (units[0] ?? 'px') : fixedUnit)
   const unit = freeUnit ? parsed.unit : fixedUnit
-  // 未显式设置的属性显示空占位符，而非 0
-  const isUnset = value === undefined || value === null || value === ''
 
   const apply = useCallback(
     (newVal: number, newUnit: string) => {
@@ -105,13 +103,13 @@ function NumberUnitField({
       <div className="flex items-center gap-1">
         <input
           type="number"
-          value={isUnset ? '' : (unit === 'auto' ? '' : parsed.val)}
+          value={unit === 'auto' ? '' : parsed.val}
           onChange={(e) => {
             const v = parseFloat(e.target.value)
             if (!isNaN(v)) apply(v, unit)
           }}
           className={inputCls + ' flex-1'}
-          placeholder={isUnset ? (placeholder || 'auto') : (placeholder || (unit === 'auto' ? 'auto' : ''))}
+          placeholder={placeholder || (unit === 'auto' ? 'auto' : '')}
           min={min}
           max={max}
           step={step}
@@ -956,7 +954,7 @@ export function Inspector() {
         <SectionLabel label="尺寸与间距" />
         <NumberUnitField
           label="宽度"
-          value={selected.style.width}
+          value={selected.style.width ?? 'auto'}
           onChange={(v) => updateNodeStyle(selected.id, { width: v })}
           units={['px', '%', 'vw', 'auto']}
           min={0}
@@ -966,7 +964,7 @@ export function Inspector() {
         />
         <NumberUnitField
           label="高度"
-          value={selected.style.height}
+          value={selected.style.height ?? 'auto'}
           onChange={(v) => updateNodeStyle(selected.id, { height: v })}
           units={['px', '%', 'vh', 'auto']}
           min={0}
@@ -976,7 +974,7 @@ export function Inspector() {
         />
         <NumberUnitField
           label="内边距"
-          value={selected.style.padding}
+          value={selected.style.padding ?? '0px'}
           onChange={(v) => updateNodeStyle(selected.id, { padding: v })}
           units={['px', 'rem', 'em', '%']}
           min={0}
@@ -1154,7 +1152,7 @@ export function Inspector() {
         </Field>
         <NumberUnitField
           label="圆角"
-          value={selected.style.borderRadius}
+          value={selected.style.borderRadius ?? '0px'}
           onChange={(v) => updateNodeStyle(selected.id, { borderRadius: v })}
           units={['px', 'rem', 'em', '%']}
           min={0}
