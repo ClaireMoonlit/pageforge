@@ -162,27 +162,26 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '核心特性', level: 2 }, style: { x: 400, y: 560, width: '400px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
       { id: nid(), type: 'text', children: [], visible: true, props: { text: '一切你需要的，我们都有' }, style: { x: 380, y: 608, width: '440px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
 
-      // 3 张特性卡片（统一 6 卡样式：titleFontSize 18px，subtitleFontSize 14px，padding 24px）
-      // 内容估算：标题 18+8+subtitle 2行*14*1.6=44.8 = 70.8px，留白 160-48-70.8=41.2px
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '拖拽编辑', subtitle: '直观的拖拽操作，无需代码即可自由布局。所见即所得，实时预览效果。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray }, style: { x: 80, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '一键导出', subtitle: '生成独立 HTML 文件，代码干净、结构清晰。部署到 Netlify、Vercel 或任意静态托管。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray }, style: { x: 440, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '响应式设计', subtitle: '桌面端绝对定位 + 移动端流式堆叠。一套设计，完美适配电脑、平板、手机。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray }, style: { x: 800, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      // ═══════════════════════════════════════════════
+      // 6 张卡片统一宽度 280px，统一列间距 40px，统一左右边距 140px
+      // 3×280 + 2×40 = 920，画布 1200 → 左右边距各 140，两排 x 完全对齐
+      // ═══════════════════════════════════════════════
+
+      // 3 张特性卡片（280px 宽：最长文案 ~40 字 → 3 行 × 14×1.5=63px + 标题 26px = 89px，+ padding 48 = 137px，160px 够用）
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '拖拽编辑', subtitle: '直观的拖拽操作，无需代码即可自由布局。所见即所得，实时预览效果。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 140, y: 680, width: '280px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '一键导出', subtitle: '生成独立 HTML 文件，代码干净、结构清晰。部署到 Netlify、Vercel 或任意静态托管。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 460, y: 680, width: '280px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '响应式设计', subtitle: '桌面端绝对定位 + 移动端流式堆叠。一套设计，完美适配电脑、平板、手机。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 780, y: 680, width: '280px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
 
       // 定价区标题（特性卡片底部 840，间距 60 → y=900）
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '选择适合你的方案', level: 2 }, style: { x: 310, y: 900, width: '580px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
       { id: nid(), type: 'text', children: [], visible: true, props: { text: '无论个人还是企业，都有合适的方案' }, style: { x: 360, y: 948, width: '480px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
 
-      // 3 张定价卡片（高度 200，宽度 240，lineHeight 1.5，让 5 行 14px 文本更舒展）
-      // 内容估算：标题 18+8+subtitle 5行*14*1.5=105 = 131px，padding 48 = 179（200 留 21px）
-      // y=1020，与"无论个人..."副标题(y=948)间距 72px（与特性卡片区域一致）
-      // 宽度 240（从 280 进一步缩窄），消除右侧大量空白
-      // x 位置 200/480/760：3 张卡片在画布内左右居中（左右各 200px 边距），
-      // 列间距 gap = 40px（= 480-200-240=40），与特性卡列间距完全一致
-      // 特性卡 x=80/440/800 边距 80，定价卡 x=200/480/760 边距 200（往内缩 120px）
-      // 6 张卡片之间的列间距统一为 40px，但两排左右边距不同
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 200, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.5 }, style: { x: 480, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 760, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      // 3 张定价卡片（280px 宽 × 200px 高：5 行 bullets × 14×1.5=105px + 标题 26px = 131px，+ padding 48 = 179px，留 21px）
+      // y=1020，与"无论个人..."副标题(y=948)间距 72px
+      // x=140/460/780 与特性卡完全对齐，两排 6 张卡片形成整齐的 3×2 网格
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 140, y: 1020, width: '280px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.5 }, style: { x: 460, y: 1020, width: '280px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 780, y: 1020, width: '280px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
 
       // 底部 CTA 容器（定价卡片底部 1220，间距 40 → y=1260；height 200 + padding 40 40 增加内部留白）
       // 外部下留白 = 画布 1520 - (1260 + 200) = 60px（保持）
