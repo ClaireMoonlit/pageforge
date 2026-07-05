@@ -1,4 +1,5 @@
 import type { CanvasConfig, CanvasNode, ComponentType, NodeStyle } from '@/types'
+import { ICON_PATHS } from './iconPaths'
 
 let idCounter = 0
 function nid(): string {
@@ -1096,6 +1097,32 @@ function buildElement(
     })
     if (linkTexts.length > 0) {
       props.navLinks = linkTexts.join(',')
+    }
+  } else if (type === 'icon') {
+    // Icon 导出格式：<div data-pf-type="icon"><span>📊</span><span>文本</span></div>
+    // 第一个 span 是图标（emoji 文本或 SVG），第二个 span 是文字
+    const spans = el.querySelectorAll(':scope > span')
+    if (spans.length >= 1) {
+      const firstSpan = spans[0]
+      const svg = firstSpan.querySelector('svg')
+      if (svg) {
+        // 命名图标（SVG）：通过 path d 属性反向匹配图标名称
+        const pathD = svg.querySelector('path')?.getAttribute('d') || ''
+        let iconName = ''
+        for (const [name, data] of Object.entries(ICON_PATHS)) {
+          if (data.d === pathD || data.paths?.some(p => p.d === pathD)) {
+            iconName = name
+            break
+          }
+        }
+        props.icon = iconName || 'star'
+      } else {
+        // Emoji 或自定义图标：取文本内容
+        props.icon = (firstSpan.textContent || '').trim() || 'star'
+      }
+    }
+    if (spans.length >= 2) {
+      props.text = getText(spans[1])
     }
   }
 
