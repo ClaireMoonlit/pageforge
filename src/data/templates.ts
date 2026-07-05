@@ -176,13 +176,13 @@ export const pageTemplates: PageTemplate[] = [
       // 内容估算：标题 18+8+subtitle 5行*14*1.5=105 = 131px，padding 48 = 179（200 留 21px）
       // y=1020，与"无论个人..."副标题(y=948)间距 72px（与特性卡片区域一致）
       // 宽度 240（从 280 进一步缩窄），消除右侧大量空白
-      // x 位置 80/480/880：3 张卡片在 80-1120 范围（左右各 80），与特性卡组完全对称
-      // 6 张卡片整体作为 3+3 布局，在画布 80-1120 范围内对称居中（左右各 80）
-      // 中列对齐（中心 600），左/右列中心差 40px（特性卡 240/960，定价卡 200/1000）
-      // 视觉上"6 张卡片作为一个整体"在画布内居中，两排左右边距一致
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 80, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      // x 位置 200/480/760：3 张卡片在画布内左右居中（左右各 200px 边距），
+      // 列间距 gap = 40px（= 480-200-240=40），与特性卡列间距完全一致
+      // 特性卡 x=80/440/800 边距 80，定价卡 x=200/480/760 边距 200（往内缩 120px）
+      // 6 张卡片之间的列间距统一为 40px，但两排左右边距不同
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 200, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
       { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.5 }, style: { x: 480, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 880, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 760, y: 1020, width: '240px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
 
       // 底部 CTA 容器（定价卡片底部 1220，间距 40 → y=1260；height 200 + padding 40 40 增加内部留白）
       // 外部下留白 = 画布 1520 - (1260 + 200) = 60px（保持）
