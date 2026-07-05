@@ -49,7 +49,9 @@ function normalizeColor(c?: string): string {
 function parseNumericValue(raw?: string, defaultVal = 0, defaultUnit = 'px'): { val: number; unit: string } {
   if (!raw) return { val: defaultVal, unit: defaultUnit }
   if (raw === 'auto') return { val: 0, unit: 'auto' }
-  const m = raw.match(/^([\d.]+)\s*(px|rem|em|pt|%|vw|vh|ms)?$/i)
+  // 支持 shorthand 值（如 '16px 40px' → 取第一个值 16px）
+  const first = raw.split(/\s+/)[0]
+  const m = first.match(/^([\d.]+)\s*(px|rem|em|pt|%|vw|vh|ms)?$/i)
   if (m) return { val: parseFloat(m[1]), unit: m[2] || defaultUnit }
   return { val: defaultVal, unit: defaultUnit }
 }

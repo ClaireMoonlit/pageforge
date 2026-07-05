@@ -326,9 +326,9 @@ export const pageTemplates: PageTemplate[] = [
       // 正文 — 16px
       { id: nid(), type: 'text', children: [], visible: true, props: { text: 'A design studio focused on brand identity, digital products, and typographic systems. Based in Zurich, working worldwide.' }, style: { x: 80, y: 340, width: '500px', fontSize: '16px', color: C.swissMuted, textAlign: 'left', lineHeight: '1.7', padding: '0', fontFamily: C.fHelvetica } },
 
-      // 全大写直角按钮
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'START A PROJECT' }, style: { x: 80, y: 450, fontSize: '13px', fontWeight: '700', color: C.white, backgroundColor: C.swissAccent, padding: '16px 40px', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', fontFamily: C.fHelvetica } },
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'VIEW WORK' }, style: { x: 320, y: 450, fontSize: '13px', fontWeight: '700', color: C.swissDark, backgroundColor: 'transparent', padding: '16px 40px', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', border: '2px solid #1d1d1d', fontFamily: C.fHelvetica } },
+      // 全大写直角按钮 — 统一宽度 220px，x=80/320 gap=20px
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'START A PROJECT' }, style: { x: 80, y: 450, width: '220px', fontSize: '13px', fontWeight: '700', color: C.white, backgroundColor: C.swissAccent, padding: '16px 0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', fontFamily: C.fHelvetica } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'VIEW WORK' }, style: { x: 320, y: 450, width: '220px', fontSize: '13px', fontWeight: '700', color: C.swissDark, backgroundColor: 'transparent', padding: '16px 0', borderRadius: '2px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', letterSpacing: '0.1em', border: '2px solid #1d1d1d', fontFamily: C.fHelvetica } },
 
       // 右侧大数字装饰 — 72px 浅灰
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '2014', level: 1 }, style: { x: 820, y: 120, width: '200px', fontSize: '72px', fontWeight: '800', color: '#e8e8e8', textAlign: 'right', padding: '0', fontFamily: C.fHelvetica } },
