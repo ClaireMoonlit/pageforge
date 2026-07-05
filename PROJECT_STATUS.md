@@ -352,6 +352,42 @@ interface CanvasNode {
 - 容器 `x=0` 时两者数值相同，bug 不暴露；容器 `x≠0` 时必须换算
 - 计算居中位置：`x = 父容器内容区中心 - 元素 width/2`，其中内容区中心 = `padding-left + (width - padding-left - padding-right)/2`
 
+### 5.17d SaaS 模板第四轮：6 卡片样式统一 + CTA 留白加大（2026-07-05）
+
+**用户反馈**：
+- "六个卡片里面文字样式统一一点，四周留白统一，小字放大到之前的你为啥缩小了"
+- "准备好开始的卡片内部上下留白大一点，外部下留白也大一点"
+
+**根因诊断**：
+- 5.17c 把 6 卡 subtitle 从 14px 缩到 13px 来硬塞 5 行内容，但 13px 偏小、可读性下降
+- 5.17c 把定价卡片 padding 从 20px 缩到 12px，与特性卡片 24px 不统一
+- 5.17c 把 CTA 容器 padding 从 32px 减到 28px（特性卡片那边）但没同步处理 CTA 内部对齐，导致"歪了"
+- CTA 容器下方画布只留 25px 空白（1360→1385），视觉上贴底
+
+**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+- **6 卡样式完全统一**：
+  - 标题：`titleFontSize 17px → 18px`（统一）
+  - 副标题：`subtitleFontSize 13px → 14px`（恢复原值，提升可读性）
+  - 内边距：所有卡片 `padding: 24px`（统一 4 周留白）
+- **高度按内容调整**：
+  - 特性卡片（2 行 14px 副标题）：高度 `160px` 不变
+  - 定价卡片（5 行 14px 副标题）：高度 `150px → 200px`（容纳 5 行 × 14 × 1.6 = 112px + 18px 标题 + 8px 间隔 = 138px 文本，再加 48px 上下 padding 余 14px 留白）
+- **CTA 容器内部留白加大**：
+  - `padding: '28px 40px' → '40px 40px'`（上下 12px 加大）
+  - `height: '160px' → '200px'`（+40px 高度容纳更大 padding）
+  - 子元素 y 重排：标题 y=40（与 padding 40 对齐）、副标题 y=88（gap 9）、按钮 y=120（gap 9），底部 32px 留白近似对称
+- **CTA 容器外部下留白加大**：
+  - 定价卡片底部 `1140 → 1190`（高度 +50）
+  - CTA `y: 1200 → 1240`（与定价卡片保持 50px 间距）
+  - 画布总高度 `1385px → 1500px`（CTA 容器 1240+200=1440 后还有 60px 底部留白，比之前 25px 翻倍多）
+
+**验证**（getBoundingClientRect 实测，100% 缩放）：
+- 6 卡 `titleFontSize=18px, subtitleFontSize=14px, padding=24px` 完全一致 ✓
+- 特性卡片 h=160，定价卡片 h=200，无 overflow ✓
+- CTA h=200, padding=40px, y=1240，画布 h=1500 ✓
+- CTA 子元素 y=40/88/120，gap 9/9，对称分布 ✓
+- 画布底部 60px 留白（之前 25px），CTA 不再贴底 ✓
+
 ---
 
 ## 6. 交互功能
