@@ -172,14 +172,14 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'heading', children: [], visible: true, props: { text: '选择适合你的方案', level: 2 }, style: { x: 310, y: 900, width: '580px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
       { id: nid(), type: 'text', children: [], visible: true, props: { text: '无论个人还是企业，都有合适的方案' }, style: { x: 360, y: 948, width: '480px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
 
-      // 3 张定价卡片（与特性卡片统一样式：padding 24px，subtitleFontSize 14px；高度 200px 容纳 5 行 14px 文本）
-      // subtitle 实际 lineHeight: 1.6（NodeRenderer 硬编码）×14px×5行=112，加标题 18+margin 8 = 138
-      // 内容区 200-48=152，剩余 14px 留白
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray }, style: { x: 80, y: 990, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe' }, style: { x: 440, y: 990, width: '320px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray }, style: { x: 800, y: 990, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      // 3 张定价卡片（与特性卡片同高 160px；lineHeight 1.2 让 5 行 14px 文本能放进 160-48=112 内容区）
+      // 内容估算：标题 18+8+subtitle 5行*14*1.2=84 = 110px，剩 2px 留白（紧凑）
+      // y 坐标调整：从 990 → 1020，让"无论个人..."副标题与卡片顶部的距离（72）= "一切你需要的..."与特性卡片顶部的距离
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.2 }, style: { x: 80, y: 1020, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.2 }, style: { x: 440, y: 1020, width: '320px', height: '160px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.2 }, style: { x: 800, y: 1020, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
 
-      // 底部 CTA 容器（定价卡片底部 1190，间距 50 → y=1240；height 200 + padding 40 40 增加内部留白）
+      // 底部 CTA 容器（定价卡片底部 1180，间距 60 → y=1240；height 200 + padding 40 40 增加内部留白）
       // 外部下留白 = 画布 1500 - (1240 + 200) = 60px（之前 25px，加大）
       {
         id: nid(), type: 'container', visible: true, props: {},

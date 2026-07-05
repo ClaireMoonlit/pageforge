@@ -388,6 +388,33 @@ interface CanvasNode {
 - CTA 子元素 y=40/88/120，gap 9/9，对称分布 ✓
 - 画布底部 60px 留白（之前 25px），CTA 不再贴底 ✓
 
+### 5.17e SaaS 模板第五轮：定价卡片高度与特性卡片统一（2026-07-05）
+
+**用户反馈**：
+- "统一价格卡片的高度与特性卡片相同"
+- "统一价格卡片顶部和"无论个人……"的距离，与特性卡片和"一切你需要的……"的距离相同"
+
+**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+- **定价卡片高度**：`200px` → `160px`（与特性卡片同高）
+- **5 行 14px 文本紧凑显示**：通过给卡片增加 `subtitleLineHeight: 1.2` 让 5 行 14px 文本（5 × 14 × 1.2 = 84px）能放进 160-48=112px 内容区，剩 2px 留白
+- **间距统一**：
+  - "无论个人还是企业，都有合适的方案" 副标题 y=948
+  - 定价卡片 y 从 990 调到 1020
+  - 间距 = 1020 - 948 = **72px**，与特性卡片区域一致（"一切你需要的" y=608，特性卡片 y=680，间距 = 680 - 608 = 72px）
+
+**配套改动**（[src/types/index.ts](file:///d:/My%20Projects/PageForge/src/types/index.ts)）：
+- `NodeProps` 新增 `subtitleLineHeight?: number` 字段，让卡片副标题支持自定义行高（默认 1.6）
+
+**配套改动**（[src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx)）：
+- 卡片副标题 `lineHeight` 从硬编码 `1.6` 改为读取 `node.props.subtitleLineHeight || 1.6`
+
+**验证**（getBoundingClientRect 实测，100% 缩放）：
+- 特性卡片 top=752, h=160 ✓
+- 定价卡片 top=1092, h=160 ✓（与特性卡片高度完全相同）
+- "一切你需要的，我们都有" top=680 → 特性卡片 top=752，间距 = **72px** ✓
+- "无论个人还是企业，都有合适的方案" top=1020 → 定价卡片 top=1092，间距 = **72px** ✓
+- 5 行 14px 文本在 160px 卡片内紧凑显示，无 overflow ✓
+
 ---
 
 ## 6. 交互功能

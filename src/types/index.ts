@@ -184,6 +184,7 @@ export interface NodeProps {
   titleColor?: string // card 主标题颜色
   subtitleFontSize?: string // card 副标题字号
   subtitleColor?: string // card 副标题颜色
+  subtitleLineHeight?: number // card 副标题行高（默认 1.6）
   src?: string // image / video
   alt?: string // image
   poster?: string // video 封面

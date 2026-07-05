@@ -120,7 +120,7 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
       return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
           <div style={{ fontWeight: 600, fontSize: node.props.titleFontSize || '18px', color: node.props.titleColor || 'inherit', marginBottom: 8 }}>{node.props.text}</div>
-          <div style={{ fontSize: node.props.subtitleFontSize || '14px', color: node.props.subtitleColor || '#6b7280', lineHeight: 1.6, flex: 1 }}>
+          <div style={{ fontSize: node.props.subtitleFontSize || '14px', color: node.props.subtitleColor || '#6b7280', lineHeight: node.props.subtitleLineHeight || 1.6, flex: 1 }}>
             {node.props.subtitle}
           </div>
         </div>
