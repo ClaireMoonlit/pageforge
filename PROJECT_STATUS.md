@@ -415,6 +415,40 @@ interface CanvasNode {
 - "无论个人还是企业，都有合适的方案" top=1020 → 定价卡片 top=1092，间距 = **72px** ✓
 - 5 行 14px 文本在 160px 卡片内紧凑显示，无 overflow ✓
 
+### 5.17f SaaS 模板第六轮：多组件 `\n` 换行失效（2026-07-05）
+
+**用户反馈**：
+- "为啥要调字间距啊，你是不是以为价格卡片里面是5行，我看了属性里面是有换行的，但是实际显示没换行，就是换行无效"
+- "看看其他组件有没有类似问题"
+
+**根因诊断**：
+- 定价卡片副标题实际是 5 行内容（`✓` 项 + `\n`），但卡片副标题 div 没有 `white-space: pre-line`，`\n` 被默认折叠成空格
+- 所以 5 行被合并成 1 行（再 wrap 自然换行）→ 看起来"留白大"
+- 我误以为是 1 行内容填充 200px 留白，所以调了 `lineHeight: 1.2` + 把卡片缩到 160px
+- 实际上 5.17e 的 `subtitleLineHeight: 1.2` 是必要的（让 5 行 14px 文本刚好放进 160-48=112px 内容区），但**前提是先让 `\n` 生效**
+
+**全局 bug 排查**（grep `\\n` 验证哪些组件真的需要换行）：
+- `text` 类型 → 简历模板有 `email\nphone\naddress` 3 行，**已有 pre-line** ✓
+- `heading` 类型 → 多模板用 `\n` 强制换行（"Build pages like\nGitHub repos."），**已有 pre-line** ✓
+- `card` 类型 → 定价卡用 `\n` 列特性，**缺失 pre-line** ❌
+- `button` / `icon` / `input` / `navbar` / `form` 类型 → 模板里目前没有 `\n`，但**缺失 pre-line** 是个潜在 bug（用户可以输入多行内容）
+
+**修复**（[src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) + [src/utils/exportHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/exportHtml.ts)）：
+- 所有 11 个文本渲染元素（card 标题+副标题、button、icon text、input、navbar logo+link、form 标题+label+submit）统一添加 `white-space: pre-line; word-break: break-word;`
+- card 副标题的 `line-height` 在 exportHtml 中从硬编码 `1.6` 改为读取 `node.props.subtitleLineHeight || 1.6`（与编辑器对齐）
+- 配套删除了之前误加的 card 内部 lineHeight workaround 的排查结论
+
+**验证**（编辑器实测）：
+- 免费版 4 行：✓ 3 个项目 / ✓ 基础组件库 / ✓ HTML 导出 / ✓ 社区支持 ✓
+- 专业版 5 行：✓ 无限项目 / ✓ 全部组件 / ✓ 高级导出 / ✓ 优先支持 / ✓ 自定义域名 ✓
+- 企业版 5 行：✓ 专业版全部功能 / ✓ 团队协作 / ✓ API 接口 / ✓ 专属支持 / ✓ 定制开发 ✓
+- 3 张定价卡高度均 160px，与特性卡片完全一致 ✓
+
+**教训**：
+- 多行文本在 React/HTML 里**必须**有 `white-space: pre-line`，否则 `\n` 被折叠成空格
+- 看到"内容很少但留白很多"时，先排查换行是否生效，不要急着调高度
+- 排查 bug 时要全局扫描同类问题，不要只修眼前一处
+
 ---
 
 ## 6. 交互功能

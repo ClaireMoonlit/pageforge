@@ -110,6 +110,8 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
           textAlign: 'inherit',
           cursor: 'inherit',
           border: 'none',
+          whiteSpace: 'pre-line',
+          wordBreak: 'break-word',
         }}>
           {node.props.text || ''}
         </span>
@@ -119,8 +121,8 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
     case 'card':
       return (
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
-          <div style={{ fontWeight: 600, fontSize: node.props.titleFontSize || '18px', color: node.props.titleColor || 'inherit', marginBottom: 8 }}>{node.props.text}</div>
-          <div style={{ fontSize: node.props.subtitleFontSize || '14px', color: node.props.subtitleColor || '#6b7280', lineHeight: node.props.subtitleLineHeight || 1.6, flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: node.props.titleFontSize || '18px', color: node.props.titleColor || 'inherit', marginBottom: 8, whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{node.props.text}</div>
+          <div style={{ fontSize: node.props.subtitleFontSize || '14px', color: node.props.subtitleColor || '#6b7280', lineHeight: node.props.subtitleLineHeight || 1.6, flex: 1, whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
             {node.props.subtitle}
           </div>
         </div>
@@ -144,7 +146,7 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
           <span style={{ display: 'inline-flex', alignItems: 'center', lineHeight: 0 }}>
             <AutoIcon value={iconVal} size={24} />
           </span>
-          {node.props.text && <span>{node.props.text}</span>}
+          {node.props.text && <span style={{ whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{node.props.text}</span>}
         </div>
       )
       return wrapLink(node, el)
@@ -193,6 +195,8 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
 	            alignItems: 'center',
 	            color: node.props.text ? '#374151' : '#9ca3af',
 	            fontSize: 'inherit',
+	            whiteSpace: 'pre-line',
+	            wordBreak: 'break-word',
 	          }}
 	        >
 	          {node.props.text || node.props.placeholder || '输入框占位'}
@@ -235,7 +239,7 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
       const linkColor = node.props.linkColor || node.style.color || '#374151'
       return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <span style={{ fontWeight: 700, fontSize: '20px', color: '#6366f1' }}>
+          <span style={{ fontWeight: 700, fontSize: '20px', color: '#6366f1', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
             {node.props.logo || 'PageForge'}
           </span>
           <div style={{ display: 'flex', gap: '24px' }}>
@@ -247,6 +251,8 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
                   fontSize: node.style.fontSize || '16px',
                   fontWeight: node.style.fontWeight || '500',
                   cursor: 'pointer',
+                  whiteSpace: 'pre-line',
+                  wordBreak: 'break-word',
                 }}
               >
                 {link}
@@ -292,12 +298,12 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
       const submitText = node.props.submitText || '提交'
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-          <div style={{ fontSize: '20px', fontWeight: 600, color: '#1f2937', marginBottom: '4px' }}>
+          <div style={{ fontSize: '20px', fontWeight: 600, color: '#1f2937', marginBottom: '4px', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>
             联系我们
           </div>
           {fields.map((field, i) => (
             <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 500, color: '#374151' }}>{field}</label>
+              <label style={{ fontSize: '14px', fontWeight: 500, color: '#374151', whiteSpace: 'pre-line', wordBreak: 'break-word' }}>{field}</label>
               {field === '留言' || field.toLowerCase().includes('message') ? (
                 <textarea
                   placeholder={`请输入${field}`}
@@ -345,6 +351,8 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
               fontWeight: 600,
               fontSize: '16px',
               cursor: 'pointer',
+              whiteSpace: 'pre-line',
+              wordBreak: 'break-word',
             }}
           >
             {submitText}

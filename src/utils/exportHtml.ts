@@ -134,24 +134,24 @@ function nodeToHtml(node: CanvasNode, depth: number, z: number): string {
 	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="image"${ia} style="${styleText};z-index:${z}">${wrapLink(imgTag)}</div>`
 	    }
 	    case 'button': {
-	      const inner = escapeHtml(node.props.text || '')
-	      // display:inline-flex 等是默认值，允许节点样式覆盖
-	      return `${pre}<span id="${node.id}" class="pf-item" data-pf-type="button"${ia} style="display:inline-flex;align-items:center;justify-content:center;${styleText};z-index:${z}">${wrapLink(inner)}</span>`
-	    }
-	    case 'card':
-	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="card"${ia} style="${styleText};z-index:${z}"><div style="font-weight:600;font-size:${node.props.titleFontSize || '18px'};color:${node.props.titleColor || 'inherit'};margin-bottom:8px">${escapeHtml(node.props.text || '')}</div><div style="font-size:${node.props.subtitleFontSize || '14px'};color:${node.props.subtitleColor || '#6b7280'};line-height:1.6">${escapeHtml(node.props.subtitle || '')}</div></div>`
+      const inner = escapeHtml(node.props.text || '')
+      // display:inline-flex 等是默认值，允许节点样式覆盖
+      return `${pre}<span id="${node.id}" class="pf-item" data-pf-type="button"${ia} style="display:inline-flex;align-items:center;justify-content:center;white-space:pre-line;word-break:break-word;${styleText};z-index:${z}">${wrapLink(inner)}</span>`
+    }
+    case 'card':
+      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="card"${ia} style="${styleText};z-index:${z}"><div style="font-weight:600;font-size:${node.props.titleFontSize || '18px'};color:${node.props.titleColor || 'inherit'};margin-bottom:8px;white-space:pre-line;word-break:break-word">${escapeHtml(node.props.text || '')}</div><div style="font-size:${node.props.subtitleFontSize || '14px'};color:${node.props.subtitleColor || '#6b7280'};line-height:${node.props.subtitleLineHeight || 1.6};white-space:pre-line;word-break:break-word">${escapeHtml(node.props.subtitle || '')}</div></div>`
 	    case 'divider':
 	      return `${pre}<hr id="${node.id}" class="pf-item" data-pf-type="divider"${ia} style="${styleText};z-index:${z}"/>`
 	    case 'icon': {
-	      const iconVal = node.props.icon || 'star'
-	      const fsStr = typeof node.style.fontSize === 'string' ? node.style.fontSize : '24px'
-	      const fs = parseFloat(fsStr) || 24
-	      const color = (typeof node.style.color === 'string' ? node.style.color : '') || 'currentColor'
-	      const iconHtml = renderIconToHtml(iconVal, fs, color)
-	      const textHtml = node.props.text ? `<span>${escapeHtml(node.props.text)}</span>` : ''
-	      // display:flex 等是默认值，允许节点样式覆盖
-	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="icon"${ia} style="display:flex;align-items:center;gap:8px;justify-content:center;${styleText};z-index:${z}">${iconHtml}${textHtml}</div>`
-	    }
+      const iconVal = node.props.icon || 'star'
+      const fsStr = typeof node.style.fontSize === 'string' ? node.style.fontSize : '24px'
+      const fs = parseFloat(fsStr) || 24
+      const color = (typeof node.style.color === 'string' ? node.style.color : '') || 'currentColor'
+      const iconHtml = renderIconToHtml(iconVal, fs, color)
+      const textHtml = node.props.text ? `<span style="white-space:pre-line;word-break:break-word">${escapeHtml(node.props.text)}</span>` : ''
+      // display:flex 等是默认值，允许节点样式覆盖
+      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="icon"${ia} style="display:flex;align-items:center;gap:8px;justify-content:center;${styleText};z-index:${z}">${iconHtml}${textHtml}</div>`
+    }
 	    case 'video':
 	      return node.props.src
 	        ? `${pre}<div id="${node.id}" class="pf-item" data-pf-type="video" style="${styleText};z-index:${z}"><video src="${escapeAttr(node.props.src)}"${node.props.poster ? ` poster="${escapeAttr(node.props.poster)}"` : ''} controls style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block"></video></div>`
@@ -167,14 +167,14 @@ function nodeToHtml(node: CanvasNode, depth: number, z: number): string {
 	        ? `${pre}<div id="${node.id}" class="pf-item" data-pf-type="iframe"${ia} style="${styleText};z-index:${z}"><iframe src="${escapeAttr(node.props.src)}" title="${escapeAttr(node.props.alt || 'embedded page')}" style="width:100%;height:100%;border:none;border-radius:inherit;display:block"></iframe></div>`
 	        : `${pre}<div id="${node.id}" class="pf-item" data-pf-type="iframe"${ia} style="${styleText};z-index:${z}"><div style="width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px;background:#f3f4f6;border:2px dashed #d1d5db">iframe 占位（设置 src URL）</div></div>`
 	    case 'navbar': {
-	      const links = (node.props.navLinks || '首页,关于,服务,联系').split(',').map((s: string) => s.trim()).filter(Boolean)
-	      const linkColor = node.props.linkColor || node.style.color || '#374151'
-	      const linkItems = links.map((l: string, i: number) =>
-	        `<span style="color:${linkColor};font-size:${node.style.fontSize || '16px'};font-weight:${node.style.fontWeight || '500'};cursor:pointer">${escapeHtml(l)}</span>`
-	      ).join('')
-	      const logo = escapeHtml(node.props.logo || 'PageForge')
-	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="navbar"${ia} style="display:flex;align-items:center;justify-content:space-between;${styleText};z-index:${z}"><span style="font-weight:700;font-size:20px;color:#6366f1">${logo}</span><div style="display:flex;gap:24px">${linkItems}</div></div>`
-	    }
+      const links = (node.props.navLinks || '首页,关于,服务,联系').split(',').map((s: string) => s.trim()).filter(Boolean)
+      const linkColor = node.props.linkColor || node.style.color || '#374151'
+      const linkItems = links.map((l: string, i: number) =>
+        `<span style="color:${linkColor};font-size:${node.style.fontSize || '16px'};font-weight:${node.style.fontWeight || '500'};cursor:pointer;white-space:pre-line;word-break:break-word">${escapeHtml(l)}</span>`
+      ).join('')
+      const logo = escapeHtml(node.props.logo || 'PageForge')
+      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="navbar"${ia} style="display:flex;align-items:center;justify-content:space-between;${styleText};z-index:${z}"><span style="font-weight:700;font-size:20px;color:#6366f1;white-space:pre-line;word-break:break-word">${logo}</span><div style="display:flex;gap:24px">${linkItems}</div></div>`
+    }
 	    case 'grid': {
 	      const cols = node.props.columns || 3
 	      const gap = node.props.gridGap || node.style.gap || '16px'
@@ -184,16 +184,16 @@ function nodeToHtml(node: CanvasNode, depth: number, z: number): string {
 	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="grid"${ia} style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${gap};${styleText};z-index:${z}">${cells}</div>`
 	    }
 	    case 'form': {
-	      const fields = (node.props.fields || '姓名,邮箱,留言').split(',').map((s: string) => s.trim()).filter(Boolean)
-	      const submitText = escapeHtml(node.props.submitText || '提交')
-	      const fieldItems = fields.map((f: string) => {
-	        const isTextarea = f === '留言' || f.toLowerCase().includes('message')
-	        return isTextarea
-	          ? `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:14px;font-weight:500;color:#374151">${escapeHtml(f)}</label><textarea placeholder="请输入${escapeHtml(f)}" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;color:#374151;background:#fff;min-height:80px;resize:vertical;outline:none" readonly></textarea></div>`
-	          : `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:14px;font-weight:500;color:#374151">${escapeHtml(f)}</label><input type="text" placeholder="请输入${escapeHtml(f)}" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;color:#374151;background:#fff;outline:none" readonly/></div>`
-	      }).join('')
-	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="form"${ia} style="display:flex;flex-direction:column;gap:12px;${styleText};z-index:${z}"><div style="font-size:20px;font-weight:600;color:#1f2937;margin-bottom:4px">联系我们</div>${fieldItems}<div style="margin-top:4px;padding:12px 24px;background:#6366f1;color:#fff;border-radius:8px;text-align:center;font-weight:600;font-size:16px;cursor:pointer">${submitText}</div></div>`
-	    }
+      const fields = (node.props.fields || '姓名,邮箱,留言').split(',').map((s: string) => s.trim()).filter(Boolean)
+      const submitText = escapeHtml(node.props.submitText || '提交')
+      const fieldItems = fields.map((f: string) => {
+        const isTextarea = f === '留言' || f.toLowerCase().includes('message')
+        return isTextarea
+          ? `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:14px;font-weight:500;color:#374151;white-space:pre-line;word-break:break-word">${escapeHtml(f)}</label><textarea placeholder="请输入${escapeHtml(f)}" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;color:#374151;background:#fff;min-height:80px;resize:vertical;outline:none" readonly></textarea></div>`
+          : `<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:14px;font-weight:500;color:#374151;white-space:pre-line;word-break:break-word">${escapeHtml(f)}</label><input type="text" placeholder="请输入${escapeHtml(f)}" style="padding:10px 14px;border-radius:8px;border:1px solid #d1d5db;font-size:14px;color:#374151;background:#fff;outline:none" readonly/></div>`
+      }).join('')
+      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="form"${ia} style="display:flex;flex-direction:column;gap:12px;${styleText};z-index:${z}"><div style="font-size:20px;font-weight:600;color:#1f2937;margin-bottom:4px;white-space:pre-line;word-break:break-word">联系我们</div>${fieldItems}<div style="margin-top:4px;padding:12px 24px;background:#6366f1;color:#fff;border-radius:8px;text-align:center;font-weight:600;font-size:16px;cursor:pointer;white-space:pre-line;word-break:break-word">${submitText}</div></div>`
+    }
 	    case 'container': {
 	      const visibleChildren = node.children.filter((c) => c.visible !== false)
 	      if (visibleChildren.length === 0) {
