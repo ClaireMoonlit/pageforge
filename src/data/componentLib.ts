@@ -55,6 +55,8 @@ export const componentLib: ComponentDef[] = [
     icon: { type: 'svg', value: 'button' },
     defaultProps: { text: '立即了解' },
     defaultStyle: {
+      width: '160px',
+      height: '48px',
       fontSize: '16px',
       fontWeight: '600',
       color: '#ffffff',

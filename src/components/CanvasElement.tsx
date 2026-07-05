@@ -348,7 +348,8 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
   const onHandlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     const r = liveRef.current
     if (r) {
-      updateNodeStyle(node.id, { width: `${r.w}px`, height: `${r.h}px`, x: r.x, y: r.y })
+      // 四舍五入到整数 px，避免浮点累积（如 499.9999999999）
+      updateNodeStyle(node.id, { width: `${Math.round(r.w)}px`, height: `${Math.round(r.h)}px`, x: Math.round(r.x), y: Math.round(r.y) })
     }
     startRef.current = null
     liveRef.current = null
