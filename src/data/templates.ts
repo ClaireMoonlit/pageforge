@@ -27,6 +27,7 @@ const C = {
   fSource: '"Source Sans 3", system-ui, sans-serif',
   fJetBrains: '"JetBrains Mono", "SF Mono", "Fira Code", monospace',
   fHelvetica: '"Helvetica Neue", "Arial", sans-serif',
+  fSerif: 'Georgia, "Source Serif 4", "Times New Roman", serif',
   fCormorant: '"Cormorant Garamond", Georgia, serif',
   fLora: '"Lora", Georgia, serif',
 
@@ -42,14 +43,14 @@ const C = {
   sGray: '#64748b',
   sLight: '#f1f5f9',
 
-  // Claude 风（米色温暖系，贴近 claude.ai 实际配色）
-  claudeBg: '#faf6f1',
-  claudeCard: '#ffffff',
-  claudeText: '#1f1d1a',
-  claudeMuted: '#6b6760',
-  claudeAccent: '#c2410c',
-  claudeAccentSoft: '#fed7aa',
-  claudeBorder: '#e7e2d8',
+  // Claude 编辑风（Anthropic 官方设计系统）
+  claudeCanvas: '#faf9f5',     // 暖米白 parchment — Claude 的标志性底色
+  claudeInk: '#141413',        // 暖黑 — 主文字色
+  claudeBody: '#3d3d3a',       // 正文灰
+  claudeMuted: '#6c6a64',      // 弱化文字
+  claudeAccent: '#cc785c',     // 赤陶珊瑚 — Claude 品牌主色
+  claudeSurface: '#efe9de',    // 卡片表面
+  claudeBorder: '#e6dfd8',     // 分割线 / 边框
 
   // GitHub 暗色
   ghBg: '#0d1117',
@@ -206,59 +207,58 @@ export const pageTemplates: PageTemplate[] = [
   },
 
   // ═══════════════════════════════════════════════
-  // 3. Claude 风 — 米色温暖系 + Inter 字体 + 克制排版（贴近 claude.ai 实际视觉）
+  // 3. Claude 编辑风 — 暖米白底 + 赤陶珊瑚 + 衬线体排版（Anthropic 官方设计复刻）
   // ═══════════════════════════════════════════════
   {
     id: 'claude-editorial',
-    name: 'Claude 风',
-    description: '米色温暖底(cream #faf6f1)，陶土橙点缀(c2410c)，Inter 字体，3 列卡片 + 数据条对齐',
-    preview: 'linear-gradient(135deg, #faf6f1 0%, #fed7aa 60%, #c2410c 100%)',
+    name: 'Claude 编辑风',
+    description: '暖米白底，赤陶珊瑚点缀，Playfair 衬线标题(56px)，Lora 衬线正文(18px)，杂志式排版',
+    preview: 'linear-gradient(135deg, #faf9f5 0%, #efe9de 40%, #cc785c 100%)',
     nodes: [
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Claude' }, style: { x: 80, y: 40, fontSize: '17px', fontWeight: '600', color: C.claudeText, textAlign: 'left', letterSpacing: '-0.01em', padding: '0', fontFamily: C.fInter } },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Site Name' }, style: { x: 80, y: 40, fontSize: '17px', fontWeight: '600', color: C.claudeInk, textAlign: 'left', letterSpacing: '-0.01em', padding: '0', fontFamily: C.fLora } },
 
-      // 三行大标题 — 48px / line-height: 1.15（Inter 替代 Playfair，更贴近 Claude.ai 实际）
-      { id: nid(), type: 'heading', children: [], visible: true, props: { text: 'Talk to Claude,\nget more done.', level: 1 }, style: { x: 80, y: 120, width: '600px', fontSize: '48px', fontWeight: '600', color: C.claudeText, textAlign: 'left', lineHeight: '1.15', letterSpacing: '-0.025em', padding: '0', fontFamily: C.fInter } },
+      // 三行大标题 — 56px / line-height: 1.15，Playfair 衬线
+      { id: nid(), type: 'heading', children: [], visible: true, props: { text: 'Design is how it\nworks, not how\nit looks.', level: 1 }, style: { x: 80, y: 120, width: '600px', fontSize: '56px', fontWeight: '400', color: C.claudeInk, textAlign: 'left', lineHeight: '1.15', letterSpacing: '-0.02em', padding: '0', fontFamily: C.fPlayfair } },
 
-      // 细分割线
-      { id: nid(), type: 'divider', children: [], visible: true, props: {}, style: { x: 80, y: 320, width: '80px', height: '2px', backgroundColor: C.claudeAccent, display: 'block' } },
+      // 细分割线 — 赤陶色
+      { id: nid(), type: 'divider', children: [], visible: true, props: {}, style: { x: 80, y: 340, width: '120px', height: '2px', backgroundColor: C.claudeAccent, display: 'block' } },
 
-      // 长副标题 — 17px / line-height: 1.6
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'A safe and steerable AI assistant that helps you write, analyze, and build — wherever you work.' }, style: { x: 80, y: 350, width: '580px', fontSize: '17px', color: C.claudeMuted, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fInter } },
+      // 长副标题 — 18px / line-height: 1.65，Lora 衬线
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: 'We build tools for people who think deeply. Every pixel, every interaction, every word — considered with care.' }, style: { x: 80, y: 370, width: '580px', fontSize: '18px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.65', padding: '0', fontFamily: C.fLora } },
 
-      // CTA
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Start chatting →' }, style: { x: 80, y: 440, width: '180px', fontSize: '15px', fontWeight: '500', color: '#ffffff', backgroundColor: C.claudeAccent, padding: '12px 24px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
+      // CTA — 赤陶底，白字
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: 'Explore our work —' }, style: { x: 80, y: 460, fontSize: '15px', fontWeight: '500', color: C.white, backgroundColor: C.claudeAccent, padding: '12px 28px', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fLora } },
 
-      // 右侧三张编号卡片（x=760, w=400；卡间距 30px；高度统一 140px）
+      // 右侧三张编号卡片 — 暖米色表面，赤陶编号
       { id: nid(), type: 'container', children: [
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: '01' }, style: { x: 24, y: 22, fontSize: '13px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fInter } },
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Long context, real memory. Hold full documents, codebases, and weeks of conversation in mind.' }, style: { x: 24, y: 50, width: '352px', fontSize: '15px', color: C.claudeText, textAlign: 'left', lineHeight: '1.55', padding: '0', fontFamily: C.fInter } },
-      ], visible: true, props: {}, style: { x: 760, y: 120, width: '400px', minHeight: '140px', padding: '24px', backgroundColor: C.claudeCard, borderRadius: '10px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
-
-      { id: nid(), type: 'container', children: [
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: '02' }, style: { x: 24, y: 22, fontSize: '13px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fInter } },
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Tool use that fits your stack. Search, edit files, run code, browse — all under your control.' }, style: { x: 24, y: 50, width: '352px', fontSize: '15px', color: C.claudeText, textAlign: 'left', lineHeight: '1.55', padding: '0', fontFamily: C.fInter } },
-      ], visible: true, props: {}, style: { x: 760, y: 290, width: '400px', minHeight: '140px', padding: '24px', backgroundColor: C.claudeCard, borderRadius: '10px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: '01' }, style: { x: 28, y: 28, fontSize: '14px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fLora } },
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Research-first approach. We study how people interact with complex systems before writing a single line of code.' }, style: { x: 28, y: 58, width: '344px', fontSize: '15px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fLora } },
+      ], visible: true, props: {}, style: { x: 760, y: 120, width: '400px', minHeight: '150px', padding: '28px', backgroundColor: C.claudeSurface, borderRadius: '8px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
 
       { id: nid(), type: 'container', children: [
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: '03' }, style: { x: 24, y: 22, fontSize: '13px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fInter } },
-        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Built for safety. Constitutional training, red-team evals, and clear refusals when something is off.' }, style: { x: 24, y: 50, width: '352px', fontSize: '15px', color: C.claudeText, textAlign: 'left', lineHeight: '1.55', padding: '0', fontFamily: C.fInter } },
-      ], visible: true, props: {}, style: { x: 760, y: 460, width: '400px', minHeight: '140px', padding: '24px', backgroundColor: C.claudeCard, borderRadius: '10px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: '02' }, style: { x: 28, y: 28, fontSize: '14px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fLora } },
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Typography as interface. Clear hierarchy, generous leading, intentional weight — every detail matters.' }, style: { x: 28, y: 58, width: '344px', fontSize: '15px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fLora } },
+      ], visible: true, props: {}, style: { x: 760, y: 300, width: '400px', minHeight: '150px', padding: '28px', backgroundColor: C.claudeSurface, borderRadius: '8px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
 
-      // 底部数据条（与右侧三卡对齐：x=760, w=400）
-      // 三等分：每列 (400-2×gap)/3 = 120px，gap=20px → x=0/140/280
+      { id: nid(), type: 'container', children: [
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: '03' }, style: { x: 28, y: 28, fontSize: '14px', fontWeight: '500', color: C.claudeAccent, textAlign: 'left', padding: '0', fontFamily: C.fLora } },
+        { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Less, but better. We remove until nothing else can be removed — then add the one thing that makes it sing.' }, style: { x: 28, y: 58, width: '344px', fontSize: '15px', color: C.claudeBody, textAlign: 'left', lineHeight: '1.6', padding: '0', fontFamily: C.fLora } },
+      ], visible: true, props: {}, style: { x: 760, y: 480, width: '400px', minHeight: '150px', padding: '28px', backgroundColor: C.claudeSurface, borderRadius: '8px', position: 'relative', border: '1px solid ' + C.claudeBorder } },
+
+      // 底部数据条 — 与右侧第三张卡片对齐（y=480），三列等分
       {
         id: nid(), type: 'container', children: [
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '200K', level: 1 }, style: { x: 0, y: 20, width: '120px', fontSize: '32px', fontWeight: '700', color: C.claudeText, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'context tokens' }, style: { x: 0, y: 60, width: '120px', fontSize: '12px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '95%', level: 1 }, style: { x: 140, y: 20, width: '120px', fontSize: '32px', fontWeight: '700', color: C.claudeText, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'on graduate reasoning' }, style: { x: 140, y: 60, width: '120px', fontSize: '12px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
-          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '4.7', level: 1 }, style: { x: 280, y: 20, width: '120px', fontSize: '32px', fontWeight: '700', color: C.claudeText, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
-          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'user rating' }, style: { x: 280, y: 60, width: '120px', fontSize: '12px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fInter } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '4.9', level: 1 }, style: { x: 0, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Average rating' }, style: { x: 0, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '12k', level: 1 }, style: { x: 207, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Projects shipped' }, style: { x: 207, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
+          { id: nid(), type: 'heading', children: [], visible: true, props: { text: '8+', level: 1 }, style: { x: 414, y: 24, width: '207px', fontSize: '48px', fontWeight: '700', color: C.claudeAccent, textAlign: 'center', padding: '0', fontFamily: C.fPlayfair } },
+          { id: nid(), type: 'text', children: [], visible: true, props: { text: 'Years experience' }, style: { x: 414, y: 84, width: '207px', fontSize: '13px', color: C.claudeMuted, textAlign: 'center', padding: '0', fontFamily: C.fLora } },
         ], visible: true, props: {},
-        style: { x: 760, y: 630, width: '400px', minHeight: '90px', padding: '20px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder },
+        style: { x: 80, y: 480, width: '621px', minHeight: '95px', padding: '24px 0', backgroundColor: 'transparent', borderRadius: '0', position: 'relative', borderTop: '1px solid ' + C.claudeBorder, borderBottom: '1px solid ' + C.claudeBorder },
       },
     ],
-    canvas: { backgroundColor: C.claudeBg, width: '1200px', height: '780px' },
+    canvas: { backgroundColor: C.claudeCanvas, width: '1200px', height: '700px' },
   },
 
   // ═══════════════════════════════════════════════
