@@ -1,7 +1,10 @@
 import { useHistory, useEditorStore, findById, getClipboard } from '@/store/editorStore'
 import { downloadHtml } from '@/utils/exportHtml'
+import { exportAsPNG, exportAsPDF, getCanvasContentElement } from '@/utils/exportImage'
 import { TemplatePanel } from '@/components/TemplatePanel'
 import { AlignToolbar } from '@/components/AlignToolbar'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   IconUndo, IconRedo, IconTrash, IconBrush,
   IconCopy, IconPaste, IconDuplicate, IconDownload, IconEye,
@@ -28,6 +31,91 @@ export function Toolbar() {
   const togglePreviewMode = useEditorStore((s) => s.togglePreviewMode)
   const nodeCount = nodes.length
 
+  const [exporting, setExporting] = useState<string | null>(null)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const exportBtnRef = useRef<HTMLButtonElement>(null)
+  const exportMenuRef = useRef<HTMLDivElement>(null)
+  // 下拉菜单位置（fixed 定位，基于按钮的视口坐标）
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    if (!showExportMenu) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        exportMenuRef.current &&
+        !exportMenuRef.current.contains(e.target as Node) &&
+        exportBtnRef.current &&
+        !exportBtnRef.current.contains(e.target as Node)
+      ) {
+        setShowExportMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showExportMenu])
+
+  // 打开下拉时，根据按钮位置计算 fixed 坐标
+  useLayoutEffect(() => {
+    if (!showExportMenu) {
+      setMenuPos(null)
+      return
+    }
+    const updatePos = () => {
+      const btn = exportBtnRef.current
+      if (!btn) return
+      const r = btn.getBoundingClientRect()
+      // top: 按钮底部 + 4px；right: 视口右侧到按钮右边的距离
+      setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right })
+    }
+    updatePos()
+    window.addEventListener('resize', updatePos)
+    window.addEventListener('scroll', updatePos, true)
+    return () => {
+      window.removeEventListener('resize', updatePos)
+      window.removeEventListener('scroll', updatePos, true)
+    }
+  }, [showExportMenu])
+
+  const handleExportHTML = () => {
+    setShowExportMenu(false)
+    downloadHtml(nodes, canvas)
+  }
+
+  const handleExportPNG = async () => {
+    setShowExportMenu(false)
+    const el = getCanvasContentElement()
+    if (!el) return
+    setExporting('png')
+    try {
+      await exportAsPNG(el, 'pageforge-export.png', {
+        backgroundColor: canvas.backgroundColor,
+      })
+    } catch (err) {
+      console.error('PNG export failed:', err)
+      alert('PNG 导出失败，请重试')
+    } finally {
+      setExporting(null)
+    }
+  }
+
+  const handleExportPDF = async () => {
+    setShowExportMenu(false)
+    const el = getCanvasContentElement()
+    if (!el) return
+    setExporting('pdf')
+    try {
+      await exportAsPDF(el, 'pageforge-export.pdf', {
+        backgroundColor: canvas.backgroundColor,
+      })
+    } catch (err) {
+      console.error('PDF export failed:', err)
+      alert('PDF 导出失败，请重试')
+    } finally {
+      setExporting(null)
+    }
+  }
+
   const handleFormatBrush = () => {
     if (formatBrushStyle) {
       // 取消格式刷
@@ -40,7 +128,7 @@ export function Toolbar() {
   }
 
   return (
-    <div className="h-12 shrink-0 bg-ink-900 border-b border-ink-700 flex items-center px-4 gap-2 overflow-x-auto">
+    <div className="h-12 shrink-0 bg-ink-900 border-b border-ink-700 flex items-center px-4 gap-2 overflow-x-auto relative z-10">
       <div className="flex items-center gap-2 mr-4">
         <span className="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-pink-500" />
         <span className="text-gray-100 font-semibold">造页工坊</span>
@@ -108,14 +196,68 @@ export function Toolbar() {
             <IconEye size={16} /> {previewMode ? '退出预览' : '预览'}
           </span>
         </button>
+        {/* 导出下拉菜单：按钮 */}
         <button
-          onClick={() => downloadHtml(nodes, canvas)}
-          disabled={nodeCount === 0}
+          ref={exportBtnRef}
+          onClick={() => setShowExportMenu((v) => !v)}
+          disabled={nodeCount === 0 || exporting !== null}
           className={primaryBtnCls}
+          title="导出"
         >
-          <span className="inline-flex items-center gap-1.5"><IconDownload size={16} /> 导出 HTML</span>
+          <span className="inline-flex items-center gap-1.5">
+            {exporting ? (
+              <>导出中...</>
+            ) : (
+              <><IconDownload size={16} /> 导出</>
+            )}
+          </span>
         </button>
       </div>
+      {/* 下拉菜单：用 Portal 渲染到 body，避免被 Toolbar overflow 裁剪 */}
+      {showExportMenu && menuPos &&
+        createPortal(
+          <div
+            ref={exportMenuRef}
+            style={{
+              position: 'fixed',
+              top: menuPos.top,
+              right: menuPos.right,
+              width: 160,
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151',
+              borderRadius: 6,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+              zIndex: 99999,
+              padding: 4,
+            }}
+          >
+            <button
+              onClick={handleExportHTML}
+              disabled={exporting !== null}
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              style={{ background: 'transparent' }}
+            >
+              <IconDownload size={14} /> HTML 文件
+            </button>
+            <button
+              onClick={handleExportPNG}
+              disabled={exporting !== null}
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              style={{ background: 'transparent' }}
+            >
+              <IconDownload size={14} /> PNG 图片
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting !== null}
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              style={{ background: 'transparent' }}
+            >
+              <IconDownload size={14} /> PDF 文档
+            </button>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

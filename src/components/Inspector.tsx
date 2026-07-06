@@ -1,7 +1,8 @@
-import { useState, useCallback, type ReactNode } from 'react'
+import { useState, useCallback, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useEditorStore, useSelectedNode } from '@/store/editorStore'
 import type { NodeStyle, NodeProps, InteractionConfig, ClickActionType, HoverEffectType, AnimationType, AnimationTrigger, AnimationConfig } from '@/types'
 import { SVG_ICON_PRESETS, SVG_ICON_MAP } from '@/components/Icons'
+import { readFileAsDataUrl, validateFileSize, validateFileType } from '@/utils/fileUpload'
 
 const inputCls =
   'w-full bg-ink-900 border border-ink-600 rounded px-2 py-1 text-sm text-gray-100 focus:outline-none focus:border-brand-500'
@@ -34,6 +35,104 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       <span className="block text-xs text-gray-400 mb-1">{label}</span>
       {children}
     </label>
+  )
+}
+
+/** 文件上传字段：隐藏 input + 按钮 + 状态提示 */
+function FileUploadField({
+  accept,
+  maxSizeMB,
+  label,
+  onUpload,
+  currentValue,
+}: {
+  accept: string
+  maxSizeMB: number
+  label: string
+  onUpload: (dataUrl: string) => void
+  currentValue?: string
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+  const [uploaded, setUploaded] = useState(false)
+
+  // 当 currentValue 变化时重置上传状态
+  useLayoutEffect(() => {
+    setUploaded(!!(currentValue && currentValue.startsWith('data:')))
+  }, [currentValue])
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 校验文件类型
+    const typeResult = validateFileType(file, [accept])
+    if (!typeResult.valid) {
+      setError(typeResult.message)
+      setTimeout(() => setError(''), 3000)
+      // 重置 input 以便重新选择同一文件
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+
+    // 校验文件大小
+    const sizeResult = validateFileSize(file, maxSizeMB)
+    if (!sizeResult.valid) {
+      setError(sizeResult.message)
+      setTimeout(() => setError(''), 3000)
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+
+    setUploading(true)
+    setError('')
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      onUpload(dataUrl)
+      setUploaded(true)
+    } catch (err) {
+      setError(`文件读取失败: ${file.name}`)
+      setTimeout(() => setError(''), 3000)
+    } finally {
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
+    }
+  }
+
+  return (
+    <div className="mb-2">
+      <div className="flex items-center gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className={`px-2 py-1 text-xs rounded border transition-colors ${
+            uploading
+              ? 'bg-ink-600 border-ink-500 text-gray-400 cursor-not-allowed'
+              : uploaded
+              ? 'bg-ink-700 border-ink-500 text-gray-300'
+              : 'bg-ink-700 border-ink-600 text-gray-300 hover:bg-ink-600'
+          }`}
+        >
+          {uploading ? '读取中...' : uploaded ? '已上传' : label}
+        </button>
+        {uploaded && currentValue && (
+          <span className="text-[10px] text-gray-500 truncate max-w-[160px]" title={currentValue}>
+            {currentValue.startsWith('data:') ? '本地文件' : currentValue}
+          </span>
+        )}
+      </div>
+      {error && (
+        <div className="mt-1 text-xs text-red-400">{error}</div>
+      )}
+    </div>
   )
 }
 
@@ -439,13 +538,21 @@ export function Inspector() {
   const [borderCustom, setBorderCustom] = useState(false)
 
   // 当未显式设置宽高时，从 DOM 读取实际渲染尺寸作为默认值
-  const renderedSize = (() => {
-    if (!selected) return null
+  // ⚠️ 必须在 useLayoutEffect（DOM commit 后）读取，否则新添加的节点还没渲染到 DOM 中
+  const [renderedSize, setRenderedSize] = useState<{ w: number; h: number } | null>(null)
+  useLayoutEffect(() => {
+    if (!selected) {
+      setRenderedSize(null)
+      return
+    }
     const el = document.getElementById(selected.id)
-    if (!el) return null
+    if (!el) {
+      setRenderedSize(null)
+      return
+    }
     const r = el.getBoundingClientRect()
-    return { w: Math.round(r.width / zoom), h: Math.round(r.height / zoom) }
-  })()
+    setRenderedSize({ w: Math.round(r.width / zoom), h: Math.round(r.height / zoom) })
+  }, [selected?.id, zoom])
 
   // 折叠态：仅显示窄条 + 展开按钮
   // 展开按钮：左箭头 (<<) → 表示"把面板展开到左侧"
@@ -754,31 +861,83 @@ export function Inspector() {
           </>
         )}
         {selected.type === 'image' && (
-          <Field label="图片地址">
-            <input
-              value={selected.props.src || ''}
-              onChange={(e) => updateNodeProps(selected.id, { src: e.target.value })}
-              className={inputCls}
-              placeholder="https://..."
+          <>
+            <FileUploadField
+              accept="image/*"
+              maxSizeMB={10}
+              label="本地上传"
+              currentValue={selected.props.src}
+              onUpload={(dataUrl) => {
+                updateNodeProps(selected.id, { src: dataUrl })
+                // 读取图片自然尺寸，自适应调整组件宽高
+                const img = new Image()
+                img.onload = () => {
+                  const maxW = 600
+                  const nw = img.naturalWidth
+                  const nh = img.naturalHeight
+                  const w = nw > maxW ? maxW : nw
+                  const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
+                  updateNodeStyle(selected.id, { width: `${w}px`, height: `${h}px` })
+                }
+                img.src = dataUrl
+              }}
             />
-          </Field>
+            <Field label="图片地址">
+              <input
+                value={selected.props.src || ''}
+                onChange={(e) => updateNodeProps(selected.id, { src: e.target.value })}
+                className={inputCls}
+                placeholder="https://... 或使用上方上传按钮"
+              />
+            </Field>
+          </>
         )}
         {selected.type === 'video' && (
           <>
+            <FileUploadField
+              accept="video/*"
+              maxSizeMB={50}
+              label="上传视频"
+              currentValue={selected.props.src}
+              onUpload={(dataUrl) => {
+                updateNodeProps(selected.id, { src: dataUrl })
+                // 读取视频自然尺寸，自适应调整组件宽高
+                const video = document.createElement('video')
+                video.preload = 'metadata'
+                video.onloadedmetadata = () => {
+                  const maxW = 600
+                  const nw = video.videoWidth
+                  const nh = video.videoHeight
+                  if (nw && nh) {
+                    const w = nw > maxW ? maxW : nw
+                    const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
+                    updateNodeStyle(selected.id, { width: `${w}px`, height: `${h}px` })
+                  }
+                }
+                video.src = dataUrl
+              }}
+            />
             <Field label="视频地址">
               <input
                 value={selected.props.src || ''}
                 onChange={(e) => updateNodeProps(selected.id, { src: e.target.value })}
                 className={inputCls}
-                placeholder="https://..."
+                placeholder="https://... 或使用上方上传按钮"
               />
             </Field>
+            <FileUploadField
+              accept="image/*"
+              maxSizeMB={5}
+              label="上传封面图"
+              currentValue={selected.props.poster}
+              onUpload={(dataUrl) => updateNodeProps(selected.id, { poster: dataUrl })}
+            />
             <Field label="封面图">
               <input
                 value={selected.props.poster || ''}
                 onChange={(e) => updateNodeProps(selected.id, { poster: e.target.value })}
                 className={inputCls}
-                placeholder="https://..."
+                placeholder="https://... 或使用上方上传按钮"
               />
             </Field>
           </>

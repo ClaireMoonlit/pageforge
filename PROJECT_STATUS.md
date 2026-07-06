@@ -1,7 +1,7 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-06（§5.17l 6 张卡片统一宽度 280px，两排完美对齐）
+> 最后更新：2026-07-06（§5.18 图片/视频本地上传 + PNG/PDF 导出 + 双击上传）
 > 当前版本：v0.1.0（开发中）
 
 ---
@@ -82,7 +82,9 @@ PageForge/
 │       ├── interactionRuntime.ts  # 导出 HTML 末尾的零依赖 vanilla JS 运行时
 │       ├── iconPaths.ts           # 图标 SVG 路径数据
 │       ├── layoutRules.ts         # 规则推断引擎（Y 轴重叠分行、响应式布局推断）
-│       └── snapping.ts            # 拖拽吸附辅助线
+│       ├── snapping.ts            # 拖拽吸附辅助线
+│       ├── fileUpload.ts           # 文件读取与校验（FileReader → data URL）
+│       └── exportImage.ts          # PNG/PDF 导出（html2canvas + jspdf）
 ```
 
 ---
@@ -649,6 +651,63 @@ interface CanvasNode {
 - "统一宽度"是消除对齐问题的根本解法，不是靠数学去补偿
 - 12 轮微调才收敛，但最终方案比之前任何一轮都干净
 
+### 5.18 图片/视频本地上传 + PNG/PDF 导出 + 双击上传（2026-07-06）
+
+**用户需求**：
+1. 图片/视频支持本地上传（FileReader → data URL），不仅是 URL
+2. 导出增加 PNG 图片和 PDF 文档选项
+3. 双击画布上的图片/视频直接触发本地上传，支持二次更换
+4. 导出按钮合并为下拉菜单，浮于页面顶层
+5. 上传后组件自动适配图片/视频真实尺寸
+
+**实现**：
+
+**5.18a 文件上传工具**（`src/utils/fileUpload.ts`，新建）：
+- `readFileAsDataUrl(file)`: FileReader 封装，返回 Promise<string>
+- `validateFileSize(file, maxSizeMB)`: 大小校验，返回 {valid, message}
+- `validateFileType(file, acceptTypes)`: MIME 类型校验，支持通配符（`image/*`）
+
+**5.18b PNG/PDF 导出**（`src/utils/exportImage.ts`，新建）：
+- `exportAsPNG(element, filename, options?)`: html2canvas 截图 → data URL 下载
+- `exportAsPDF(element, filename, options?)`: html2canvas → jspdf 生成 PDF，自动分页
+- `getCanvasContentElement()`: 通过 `data-pf-export-target` 属性定位画布内容区
+- 导出前自动进入预览模式（`togglePreviewMode`）+ 清除选中（`selectNode(null)`），确保截图不含选中边框和手柄
+- 使用 data URL 而非 blob URL 下载，避免 Windows "发行商不确认"安全警告
+- 两次 `requestAnimationFrame` 等待 DOM 重绘，确保截图准确
+
+**5.18c Inspector 上传 UI**（`src/components/Inspector.tsx`）：
+- 新增 `FileUploadField` 内部组件：隐藏 `<input type="file">` + 按钮 + 状态提示
+- 图片节点：新增「本地上传」按钮（`accept="image/*"`, maxSizeMB=10），上传后自动读取 `naturalWidth/naturalHeight` 等比缩放（最大 600px）
+- 视频节点：新增「上传视频」按钮（maxSizeMB=50）+「上传封面图」按钮（maxSizeMB=5），同样自适应尺寸
+- 上传状态：读取中 / 已上传 / 错误提示（3 秒自动消失）
+- 配色：使用 ink 主题色（`bg-ink-700/border-ink-500`），无 emoji，纯文字
+
+**5.18d 双击上传**（`src/components/CanvasElement.tsx`）：
+- 选中图片/视频后双击 → 弹出系统文件选择器（与 Inspector 上传逻辑一致）
+- 已导入的图片/视频同样支持双击更换文件（二次更改）
+- 文件校验、自适应尺寸、错误提示全部复用 fileUpload 工具函数
+- 隐藏 `<input type="file">` 挂载在每个 image/video 节点内
+
+**5.18e 导出按钮合并为下拉菜单**（`src/components/Toolbar.tsx`）：
+- 三个独立按钮（导出 HTML / PNG / PDF）→ 单个「导出」按钮 + 下拉菜单
+- 使用 `createPortal` 渲染到 `document.body`，`position: fixed` + `zIndex: 99999` 浮于页面顶层
+- `useLayoutEffect` + `getBoundingClientRect` 动态计算菜单位置，绑定 `resize`/`scroll` 实时跟随
+- 点击外部关闭（同时检测按钮和菜单区域）
+
+**新增依赖**（`package.json`）：
+- `html2canvas`: ^1.4.1（DOM → Canvas 截图）
+- `jspdf`: ^2.5.2（客户端 PDF 生成）
+
+**新增文件**：
+- `src/utils/fileUpload.ts`: 文件读取与校验
+- `src/utils/exportImage.ts`: PNG/PDF 导出
+
+**修改文件**：
+- `src/components/Inspector.tsx`: FileUploadField 组件 + 图片/视频上传区域
+- `src/components/CanvasElement.tsx`: 双击上传 + 隐藏文件输入
+- `src/components/Toolbar.tsx`: 导出下拉菜单（Portal）
+- `src/components/Canvas.tsx`: 添加 `data-pf-export-target` 属性
+
 ---
 
 ## 6. 交互功能
@@ -805,11 +864,14 @@ interface InteractionConfig {
 | [src/utils/interactionRuntime.ts](file:///d:/My%20Projects/PageForge/src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
 | [src/utils/iconPaths.ts](file:///d:/My%20Projects/PageForge/src/utils/iconPaths.ts) | - | 图标 SVG 路径数据 |
 | [src/utils/layoutRules.ts](file:///d:/My%20Projects/PageForge/src/utils/layoutRules.ts) | ~130 | 规则推断引擎：inferLayout Y 轴重叠分行、getLayoutHint 布局提示 |
+| [src/utils/snapping.ts](file:///d:/My%20Projects/PageForge/src/utils/snapping.ts) | - | 拖拽吸附辅助线 |
+| [src/utils/fileUpload.ts](file:///d:/My%20Projects/PageForge/src/utils/fileUpload.ts) | ~35 | 文件读取、类型/大小校验（FileReader → data URL） |
+| [src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts) | ~120 | PNG/PDF 导出（html2canvas + jspdf），导出前进入预览模式 |
 | [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
-| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~500+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 |
+| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 |
 | [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
-| [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1200+ | 属性面板 + 交互配置 + ID 复制 |
-| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | - | 工具栏（含预览按钮 + AlignToolbar） |
+| [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1300+ | 属性面板 + 交互配置 + ID 复制 + 本地上传 |
+| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal） |
 | [src/components/AlignToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
 | [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |

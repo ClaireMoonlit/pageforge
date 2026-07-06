@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, typ
 import type { CanvasNode, HoverEffectConfig } from '@/types'
 import { useEditorStore, findById } from '@/store/editorStore'
 import { nodeToCss, renderNodeContent } from '@/components/NodeRenderer'
+import { readFileAsDataUrl, validateFileSize, validateFileType } from '@/utils/fileUpload'
 
 /** 可双击就地编辑文字的节点类型 */
 const TEXT_EDITABLE = new Set(['heading', 'text', 'button', 'card', 'icon', 'input'])
@@ -68,6 +69,8 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
   const [editing, setEditing] = useState(false)
   const editableRef = useRef<HTMLDivElement>(null)
   const draftRef = useRef('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadError, setUploadError] = useState('')
 
   /** 本地 resize 态：拖拽手柄时实时更新尺寸视觉，松手才提交到 store（单条历史） */
   const [resize, setResize] = useState<{ w: number; h: number; x: number; y: number } | null>(null)
@@ -104,38 +107,15 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     }
   }, [editing, node.type, node.id])
 
-  // 🔍 第一性原理：渲染后测量 text 元素的实际尺寸
+  // 渲染后测量 text 元素的实际尺寸（用于属性面板 fallback 显示）
   useEffect(() => {
     if (node.type !== 'text') return
     const el = elRef.current
     if (!el) return
-    // 延迟一帧等待布局完成
     const raf = requestAnimationFrame(() => {
       const r = el.getBoundingClientRect()
-      const cs = getComputedStyle(el)
-      console.log('[PF-RENDER-TEXT]', {
-        id: node.id.slice(-8),
-        text: (node.props.text as string || '').substring(0, 30),
-        // 节点 style 中存储的值
-        storedWidth: node.style.width,
-        storedPosition: node.style.position,
-        // 实际渲染尺寸
-        renderedW: r.width.toFixed(0),
-        renderedH: r.height.toFixed(0),
-        // 计算样式
-        computedW: cs.width,
-        computedH: cs.height,
-        boxSizing: cs.boxSizing,
-        display: cs.display,
-        fontSize: cs.fontSize,
-        lineHeight: cs.lineHeight,
-        // overflow 状态
-        scrollW: el.scrollWidth,
-        scrollH: el.scrollHeight,
-        // 父容器信息
-        parentW: el.parentElement ? el.parentElement.getBoundingClientRect().width.toFixed(0) : 'N/A',
-        parentBoxSizing: el.parentElement ? getComputedStyle(el.parentElement).boxSizing : 'N/A',
-      })
+      el.setAttribute('data-rendered-w', String(Math.round(r.width)))
+      el.setAttribute('data-rendered-h', String(Math.round(r.height)))
     })
     return () => cancelAnimationFrame(raf)
   }, [node.type, node.id, node.style.width, node.style.position, node.props.text])
@@ -153,6 +133,72 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     sel?.removeAllRanges()
     sel?.addRange(range)
   }, [editing])
+
+  /** 双击图片/视频触发本地文件上传，也支持二次更换 */
+  const handleFileUpload = () => {
+    if (node.type !== 'image' && node.type !== 'video') return
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const accept = node.type === 'image' ? 'image/*' : 'video/*'
+    const maxSizeMB = node.type === 'image' ? 10 : 50
+
+    const typeResult = validateFileType(file, [accept])
+    if (!typeResult.valid) {
+      setUploadError(typeResult.message)
+      setTimeout(() => setUploadError(''), 3000)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    const sizeResult = validateFileSize(file, maxSizeMB)
+    if (!sizeResult.valid) {
+      setUploadError(sizeResult.message)
+      setTimeout(() => setUploadError(''), 3000)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file)
+      updateNodeProps(node.id, { src: dataUrl })
+      // 读取自然尺寸，自适应调整组件宽高
+      const maxW = 600
+      if (node.type === 'image') {
+        const img = new Image()
+        img.onload = () => {
+          const nw = img.naturalWidth
+          const nh = img.naturalHeight
+          const w = nw > maxW ? maxW : nw
+          const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
+          updateNodeStyle(node.id, { width: `${w}px`, height: `${h}px` })
+        }
+        img.src = dataUrl
+      } else {
+        const video = document.createElement('video')
+        video.preload = 'metadata'
+        video.onloadedmetadata = () => {
+          const nw = video.videoWidth
+          const nh = video.videoHeight
+          if (nw && nh) {
+            const w = nw > maxW ? maxW : nw
+            const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
+            updateNodeStyle(node.id, { width: `${w}px`, height: `${h}px` })
+          }
+        }
+        video.src = dataUrl
+      }
+    } catch {
+      setUploadError(`文件读取失败: ${file.name}`)
+      setTimeout(() => setUploadError(''), 3000)
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const startEditing = () => {
     if (!isTextEditable) return
@@ -425,27 +471,6 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
 
   const showHandles = isSelected && !editing && !draggable.isDragging && !previewMode
 
-  // 🔍 第一性原理：在渲染前打印 text 元素的最终 style
-  if (node.type === 'text' && !previewMode) {
-    console.log('[PF-CANVAS-STYLE]', {
-      id: node.id.slice(-8),
-      text: (node.props.text as string || '').substring(0, 30),
-      isAbsPos,
-      isRoot,
-      declaredPosition,
-      nodeStyleWidth: node.style.width,
-      nodeStylePosition: node.style.position,
-      nodeToCssWidth: (nodeToCss(node.style) as any).width,
-      finalStyleWidth: style.width,
-      finalStylePosition: style.position,
-      finalStyleLeft: style.left,
-      finalStyleTop: style.top,
-      finalStyleBoxSizing: style.boxSizing,
-      finalStyleDisplay: style.display,
-      hasFitContent: (style as any).width === 'fit-content',
-    })
-  }
-
   return (
     <div
       ref={setRefs}
@@ -470,7 +495,11 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       onDoubleClick={(e) => {
         if (previewMode) return
         e.stopPropagation()
-        startEditing()
+        if (node.type === 'image' || node.type === 'video') {
+          handleFileUpload()
+        } else {
+          startEditing()
+        }
       }}
       onClick={handlePreviewClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -566,6 +595,34 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
             }}
           />
         ))}
+      {/* 图片/视频双击上传：隐藏文件输入 */}
+      {(node.type === 'image' || node.type === 'video') && (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={node.type === 'image' ? 'image/*' : 'video/*'}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+          {uploadError && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -20,
+                left: 0,
+                fontSize: 11,
+                color: '#f87171',
+                whiteSpace: 'nowrap',
+                zIndex: 30,
+                pointerEvents: 'none',
+              }}
+            >
+              {uploadError}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 })

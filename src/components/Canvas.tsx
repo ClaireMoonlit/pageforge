@@ -386,6 +386,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         {/* 画布 */}
         <div
           ref={setRefs}
+          data-pf-export-target="true"
           onClick={(e) => {
             if (e.target === e.currentTarget) selectNode(null)
           }}
