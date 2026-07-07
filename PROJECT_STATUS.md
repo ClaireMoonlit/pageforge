@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-06（§5.18 图片/视频本地上传 + PNG/PDF 导出 + 双击上传）
-> 当前版本：v0.1.0（开发中）
+> 最后更新：2026-07-07（§5.20 统一剪贴板 + 右键菜单 + 图片裁切模态框）
+> 当前版本：v0.2.0（开发中）
 
 ---
 
@@ -710,6 +710,113 @@ interface CanvasNode {
 
 ---
 
+### 5.19 图片裁切模态框（ImageCropModal）—— 形状 + 吸附系统（2026-07-07）
+
+**用户需求**：
+1. 图片上传后弹出裁切弹窗，支持矩形/圆形/圆角矩形三种形状
+2. 裁切框支持 8 向拖拽手柄（4 角 + 4 边中点），角手柄保持等比缩放
+3. 正方形/正圆吸附：拖拽接近正方形时自动吸附，带绿色指示框和磁吸手感
+4. 居中/边缘吸附：裁切框移动时自动吸附到图片中心线和边缘
+
+**实现**（`src/components/ImageCropModal.tsx`，新建，~700 行）：
+
+**5.19a 裁切核心逻辑**：
+- 形状切换：`rectangle` / `circle` / `rounded`（圆角 12px），`circle` 和 `rounded` 强制正方形裁切
+- 8 向 resize 手柄：角手柄（nw/ne/sw/se）保持等比缩放，边缘手柄（n/s/e/w）自由拉伸单维度
+- 移动模式：拖拽裁切框内部移动位置，clamp 到图片边界内
+- 最小尺寸限制：`minSize = 20px`
+- 画布缩放适配：`scaleRef` 跟踪 `imgDisplay` 尺寸与原始尺寸的比例，闭包中避免 stale state
+
+**5.19b 正方形/正圆吸附系统**（核心难点，多轮迭代）：
+- **检测方式**：相对差异 `|w-h| / max(w,h)`，与图片尺度无关（500×400 和 50×40 判定一致）
+- **滞后阈值**：`SQ_SNAP_ON = 1.5%`（进入吸附）、`SQ_SNAP_OFF = 4%`（退出吸附），滞后比 2.67x 提供稳定黏性
+- **角手柄吸附**：检测到接近正方形时，对角锚点固定，尺寸直接修正为 `size = (w+h)/2`，产生"咔嗒"磁吸感
+- **边缘手柄吸附**：检测到接近正方形时，冻结自由维度（如拖右边缘时冻结高度 = 宽度），产生磁吸冻感
+- **自然尺寸检测**：正方形检测使用鼠标原始坐标计算的自然尺寸（`natWidth/natHeight`），而非修正后尺寸，确保滞后逻辑正确运作
+- **ar=1 恒绿**：当选区宽高比恰好为 1 时，跳过检测直接判定吸附，绿色指示框常亮，避免闪烁
+- **初始状态抑制**：弹窗打开时默认尺寸不显示绿色指示，仅主动拖拽或切换形状时才显示
+- **绿色指示**：吸附激活时显示绿色裁切框 + 发光效果，SVG 渲染中过滤掉 square 类型参考线避免左侧绿线
+- **吸附标签**：已移除"正方形吸附"文字标签，仅保留绿色视觉反馈
+
+**5.19c 居中/边缘吸附**（与画布 snapping.ts 一致）：
+- **阈值**：`SNAP_ON = 8px`、`SNAP_OFF = 12px`，滞后比 1.5x
+- **居中吸附**：裁切框中心对齐图片中心（水平/垂直）
+- **边缘吸附**：裁切框边缘对齐图片边缘
+- **移动模式**：应用位置修正，移动时跳过边缘吸附避免裁切框跳跃
+- **调整大小模式**：跳过居中/边缘吸附，仅角手柄应用正方形吸附
+
+**5.19d 确认裁切**：
+- 计算裁切区域：`crop = { x, y, width, height }`（原始图片坐标）
+- Canvas 绘制：`drawImage` 按形状裁剪（圆形用 `arc` + `clip`，圆角矩形用 `roundRect` + `clip`）
+- 输出 `dataUrl`（PNG 格式，支持透明背景）
+- 结果回传 `onConfirm`：`croppedDataUrl`、`originalSrc`、`shape`、`cropRect`
+- 最终尺寸：最大 400px 等比缩放，圆形/圆角矩形设置 `backgroundColor: transparent`
+
+**关键决策**：
+- 投影法等比缩放：角手柄拖拽时将鼠标位置投影到等比约束线，公式 `t = (ar·Δx + Δy) / (ar² + 1)`，实现连续平滑缩放
+- 直接修正而非投影法做正方形：投影法（effectiveAr=1）磁吸感弱，直接修正 `(w+h)/2` 产生更明显的"咔嗒"感
+- 自然尺寸检测：用鼠标原始坐标而非修正后尺寸做检测，保证滞后逻辑正确运作
+
+**涉及文件**：
+- `src/components/ImageCropModal.tsx`：新建，裁切模态框完整实现
+- `src/store/editorStore.ts`：新增 `cropModal` 状态、`openCropModal`/`closeCropModal` 方法、`CropModalResult` 类型
+- `src/components/Canvas.tsx`：`pasteImageFromDataUrl` 共享流程，粘贴图片后自动打开裁切弹窗
+- `src/types/index.ts`：新增 `ImageShape` 类型（`'rectangle' | 'circle' | 'rounded'`）
+
+---
+
+### 5.20 统一剪贴板 + 右键菜单 + 外部文本粘贴 + 占位符优化（2026-07-07）
+
+**用户需求**：
+1. 统一所有粘贴入口（Ctrl+V、工具栏按钮、右键菜单）的粘贴逻辑
+2. 判断内部/外部复制时间戳，粘贴最新复制的内容
+3. 右键菜单添加复制功能
+4. 从外部复制文字粘贴到画布上创建 text 节点
+5. 双击图片/视频占位符时避免文本被选中
+
+**实现**：
+
+**5.20a 统一剪贴板时间戳机制**（`src/store/editorStore.ts`）：
+- 模块级变量：`lastInternalCopyTime`（内部复制时间戳）、`lastExternalCopyTime`（外部复制时间戳）
+- 所有内部复制操作（`copyNode`、`duplicateNode`、右键复制）统一调用 `setLastInternalCopyTime()`
+- 外部复制通过 `window.addEventListener('copy')` 监听，设置 `lastExternalCopyTime`
+- 导出函数：`getLastInternalCopyTime()`、`getLastExternalCopyTime()`、`getClipboard()`
+
+**5.20b 统一粘贴入口**（`src/components/Canvas.tsx`）：
+- `unifiedAsyncPaste(pos)`: 比较内部/外部时间戳，优先粘贴最新内容
+  - 内部更新 → 调用 `pasteNode()` 粘贴内部剪贴板中的节点
+  - 外部更新 → 通过 `navigator.clipboard.read()` 读取系统剪贴板，先图片后文本
+  - 回退：系统剪贴板无内容或无权限 → 回退到内部剪贴板
+- 文档级 `paste` 监听器：同时处理图片和文本粘贴（不依赖焦点/位置）
+  - 图片分支：比较时间戳，外部更新时清除内部预创建的节点，使用外部图片
+  - 文本分支：`getData('text/plain')` 获取文本，创建 text 节点
+- 三种粘贴入口（Ctrl+V、工具栏按钮、右键菜单）均调用 `unifiedAsyncPaste`
+
+**5.20c 右键菜单增强**（`src/components/Canvas.tsx` + `src/components/CanvasElement.tsx`）：
+- 右键菜单新增「复制」按钮：调用 `copyNode(id)` 并设置内部时间戳
+- 右键粘贴修复：先粘贴再关闭菜单（`closeCtxMenu` 在 `navigator.clipboard.read()` 之前调用会丢失用户手势上下文）
+- 右键菜单外部点击关闭：`pointerdown` 监听器添加 `ctxMenuRef`，点击菜单内部时不关闭
+- 菜单使用 `createPortal` 渲染到 `document.body`
+
+**5.20d 外部文本粘贴**（`src/components/Canvas.tsx`）：
+- 文档级 paste 监听器：检测 `text/plain` 类型，外部时间戳更新时创建 text 节点
+- `unifiedAsyncPaste`：`navigator.clipboard.read()` 后检查 `text/plain` 类型，创建 text 节点
+- 粘贴位置：使用 `lastMousePosRef` 记录的最后鼠标位置
+
+**5.20e 占位符优化**（`src/components/NodeRenderer.tsx`）：
+- 图片/视频占位符文本改为引导性提示："双击上传图片" / "双击上传视频"
+- 占位符添加 `userSelect: 'none'` 样式，防止双击时浏览器选中文本
+- 双击处理：使用 `setTimeout(() => window.getSelection()?.removeAllRanges(), 0)` 异步清除选区
+
+**涉及文件**：
+- `src/store/editorStore.ts`：新增剪贴板时间戳模块变量和导出函数
+- `src/components/Canvas.tsx`：`unifiedAsyncPaste` 统一入口、文档级 paste 监听器、右键菜单增强
+- `src/components/CanvasElement.tsx`：右键菜单复制功能、双击粘贴逻辑
+- `src/components/NodeRenderer.tsx`：占位符文本和 `userSelect` 样式
+- `src/components/Toolbar.tsx`：工具栏粘贴按钮调用 `unifiedAsyncPaste`
+
+---
+
 ## 6. 交互功能
 
 PageForge 现在支持零代码配置交互效果，导出 HTML 自带 vanilla JS 运行时。
@@ -803,6 +910,11 @@ interface InteractionConfig {
 
 - ~~响应式导出~~：`groupRows` 分行 + 三层断点 CSS（桌面/平板/手机）已在 `exportHtml.ts` 实现，见 5.15
 - ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
+- ~~图片裁切模态框~~：形状切换 + 8 向手柄 + 正方形/居中/边缘三套吸附系统，见 5.19
+- ~~统一剪贴板~~：时间戳机制 + 统一粘贴入口（Ctrl+V/工具栏/右键菜单），见 5.20
+- ~~右键菜单增强~~：复制 + 粘贴 + Portal 渲染，见 5.20
+- ~~外部文本粘贴~~：文档级 paste 监听器 + unifiedAsyncPaste 均支持 text/plain → text 节点，见 5.20
+- ~~占位符优化~~：引导文本 + userSelect: 'none' + 异步清除选区，见 5.20
 
 ---
 
@@ -867,11 +979,12 @@ interface InteractionConfig {
 | [src/utils/snapping.ts](file:///d:/My%20Projects/PageForge/src/utils/snapping.ts) | - | 拖拽吸附辅助线 |
 | [src/utils/fileUpload.ts](file:///d:/My%20Projects/PageForge/src/utils/fileUpload.ts) | ~35 | 文件读取、类型/大小校验（FileReader → data URL） |
 | [src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts) | ~120 | PNG/PDF 导出（html2canvas + jspdf），导出前进入预览模式 |
-| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
-| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 |
-| [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
+| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~500+ | 画布渲染、缩放、统一粘贴入口、右键菜单、手型平移 |
+| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 + 右键复制 |
+| [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree、占位符引导文本 |
 | [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1300+ | 属性面板 + 交互配置 + ID 复制 + 本地上传 |
-| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal） |
+| [src/components/ImageCropModal.tsx](file:///d:/My%20Projects/PageForge/src/components/ImageCropModal.tsx) | ~700 | 图片裁切模态框：形状切换、8 向手柄、正方形/居中/边缘吸附 |
+| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal + 统一粘贴） |
 | [src/components/AlignToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
 | [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |

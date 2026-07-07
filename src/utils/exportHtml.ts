@@ -128,11 +128,37 @@ function nodeToHtml(node: CanvasNode, depth: number, z: number): string {
 	      return `${pre}<p id="${node.id}" class="pf-item" data-pf-type="text"${ia} style="margin:0;white-space:pre-line;word-break:break-word;min-height:1.2em;${styleText};z-index:${z}">${wrapLink(inner)}</p>`
 	    }
 	    case 'image': {
-	      const imgTag = node.props.src
-	        ? `<img src="${escapeAttr(node.props.src)}" alt="${escapeAttr(node.props.alt || '')}" style="width:100%;height:auto;max-width:100%;display:block;border-radius:inherit"/>`
-	        : `<div style="width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">图片占位</div>`
-	      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="image"${ia} style="${styleText};z-index:${z}">${wrapLink(imgTag)}</div>`
-	    }
+      const shape = node.props.imageShape || 'rectangle'
+      const isShaped = shape !== 'rectangle'
+      let imgExtraStyle = ''
+      let placeholderExtraStyle = ''
+      if (shape === 'circle') {
+        imgExtraStyle = 'border-radius:50%;'
+        placeholderExtraStyle = 'border-radius:50%;'
+      } else if (shape === 'rounded') {
+        imgExtraStyle = 'border-radius:16px;'
+        placeholderExtraStyle = 'border-radius:16px;'
+      }
+      // 旋转/镜像
+      const transforms: string[] = []
+      if (node.props.rotation) transforms.push(`rotate(${node.props.rotation}deg)`)
+      if (node.props.flipH) transforms.push('scaleX(-1)')
+      if (node.props.flipV) transforms.push('scaleY(-1)')
+      if (transforms.length > 0) {
+        imgExtraStyle += `transform:${transforms.join(' ')};`
+      }
+      if (isShaped) {
+        // 非矩形：img 高度 100% 让裁切后的图填满
+        const imgTag = node.props.src
+          ? `<img src="${escapeAttr(node.props.src)}" alt="${escapeAttr(node.props.alt || '')}" style="width:100%;height:100%;max-width:100%;display:block;${imgExtraStyle}"/>`
+          : `<div style="width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px;${placeholderExtraStyle}">图片占位</div>`
+        return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="image"${ia} style="${styleText};z-index:${z}">${wrapLink(imgTag)}</div>`
+      }
+      const imgTag = node.props.src
+        ? `<img src="${escapeAttr(node.props.src)}" alt="${escapeAttr(node.props.alt || '')}" style="width:100%;height:auto;max-width:100%;display:block;border-radius:inherit"/>`
+        : `<div style="width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:14px">图片占位</div>`
+      return `${pre}<div id="${node.id}" class="pf-item" data-pf-type="image"${ia} style="${styleText};z-index:${z}">${wrapLink(imgTag)}</div>`
+    }
 	    case 'button': {
       const inner = escapeHtml(node.props.text || '')
       // display:inline-flex 等是默认值，允许节点样式覆盖

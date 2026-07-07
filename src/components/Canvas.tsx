@@ -1,10 +1,131 @@
 import { useDroppable } from '@dnd-kit/core'
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { useEditorStore } from '@/store/editorStore'
+import { createPortal } from 'react-dom'
+import { useEditorStore, getClipboard, getLastInternalCopyTime, getLastExternalCopyTime } from '@/store/editorStore'
 import { CanvasElement } from './CanvasElement'
 import { Ruler } from './Ruler'
 import { AlignInfoOverlay } from './AlignInfoOverlay'
 import type { SnapLine } from '@/utils/snapping'
+import { readFileAsDataUrl } from '@/utils/fileUpload'
+
+/** 协调内部剪贴板粘贴与系统剪贴板图片粘贴：当两者同时存在时，优先图片 */
+let pendingPasteId: string | null = null
+export function setPendingPasteId(id: string | null) { pendingPasteId = id }
+export function getAndClearPendingPasteId() { const id = pendingPasteId; pendingPasteId = null; return id }
+
+/**
+ * 共享的图片粘贴 + 裁切流程：从 dataUrl 创建节点并打开裁切弹窗
+ * 用于系统剪贴板图片粘贴（右键菜单、工具栏按钮、Ctrl+V）
+ */
+function pasteImageFromDataUrl(dataUrl: string, pos: { x: number; y: number }) {
+  const id = useEditorStore.getState().addNode('image', pos.x, pos.y)
+  useEditorStore.getState().updateNodeProps(id, { src: dataUrl })
+  const img = new Image()
+  img.onload = () => {
+    const nw = img.naturalWidth
+    const nh = img.naturalHeight
+    const maxW = 600
+    const w = nw > maxW ? maxW : nw
+    const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
+    useEditorStore.getState().updateNodeStyle(id, { width: `${w}px`, height: `${h}px` })
+    useEditorStore.getState().openCropModal({
+      imageSrc: dataUrl,
+      imageWidth: nw,
+      imageHeight: nh,
+      onConfirm: (result) => {
+        const maxSide = 400
+        const ratio = Math.min(maxSide / result.crop.width, maxSide / result.crop.height, 1)
+        const finalW = Math.round(result.crop.width * ratio)
+        const finalH = Math.round(result.crop.height * ratio)
+        const isShaped = result.shape !== 'rectangle'
+        useEditorStore.getState().updateNodeProps(id, {
+          src: result.croppedDataUrl,
+          originalSrc: dataUrl,
+          imageShape: result.shape,
+          cropRect: result.crop,
+        })
+        useEditorStore.getState().updateNodeStyle(id, {
+          width: `${finalW}px`,
+          height: `${finalH}px`,
+          ...(isShaped ? { backgroundColor: 'transparent' } : {}),
+        })
+      },
+    })
+  }
+  img.src = dataUrl
+}
+
+/**
+ * 从 navigator.clipboard.read() 结果中提取图片并粘贴
+ * 返回 true 表示成功粘贴了图片
+ */
+async function pasteImageFromClipboardItems(items: ClipboardItems, pos: { x: number; y: number }): Promise<boolean> {
+  for (const item of items) {
+    for (const type of item.types) {
+      if (type.startsWith('image/')) {
+        const blob = await item.getType(type)
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+        pasteImageFromDataUrl(dataUrl, pos)
+        return true
+      }
+    }
+  }
+  return false
+}
+
+/**
+ * 统一异步粘贴入口（供工具栏按钮和右键菜单使用）
+ * 比较内部/外部复制时间戳，粘贴最新复制的内容
+ * @param pos 粘贴位置（画布坐标）
+ */
+export async function unifiedAsyncPaste(pos: { x: number; y: number }): Promise<boolean> {
+  const internalTime = getLastInternalCopyTime()
+  const externalTime = getLastExternalCopyTime()
+  const clip = getClipboard()
+
+  // 内部复制更新且内部剪贴板有内容 → 粘贴内部节点
+  if (internalTime >= externalTime && clip) {
+    useEditorStore.getState().pasteNode()
+    return true
+  }
+
+  // 外部复制更新 → 尝试读取系统剪贴板
+  try {
+    const clipboardItems = await navigator.clipboard.read()
+    // 先检查图片
+    const pastedImg = await pasteImageFromClipboardItems(clipboardItems, pos)
+    if (pastedImg) return true
+    // 再检查文本
+    for (const item of clipboardItems) {
+      for (const type of item.types) {
+        if (type === 'text/plain') {
+          const blob = await item.getType(type)
+          const text = await blob.text()
+          if (text && text.trim()) {
+            const id = useEditorStore.getState().addNode('text', pos.x, pos.y)
+            useEditorStore.getState().updateNodeProps(id, { text: text.trim() })
+            return true
+          }
+        }
+      }
+    }
+  } catch {
+    // 无权限，静默
+  }
+
+  // 系统剪贴板无图片/文本或无权限 → 回退到内部剪贴板
+  if (clip) {
+    useEditorStore.getState().pasteNode()
+    return true
+  }
+
+  return false
+}
 
 /** 判断焦点是否在可输入元素中（避免空格键误触影响输入） */
 function isTypingTarget(): boolean {
@@ -33,8 +154,27 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const updateCanvas = useEditorStore((s) => s.updateCanvas)
   const rulerCursorVisible = useEditorStore((s) => s.rulerCursorVisible)
   const toggleRulerCursor = useEditorStore((s) => s.toggleRulerCursor)
+  const addNode = useEditorStore((s) => s.addNode)
 
   const innerRef = useRef<HTMLDivElement | null>(null)
+  const lastMousePosRef = useRef({ x: 400, y: 300 }) // 画布坐标，默认中心附近
+
+  // 右键菜单
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
+  const ctxMenuRef = useRef<HTMLDivElement | null>(null)
+  const closeCtxMenu = useCallback(() => setCtxMenu(null), [])
+
+  // 右键菜单外部点击关闭（pointerdown 先于 click 触发，需排除菜单内部点击）
+  useEffect(() => {
+    if (!ctxMenu) return
+    const onDown = (e: PointerEvent) => {
+      // 点击在菜单内部 → 不关闭，让菜单项的 click 处理
+      if (ctxMenuRef.current?.contains(e.target as Node)) return
+      closeCtxMenu()
+    }
+    document.addEventListener('pointerdown', onDown)
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [ctxMenu, closeCtxMenu])
 
   // ========== 手型平移 ==========
   const [panMode, setPanMode] = useState(false)       // 空格按下 → 进入手型模式
@@ -98,6 +238,82 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 
   const cursor = isPanning ? 'grabbing' : panMode ? 'grab' : undefined
   // ========== 手型平移 END ==========
+
+  // ========== 画布粘贴 ==========
+  const handlePaste = useCallback(async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items || items.length === 0) return
+
+    const pos = { ...lastMousePosRef.current }
+
+    // 优先检查系统剪贴板中的图片
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (!file) continue
+        try {
+          const dataUrl = await readFileAsDataUrl(file)
+          pasteImageFromDataUrl(dataUrl, pos)
+        } catch {
+          // 静默失败
+        }
+        return
+      }
+    }
+  }, [])
+
+  // 文档级 paste 监听：捕获系统剪贴板图片和文本（不依赖焦点/位置）
+  useEffect(() => {
+    const onDocPaste = (e: ClipboardEvent) => {
+      // 不拦截 input/textarea/contentEditable 中的粘贴
+      const target = e.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+      }
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.startsWith('image/')) {
+          e.preventDefault()
+          const internalTime = getLastInternalCopyTime()
+          const externalTime = getLastExternalCopyTime()
+          // 清除内部剪贴板产生的节点（如果外部复制更新或同等，则用外部图片替换）
+          const pendingId = getAndClearPendingPasteId()
+          if (externalTime >= internalTime) {
+            // 外部复制更新或同等（包括首次使用两者均为 0 的情况）
+            if (pendingId) {
+              useEditorStore.getState().removeNode(pendingId)
+            }
+            handlePaste(e as unknown as React.ClipboardEvent)
+          }
+          // 内部复制更新 → 保留内部节点，不处理外部图片
+          return
+        }
+      }
+
+      // 外部文本粘贴：创建 text 节点
+      const text = e.clipboardData?.getData('text/plain')
+      if (text && text.trim()) {
+        const internalTime = getLastInternalCopyTime()
+        const externalTime = getLastExternalCopyTime()
+        if (externalTime >= internalTime) {
+          e.preventDefault()
+          const pendingId = getAndClearPendingPasteId()
+          if (pendingId) {
+            useEditorStore.getState().removeNode(pendingId)
+          }
+          const pos = { ...lastMousePosRef.current }
+          const id = useEditorStore.getState().addNode('text', pos.x, pos.y)
+          useEditorStore.getState().updateNodeProps(id, { text: text.trim() })
+        }
+      }
+    }
+    document.addEventListener('paste', onDocPaste)
+    return () => document.removeEventListener('paste', onDocPaste)
+  }, [handlePaste])
 
   const setRefs = (node: HTMLDivElement | null) => {
     setNodeRef(node)
@@ -390,6 +606,20 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           onClick={(e) => {
             if (e.target === e.currentTarget) selectNode(null)
           }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            if (rect) {
+              const curZoom = useEditorStore.getState().zoom
+              lastMousePosRef.current = {
+                x: Math.round((e.clientX - rect.left) / curZoom),
+                y: Math.round((e.clientY - rect.top) / curZoom),
+              }
+            }
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setCtxMenu({ x: e.clientX, y: e.clientY })
+          }}
           style={{
             position: 'absolute',
             top: 24,
@@ -563,6 +793,78 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           </svg>
         </div>
       </div>
+      {/* 右键菜单 */}
+      {ctxMenu &&
+        createPortal(
+          <div
+            ref={ctxMenuRef}
+            style={{
+              position: 'fixed',
+              left: ctxMenu.x,
+              top: ctxMenu.y,
+              zIndex: 100000,
+              background: '#1e293b',
+              border: '1px solid #475569',
+              borderRadius: 6,
+              padding: 4,
+              minWidth: 120,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+            }}
+            onClick={closeCtxMenu}
+          >
+            {/* 右键复制按钮 */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                closeCtxMenu()
+                const sid = useEditorStore.getState().selectedId
+                if (sid) useEditorStore.getState().copyNode(sid)
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
+                fontSize: 13,
+                userSelect: 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent'
+              }}
+            >
+              复制
+            </div>
+            {/* 右键粘贴按钮 */}
+            <div
+              onClick={async (e) => {
+                e.stopPropagation()
+                // 先粘贴再关闭菜单，保持用户手势上下文（navigator.clipboard.read 需要）
+                await unifiedAsyncPaste({ ...lastMousePosRef.current })
+                closeCtxMenu()
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                color: '#e2e8f0',
+                fontSize: 13,
+                userSelect: 'none',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.background = '#334155'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent'
+              }}
+            >
+              粘贴
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 })

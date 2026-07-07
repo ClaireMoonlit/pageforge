@@ -1,8 +1,9 @@
-import { useHistory, useEditorStore, findById, getClipboard } from '@/store/editorStore'
+import { useHistory, useEditorStore, findById } from '@/store/editorStore'
 import { downloadHtml } from '@/utils/exportHtml'
 import { exportAsPNG, exportAsPDF, getCanvasContentElement } from '@/utils/exportImage'
 import { TemplatePanel } from '@/components/TemplatePanel'
 import { AlignToolbar } from '@/components/AlignToolbar'
+import { unifiedAsyncPaste } from '@/components/Canvas'
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { createPortal } from 'react-dom'
 import {
@@ -26,7 +27,6 @@ export function Toolbar() {
   const setFormatBrush = useEditorStore((s) => s.setFormatBrush)
   const copyNode = useEditorStore((s) => s.copyNode)
   const duplicateNode = useEditorStore((s) => s.duplicateNode)
-  const pasteNode = useEditorStore((s) => s.pasteNode)
   const previewMode = useEditorStore((s) => s.previewMode)
   const togglePreviewMode = useEditorStore((s) => s.togglePreviewMode)
   const nodeCount = nodes.length
@@ -166,8 +166,12 @@ export function Toolbar() {
         <span className="inline-flex items-center gap-1.5"><IconCopy size={16} /> 复制</span>
       </button>
       <button
-        onClick={() => pasteNode()}
-        disabled={!getClipboard()}
+        onClick={async () => {
+          // 使用画布中心作为默认粘贴位置
+          const cw = parseInt(canvas.width) || 1200
+          const ch = parseInt(canvas.height) || 800
+          await unifiedAsyncPaste({ x: Math.round(cw / 2), y: Math.round(ch / 2) })
+        }}
         className={btnCls}
         title="粘贴 (Ctrl+V)"
       >

@@ -165,26 +165,56 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
 
     try {
       const dataUrl = await readFileAsDataUrl(file)
-      updateNodeProps(node.id, { src: dataUrl })
-      // 读取自然尺寸，自适应调整组件宽高
-      const maxW = 600
       if (node.type === 'image') {
+        // 读取自然尺寸后打开裁切弹窗
         const img = new Image()
         img.onload = () => {
           const nw = img.naturalWidth
           const nh = img.naturalHeight
+          // 临时显示原图，等待用户裁切
+          updateNodeProps(node.id, { src: dataUrl })
+          const maxW = 600
           const w = nw > maxW ? maxW : nw
           const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
           updateNodeStyle(node.id, { width: `${w}px`, height: `${h}px` })
+          // 打开裁切弹窗
+          useEditorStore.getState().openCropModal({
+            imageSrc: dataUrl,
+            imageWidth: nw,
+            imageHeight: nh,
+            initialShape: node.props.imageShape,
+            onConfirm: (result) => {
+              // 占位尺寸按裁切区域比例（最大 400 限制）
+              const maxSide = 400
+              const ratio = Math.min(maxSide / result.crop.width, maxSide / result.crop.height, 1)
+              const finalW = Math.round(result.crop.width * ratio)
+              const finalH = Math.round(result.crop.height * ratio)
+              const isShaped = result.shape !== 'rectangle'
+              updateNodeProps(node.id, {
+                src: result.croppedDataUrl,
+                originalSrc: dataUrl,
+                imageShape: result.shape,
+                cropRect: result.crop,
+              })
+              updateNodeStyle(node.id, {
+                width: `${finalW}px`,
+                height: `${finalH}px`,
+                ...(isShaped ? { backgroundColor: 'transparent' } : {}),
+              })
+            },
+          })
         }
         img.src = dataUrl
       } else {
+        // 视频直接设置（暂不裁切）
+        updateNodeProps(node.id, { src: dataUrl })
         const video = document.createElement('video')
         video.preload = 'metadata'
         video.onloadedmetadata = () => {
           const nw = video.videoWidth
           const nh = video.videoHeight
           if (nw && nh) {
+            const maxW = 600
             const w = nw > maxW ? maxW : nw
             const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
             updateNodeStyle(node.id, { width: `${w}px`, height: `${h}px` })
@@ -445,6 +475,8 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     ...(resize ? { width: `${resize.w}px`, height: `${resize.h}px` } : {}),
     // 悬停效果预览
     ...getHoverStyle(hoverConfig, isHovered),
+    // 旋转/镜像（画布框也需要旋转）
+    ...(node.props.rotation ? { transform: `rotate(${node.props.rotation}deg)` } : {}),
   }
 
   // 根节点用 absolute 定位；
@@ -495,8 +527,56 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       onDoubleClick={(e) => {
         if (previewMode) return
         e.stopPropagation()
-        if (node.type === 'image' || node.type === 'video') {
+        if (node.type === 'image' && node.props.src) {
+          // 有图片 → 打开裁切弹窗
+          // 第一性原理：始终使用 originalSrc（未裁切原图）作为裁切源
+          // 如果 originalSrc 未设置且 cropRect 存在，说明图片已被裁切但原图丢失，
+          // 此时不能将 src（裁切后图片）设为 originalSrc，否则下次裁切会在裁切图上二次裁切
+          let baseSrc = node.props.originalSrc || node.props.src
+          let effectiveCrop = node.props.cropRect
+          if (!node.props.originalSrc && node.props.src) {
+            if (node.props.cropRect) {
+              // 已裁切过但丢失了 originalSrc → src 是裁切后的图片
+              // 使用当前 src 作为裁切源，但必须清除 cropRect 避免坐标错位
+              baseSrc = node.props.src
+              effectiveCrop = undefined
+            } else {
+              // 首次裁切 → 保存当前 src 为 originalSrc
+              updateNodeProps(node.id, { originalSrc: node.props.src })
+            }
+          }
+          const img = new Image()
+          img.onload = () => {
+            useEditorStore.getState().openCropModal({
+              imageSrc: baseSrc,
+              imageWidth: img.naturalWidth,
+              imageHeight: img.naturalHeight,
+              initialShape: node.props.imageShape,
+              initialCrop: effectiveCrop,
+              onConfirm: (result) => {
+                const maxSide = 400
+                const ratio = Math.min(maxSide / result.crop.width, maxSide / result.crop.height, 1)
+                const finalW = Math.round(result.crop.width * ratio)
+                const finalH = Math.round(result.crop.height * ratio)
+                const isShaped = result.shape !== 'rectangle'
+                useEditorStore.getState().updateNodeProps(node.id, {
+                  src: result.croppedDataUrl,
+                  imageShape: result.shape,
+                  cropRect: result.crop,
+                })
+                useEditorStore.getState().updateNodeStyle(node.id, {
+                  width: `${finalW}px`,
+                  height: `${finalH}px`,
+                  ...(isShaped ? { backgroundColor: 'transparent' } : {}),
+                })
+              },
+            })
+          }
+          img.src = baseSrc
+        } else if (node.type === 'image' || node.type === 'video') {
           handleFileUpload()
+          // 浏览器在 dblclick 之前已选中文本，e.preventDefault 来不及阻止
+          setTimeout(() => window.getSelection()?.removeAllRanges(), 0)
         } else {
           startEditing()
         }

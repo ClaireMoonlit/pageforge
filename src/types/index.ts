@@ -188,6 +188,12 @@ export interface NodeProps {
   src?: string // image / video
   alt?: string // image
   poster?: string // video 封面
+  originalSrc?: string // 未裁切的原图（重新裁切时使用）
+  imageShape?: 'rectangle' | 'circle' | 'rounded' // 图片占位形状，默认 rectangle
+  cropRect?: { x: number; y: number; width: number; height: number } // 上次裁切选区（重新裁切时记忆）
+  rotation?: number // 图片旋转角度（度），默认 0
+  flipH?: boolean // 水平镜像
+  flipV?: boolean // 垂直镜像
   icon?: string // icon 图标（emoji 或文字）
   placeholder?: string // input 占位文字
   level?: 1 | 2 | 3 // heading 层级

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -23,6 +23,12 @@ function genId(type?: string): string {
 let clipboard: CanvasNode | null = null
 /** 剪贴板计数器：每次粘贴时递增，用于生成不同的偏移量 */
 let clipboardPasteCount = 0
+/** 最后一次内部复制的时间戳（用于判断"最后复制的是内部还是外部"） */
+let lastInternalCopyTime = 0
+/** 最后一次外部复制的时间戳（系统剪贴板，如从浏览器复制图片） */
+let lastExternalCopyTime = 0
+/** 标记当前是否正在执行内部复制（防止 copy 事件监听器误判为外部复制） */
+let isInternalCopying = false
 
 /** 深拷贝节点并递归重生成所有 id */
 function deepCloneNode(node: CanvasNode): CanvasNode {
@@ -44,6 +50,28 @@ export function getClipboard(): CanvasNode | null {
 /** 重置粘贴计数器 */
 export function resetClipboardPasteCount(): void {
   clipboardPasteCount = 0
+}
+
+/** 获取最后一次内部复制的时间戳（用于粘贴时判断内外优先级） */
+export function getLastInternalCopyTime(): number {
+  return lastInternalCopyTime
+}
+
+/** 获取最后一次外部复制的时间戳 */
+export function getLastExternalCopyTime(): number {
+  return lastExternalCopyTime
+}
+
+/** 记录外部复制（由 document copy 事件监听器调用） */
+export function markExternalCopy(): void {
+  if (!isInternalCopying) {
+    lastExternalCopyTime = Date.now()
+  }
+}
+
+/** 标记内部复制开始/结束（防止 copy 事件监听器误判） */
+export function setInternalCopying(v: boolean): void {
+  isInternalCopying = v
 }
 
 interface EditorState {
@@ -71,6 +99,8 @@ interface EditorState {
   rightPanelCollapsed: boolean
   /** 标尺光标定位线是否显示（按 R 切换） */
   rulerCursorVisible: boolean
+  /** 图片裁切弹窗状态 */
+  cropModal: CropModalState
 
   addNode: (type: ComponentType, x: number, y: number, parentId?: string) => string
   removeNode: (id: string) => void
@@ -126,6 +156,43 @@ interface EditorState {
   toggleRightPanel: () => void
   /** 切换标尺光标定位线显隐 */
   toggleRulerCursor: () => void
+  /** 打开图片裁切弹窗 */
+  openCropModal: (payload: CropModalPayload) => void
+  /** 关闭图片裁切弹窗 */
+  closeCropModal: () => void
+}
+
+/** 图片裁切弹窗：原图信息 + 确认回调 */
+export interface CropModalPayload {
+  imageSrc: string
+  imageWidth: number
+  imageHeight: number
+  /** 弹窗打开时预填的形状（重新裁切时使用） */
+  initialShape?: 'rectangle' | 'circle' | 'rounded'
+  /** 弹窗打开时预填的选区（重新裁切时使用，原图坐标系） */
+  initialCrop?: { x: number; y: number; width: number; height: number }
+  /** 确认后回调：拿到裁切结果（裁切后图片 + 形状 + 选区） */
+  onConfirm: (result: CropModalResult) => void
+}
+
+/** 裁切弹窗确认结果 */
+export interface CropModalResult {
+  croppedDataUrl: string
+  shape: 'rectangle' | 'circle' | 'rounded'
+  crop: { x: number; y: number; width: number; height: number }
+}
+
+/** 弹窗状态 */
+export interface CropModalState {
+  open: boolean
+  imageSrc: string | null
+  imageWidth: number
+  imageHeight: number
+  initialShape: 'rectangle' | 'circle' | 'rounded'
+  initialCrop: { x: number; y: number; width: number; height: number } | null
+  onConfirm: ((result: CropModalResult) => void) | null
+  /** 每次 openCropModal 递增，用于强制 ImageCropModal 重新挂载 */
+  cropKey: number
 }
 
 /** 递归查找并就地更新节点（支持嵌套） */
@@ -176,6 +243,16 @@ export const useEditorStore = create<EditorState>()(
       leftPanelCollapsed: false,
       rightPanelCollapsed: false,
       rulerCursorVisible: true,
+      cropModal: {
+        open: false,
+        imageSrc: null,
+        imageWidth: 0,
+        imageHeight: 0,
+        initialShape: 'rectangle',
+        initialCrop: null,
+        onConfirm: null,
+        cropKey: 0,
+      },
 
       addNode: (type, x, y, parentId) => {
         const def = findComponentDef(type)
@@ -554,6 +631,26 @@ export const useEditorStore = create<EditorState>()(
           state.rulerCursorVisible = !state.rulerCursorVisible
         }),
 
+      openCropModal: (payload) =>
+        set((state) => {
+          state.cropModal = {
+            open: true,
+            imageSrc: payload.imageSrc,
+            imageWidth: payload.imageWidth,
+            imageHeight: payload.imageHeight,
+            initialShape: payload.initialShape || 'rectangle',
+            initialCrop: payload.initialCrop || null,
+            onConfirm: payload.onConfirm,
+            cropKey: state.cropModal.cropKey + 1,
+          }
+        }),
+
+      closeCropModal: () =>
+        set((state) => {
+          state.cropModal.open = false
+          // 保留 imageSrc 等数据 1 帧用于退出动画
+        }),
+
       clearCanvas: () =>
         set((state) => {
           state.nodes = []
@@ -605,6 +702,10 @@ export const useEditorStore = create<EditorState>()(
         if (node) {
           clipboard = JSON.parse(JSON.stringify(node)) as CanvasNode
           clipboardPasteCount = 0
+          isInternalCopying = true
+          lastInternalCopyTime = Date.now()
+          // 下一个事件循环重置标记，确保 document copy 监听器不会误判
+          setTimeout(() => { isInternalCopying = false }, 0)
         }
       },
 
@@ -640,6 +741,9 @@ export const useEditorStore = create<EditorState>()(
         // 同步到剪贴板
         clipboard = JSON.parse(JSON.stringify(clone)) as CanvasNode
         clipboardPasteCount = 0
+        isInternalCopying = true
+        lastInternalCopyTime = Date.now()
+        setTimeout(() => { isInternalCopying = false }, 0)
         return newId
       },
 

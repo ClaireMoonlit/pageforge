@@ -45,7 +45,7 @@ export const componentLib: ComponentDef[] = [
     defaultStyle: {
       width: '320px',
       height: '180px',
-      borderRadius: '8px',
+      borderRadius: '0px',
       backgroundColor: '#e5e7eb',
     },
   },
@@ -127,7 +127,7 @@ export const componentLib: ComponentDef[] = [
       width: '560px',
       height: '315px',
       backgroundColor: '#000000',
-      borderRadius: '8px',
+      borderRadius: '0px',
     },
   },
   {

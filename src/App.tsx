@@ -16,8 +16,10 @@ import { Toolbar } from '@/components/Toolbar'
 import { ComponentPanel } from '@/components/ComponentPanel'
 import { Canvas } from '@/components/Canvas'
 import { Inspector } from '@/components/Inspector'
+import { ImageCropModal } from '@/components/ImageCropModal'
+import { setPendingPasteId, getAndClearPendingPasteId } from '@/components/Canvas'
 import { nodeToCss, renderPreviewTree } from '@/components/NodeRenderer'
-import { useEditorStore, findById } from '@/store/editorStore'
+import { useEditorStore, findById, getClipboard, getLastInternalCopyTime, getLastExternalCopyTime, markExternalCopy } from '@/store/editorStore'
 import { findComponentDef } from '@/data/componentLib'
 import type { CanvasNode, ComponentType } from '@/types'
 import { collectRectsFromDOM, computeSnap, canvasRect, type SnapLine, type PrevSnapState } from '@/utils/snapping'
@@ -85,10 +87,11 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
 }
 
 export default function App() {
-	  const addNode = useEditorStore((s) => s.addNode)
-	  const moveNode = useEditorStore((s) => s.moveNode)
-	  const zoom = useEditorStore((s) => s.zoom)
-	  const canvasRef = useRef<HTMLDivElement>(null)
+		  const addNode = useEditorStore((s) => s.addNode)
+		  const moveNode = useEditorStore((s) => s.moveNode)
+		  const zoom = useEditorStore((s) => s.zoom)
+		  const cropKey = useEditorStore((s) => s.cropModal.cropKey)
+		  const canvasRef = useRef<HTMLDivElement>(null)
   const [activeNode, setActiveNode] = useState<CanvasNode | null>(null)
   /** 记录当前拖拽来源，供 modifier 判断是否需要把预览贴到光标 */
   const dragSourceRef = useRef<'library' | 'canvas' | null>(null)
@@ -422,10 +425,22 @@ export default function App() {
         return
       }
 
-      // Ctrl+V 粘贴
+      // Ctrl+V 粘贴：比较内外复制时间戳，粘贴最新复制的内容
       if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        e.preventDefault()
-        pasteNode()
+        const internalTime = getLastInternalCopyTime()
+        const externalTime = getLastExternalCopyTime()
+        const clip = getClipboard()
+
+        if (internalTime >= externalTime && clip) {
+          // 内部复制更新 → 粘贴内部节点
+          const id = pasteNode()
+          if (id) {
+            setPendingPasteId(id)
+            // 200ms 后清除（如果文档 paste 监听器没有处理图片，则保留此节点）
+            setTimeout(() => getAndClearPendingPasteId(), 200)
+          }
+        }
+        // 外部复制更新或无内部剪贴板 → 不阻止默认，让 paste 事件触发（文档监听器处理）
         return
       }
 
@@ -477,6 +492,15 @@ export default function App() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [removeNode, moveNode, copyNode, duplicateNode, pasteNode])
+
+  // 文档级 copy 监听：跟踪外部复制时间戳（用于粘贴时内外优先级判断）
+  useEffect(() => {
+    const onCopy = () => {
+      markExternalCopy()
+    }
+    document.addEventListener('copy', onCopy)
+    return () => document.removeEventListener('copy', onCopy)
+  }, [])
 
   return (
     <DndContext
@@ -534,6 +558,7 @@ export default function App() {
           </div>
         </DragOverlay>
       )}
+      <ImageCropModal key={cropKey} />
     </DndContext>
   )
 }

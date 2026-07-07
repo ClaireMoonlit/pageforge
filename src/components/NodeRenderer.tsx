@@ -62,21 +62,32 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
       return wrapLink(node, el)
     }
     case 'image': {
-      const styleHeight = node.style.height
+      const shape = node.props.imageShape || 'rectangle'
       const styleMaxHeight = node.style.maxHeight
-      // 如果图片自带 height/max-height（如 .img-brand height:2.75rem），
-      // 保留原比例：width:auto 让 SVG 等按 viewBox 比例显示
-      const useAutoWidth = !!(styleHeight || styleMaxHeight)
+      // 仅当有 maxHeight 时（如 .img-brand max-height:2.75rem）用 width:auto
+      // 让 SVG/品牌图按 viewBox 比例显示；普通图片（含裁切后）始终填满容器
+      const useAutoWidth = !!styleMaxHeight
+      const isShaped = shape !== 'rectangle'
+
+      // 形状覆盖样式（裁切后的图片已包含裁切区域，不需要 cover/position）
+      const shapeStyle: CSSProperties = {}
+      if (shape === 'circle') {
+        shapeStyle.borderRadius = '50%'
+      } else if (shape === 'rounded') {
+        shapeStyle.borderRadius = '16px'
+      }
+
       const el = node.props.src ? (
         <img
           src={node.props.src}
           alt={node.props.alt || ''}
           style={{
             width: useAutoWidth ? 'auto' : '100%',
-            height: 'auto',
+            height: isShaped ? '100%' : 'auto',
             maxWidth: '100%',
             display: 'block',
             borderRadius: 'inherit',
+            ...shapeStyle,
           }}
         />
       ) : (
@@ -90,9 +101,11 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
             justifyContent: 'center',
             color: '#9ca3af',
             fontSize: 14,
+            userSelect: 'none',
+            borderRadius: shape === 'circle' ? '50%' : shape === 'rounded' ? '16px' : undefined,
           }}
         >
-          图片占位
+          双击上传图片
         </div>
       )
       return wrapLink(node, el)
@@ -176,12 +189,13 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
             justifyContent: 'center',
             color: '#9ca3af',
             fontSize: 14,
+            userSelect: 'none',
             flexDirection: 'column',
             gap: 4,
           }}
         >
-          <span style={{ fontSize: 32 }}>▶</span>
-          <span>视频占位</span>
+          <span style={{ fontSize: 32, userSelect: 'none' }}>▶</span>
+          <span>双击上传视频</span>
         </div>
       )
     case 'input':

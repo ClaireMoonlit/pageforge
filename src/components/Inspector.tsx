@@ -121,7 +121,7 @@ function FileUploadField({
               : 'bg-ink-700 border-ink-600 text-gray-300 hover:bg-ink-600'
           }`}
         >
-          {uploading ? '读取中...' : uploaded ? '已上传' : label}
+          {uploading ? '读取中...' : uploaded ? '重新上传' : label}
         </button>
         {uploaded && currentValue && (
           <span className="text-[10px] text-gray-500 truncate max-w-[160px]" title={currentValue}>
@@ -868,8 +868,8 @@ export function Inspector() {
               label="本地上传"
               currentValue={selected.props.src}
               onUpload={(dataUrl) => {
+                // 临时显示原图，等待用户裁切
                 updateNodeProps(selected.id, { src: dataUrl })
-                // 读取图片自然尺寸，自适应调整组件宽高
                 const img = new Image()
                 img.onload = () => {
                   const maxW = 600
@@ -878,6 +878,31 @@ export function Inspector() {
                   const w = nw > maxW ? maxW : nw
                   const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
                   updateNodeStyle(selected.id, { width: `${w}px`, height: `${h}px` })
+                  // 打开裁切弹窗
+                  useEditorStore.getState().openCropModal({
+                    imageSrc: dataUrl,
+                    imageWidth: nw,
+                    imageHeight: nh,
+                    initialShape: selected.props.imageShape,
+                    onConfirm: (result) => {
+                      const maxSide = 400
+                      const ratio = Math.min(maxSide / result.crop.width, maxSide / result.crop.height, 1)
+                      const finalW = Math.round(result.crop.width * ratio)
+                      const finalH = Math.round(result.crop.height * ratio)
+                      const isShaped = result.shape !== 'rectangle'
+                      updateNodeProps(selected.id, {
+                        src: result.croppedDataUrl,
+                        originalSrc: dataUrl,
+                        imageShape: result.shape,
+                        cropRect: result.crop,
+                      })
+                      updateNodeStyle(selected.id, {
+                        width: `${finalW}px`,
+                        height: `${finalH}px`,
+                        ...(isShaped ? { backgroundColor: 'transparent' } : {}),
+                      })
+                    },
+                  })
                 }
                 img.src = dataUrl
               }}
@@ -890,6 +915,103 @@ export function Inspector() {
                 placeholder="https://... 或使用上方上传按钮"
               />
             </Field>
+            {/* 旋转角度 */}
+            {selected.props.src && (
+              <Field label="旋转角度">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={-180}
+                    max={180}
+                    value={selected.props.rotation || 0}
+                    onChange={(e) => updateNodeProps(selected.id, { rotation: parseInt(e.target.value) || 0 })}
+                    className="flex-1"
+                    list="rotation-ticks"
+                  />
+                  <datalist id="rotation-ticks">
+                    <option value="-180" />
+                    <option value="-135" />
+                    <option value="-90" />
+                    <option value="-45" />
+                    <option value="0" />
+                    <option value="45" />
+                    <option value="90" />
+                    <option value="135" />
+                    <option value="180" />
+                  </datalist>
+                  <span className="text-xs text-gray-500 w-10 text-right tabular-nums">
+                    {selected.props.rotation || 0}°
+                  </span>
+                </div>
+              </Field>
+            )}
+            {/* 镜像翻转 */}
+            {selected.props.src && (
+              <div className="flex gap-1">
+                <button
+                  onClick={() => updateNodeProps(selected.id, { flipH: !selected.props.flipH })}
+                  className={toggleBtnCls(!!selected.props.flipH)}
+                >
+                  ↔ 水平翻转
+                </button>
+                <button
+                  onClick={() => updateNodeProps(selected.id, { flipV: !selected.props.flipV })}
+                  className={toggleBtnCls(!!selected.props.flipV)}
+                >
+                  ↕ 垂直翻转
+                </button>
+              </div>
+            )}
+            {/* 重新裁切图片（仅当已有 src 时显示） */}
+            {selected.props.src && (
+              <button
+                onClick={() => {
+                  // 第一性原理：始终使用 originalSrc（未裁切原图）作为裁切源
+                  let baseSrc = selected.props.originalSrc || selected.props.src!
+                  let effectiveCrop = selected.props.cropRect
+                  if (!selected.props.originalSrc && selected.props.src) {
+                    if (selected.props.cropRect) {
+                      // 已裁切过但丢失了 originalSrc → 使用当前 src 但清除 cropRect 避免坐标错位
+                      baseSrc = selected.props.src
+                      effectiveCrop = undefined
+                    } else {
+                      updateNodeProps(selected.id, { originalSrc: selected.props.src })
+                    }
+                  }
+                  const img = new Image()
+                  img.onload = () => {
+                    useEditorStore.getState().openCropModal({
+                      imageSrc: baseSrc,
+                      imageWidth: img.naturalWidth,
+                      imageHeight: img.naturalHeight,
+                      initialShape: selected.props.imageShape,
+                      initialCrop: effectiveCrop,
+                      onConfirm: (result) => {
+                        const maxSide = 400
+                        const ratio = Math.min(maxSide / result.crop.width, maxSide / result.crop.height, 1)
+                        const finalW = Math.round(result.crop.width * ratio)
+                        const finalH = Math.round(result.crop.height * ratio)
+                        const isShaped = result.shape !== 'rectangle'
+                        updateNodeProps(selected.id, {
+                          src: result.croppedDataUrl,
+                          imageShape: result.shape,
+                          cropRect: result.crop,
+                        })
+                        updateNodeStyle(selected.id, {
+                          width: `${finalW}px`,
+                          height: `${finalH}px`,
+                          ...(isShaped ? { backgroundColor: 'transparent' } : {}),
+                        })
+                      },
+                    })
+                  }
+                  img.src = baseSrc
+                }}
+                className="w-full mt-2 px-2 py-1 text-xs rounded border border-ink-600 text-gray-300 bg-ink-700 hover:bg-ink-600"
+              >
+                重新裁切图片
+              </button>
+            )}
           </>
         )}
         {selected.type === 'video' && (
