@@ -1,7 +1,7 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-07（§5.20 统一剪贴板 + 右键菜单 + 图片裁切模态框）
+> 最后更新：2026-07-08（§5.21 旋转预览 + 预览模式工具栏 + PNG 安全警告 + 图片自由拉伸）
 > 当前版本：v0.2.0（开发中）
 
 ---
@@ -814,6 +814,95 @@ interface CanvasNode {
 - `src/components/CanvasElement.tsx`：右键菜单复制功能、双击粘贴逻辑
 - `src/components/NodeRenderer.tsx`：占位符文本和 `userSelect` 样式
 - `src/components/Toolbar.tsx`：工具栏粘贴按钮调用 `unifiedAsyncPaste`
+
+---
+
+### 5.21 旋转图片拖拽预览 + 预览模式工具栏禁用 + PNG 安全警告 + 图片自由拉伸 + 圆形裁切内部遮罩（2026-07-08）
+
+**用户需求**：
+1. 旋转后的图片在拖拽时预览仍是正的
+2. 预览模式（包括导出时）工具栏所有按钮应该禁用
+3. PNG 打开时老是警告"未知发行商"
+4. 图片应该支持自由拉伸（高度也应填满容器）
+5. 圆形裁切框内但形状外的区域应有视觉区分
+6. 从外部 App 复制后切回页面粘贴，应使用外部内容
+
+**实现**：
+
+**5.21a 旋转图片拖拽预览**（`src/App.tsx`）：
+- DragOverlay 中 `transform` 从仅 `scale(${zoom})` 改为组合 `scale(${zoom}) rotate(${rotation}deg)`
+- 旋转信息存储在 `node.props.rotation` 中（非 style），需要单独读取
+- 修复后拖拽旋转图片时预览与落点视觉效果一致
+
+**5.21b 预览模式工具栏完全禁用**（`src/components/Toolbar.tsx`）：
+- 所有按钮添加 `disabled={previewMode || ...}` 条件：撤销、重做、删除、格式刷、复制、粘贴、重复、清空
+- 预览模式下隐藏 `TemplatePanel`：`{!previewMode && <TemplatePanel key={nodes.length} />}`
+- 导出按钮禁用：`disabled={nodeCount === 0 || exporting !== null || previewMode}`
+- 预览按钮在导出中禁用：`disabled={exporting !== null}`
+- primaryBtnCls 增加 `disabled:opacity-40 disabled:cursor-not-allowed` 样式
+- 导出下拉菜单项增加 `disabled:cursor-not-allowed`
+
+**5.21c PNG/PDF 安全警告修复**（`src/utils/exportImage.ts` + `src/components/Toolbar.tsx`）：
+- **根因**：传统 `<a download>` 方式下载的文件被浏览器标记为"来自互联网"（Mark of the Web），Windows 打开时弹出安全警告
+- **修复**：使用 `showSaveFilePicker` + `FileSystemWritableFileStream` 直接写入磁盘，绕过浏览器下载标记
+- 新增 `getFileHandle(filename, mimeType)`：在渲染前立即弹出保存对话框，用户感知即时响应
+- 新增 `writeToHandle(handle, blob)`：通过 `createWritable()` → `write()` → `close()` 写入文件
+- 新增 `saveBlob(blob, filename, mimeType)`：优先 File System Access API，不支持时回退传统 `<a download>` 方式
+- 写入错误处理：检测 `NotAllowedError`/`InvalidStateError`/`NoModificationAllowedError`/`QuotaExceededError`，用 `setTimeout(() => alert(...), 0)` 避免 React #185 死循环
+- PNG 导出：data URL → blob + FileSystemWritableFileStream
+- PDF 导出：`pdf.save()` → blob + FileSystemWritableFileStream
+- Toolbar 中导出流程调整：先调 `getFileHandle` 弹对话框，再 `await exportAsPNG/PDF()` 渲染
+
+**5.21d 图片自由拉伸**（`src/components/NodeRenderer.tsx` + `src/utils/exportHtml.ts`）：
+- **根因**：图片高度 `height: isShaped ? '100%' : 'auto'`，非裁切图片高度为 auto 不可拉伸
+- **修复**：统一为 `height: useAutoWidth ? 'auto' : '100%'`，仅品牌图（带 maxHeight 的 SVG）保留 auto，其余图片均填满容器允许自由拉伸
+- 导出 HTML 同步：所有图片统一 `height:100%`（之前非裁切图片是 `height:auto`）
+- 镜像翻转（flipH/flipV）通过 CSS `transform: scaleX(-1)/scaleY(-1)` 应用于 img 元素
+
+**5.21e 导出图片旋转与镜像分离**（`src/utils/exportHtml.ts`）：
+- **旋转**：应用于外层容器（`transform:rotate(${rotation}deg)`），与编辑器一致（框随图片旋转）
+- **镜像**：仅应用于 img 元素（`transform:scaleX(-1)/scaleY(-1)`），只翻转内容不翻转框
+- 非矩形裁切：外层 div 做形状裁切（`overflow:hidden` + `border-radius`），内层 img 做镜像
+- 修复前旋转和镜像都混在 img 的 transform 中，导致框不随图片旋转
+
+**5.21f 圆形/圆角裁切内部遮罩**（`src/components/ImageCropModal.tsx`）：
+- 圆形/圆角模式下，裁切框内但形状外的区域添加半透明遮罩（`rgba(0,0,0,0.25)`）
+- 使用 `mask-image: radial-gradient(ellipse closest-side ...)` 精确控制可见区域
+- 圆形：`transparent 98% → white 99%`（边缘清晰）
+- 圆角：`transparent 72% → white 82%`（过渡柔和）
+- 同时设置 `maskImage` 和 `WebkitMaskImage` 兼容不同浏览器
+
+**5.21g 形状切换绿色指示自动消失**（`src/components/ImageCropModal.tsx`）：
+- 形状切换时检测到正方形吸附后，300ms 自动清除绿色指示
+- 使用 `shapeGuideTimerRef` 管理定时器，避免多次切换时残留
+
+**5.21h 窗口聚焦剪贴板同步**（`src/App.tsx`）：
+- 新增 `window.addEventListener('focus', onFocus)` 监听
+- 用户在外部 App 复制后切回页面时，自动更新外部复制时间戳（`markExternalCopy()`）
+- 解决外部 App 的复制操作不触发当前页面 `copy` 事件的问题
+
+**5.21i 粘贴逻辑优化**（`src/components/Canvas.tsx`）：
+- 重构文档级 paste 监听器：先检查外部时间戳，再分别处理图片和文本
+- 逻辑更清晰：外部复制 → 检查图片优先 → 再检查文本 → 回退内部
+
+**5.21j Resize 初始尺寸优化**（`src/components/CanvasElement.tsx`）：
+- 优先使用 `node.style.width/height` 显式值作为 resize 初始尺寸
+- 避免 `overflow:visible` 时 `getBoundingClientRect` 被内容撑开导致尺寸跳变
+- 仅当 style 中没有显式宽高时才回退到 `getBoundingClientRect / zoom`
+
+**5.21k 平板媒体查询移除 height:auto!important**（`src/utils/exportHtml.ts`）：
+- 移除 `@media(min-width:769px) and (max-width:1024px)` 中的 `height:auto!important`
+- 修复 HTML 导出元素框架脱离实际图片边缘的问题
+
+**涉及文件**：
+- `src/App.tsx`：旋转预览、窗口聚焦剪贴板同步
+- `src/components/Toolbar.tsx`：预览模式全按钮禁用、导出流程优化
+- `src/utils/exportImage.ts`：FileSystemWritableFileStream 写入、错误处理、saveBlob 回退
+- `src/components/NodeRenderer.tsx`：图片自由拉伸、镜像翻转
+- `src/utils/exportHtml.ts`：旋转/镜像分离、图片高度统一、移除 height:auto!important
+- `src/components/ImageCropModal.tsx`：内部遮罩、形状切换指示消失
+- `src/components/Canvas.tsx`：粘贴逻辑优化
+- `src/components/CanvasElement.tsx`：Resize 初始尺寸优化
 
 ---
 

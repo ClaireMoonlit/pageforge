@@ -134,11 +134,10 @@ export function ImageCropModal() {
     }
   }, [open, cropModal.imageWidth, cropModal.imageHeight, cropModal.initialCrop, cropModal.initialShape])
 
-  // 形状切换时检测当前选区是否已经是正方形
+  // 形状切换时检测当前选区是否已经是正方形，短暂显示绿色指示后消失
   // 使用 cropRef 读取最新值，避免闭包读到初始 {0,0,0,0} 导致误判
-  // 第一性原理：绿框是"吸附中"指示器，不应在静止状态下显示。
-  // 打开弹窗时跳过（由初始化 effect 清空 guides），仅在用户主动切换形状时检测。
   const shapeSwitchCountRef = useRef(0)
+  const shapeGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (!open) return
     shapeSwitchCountRef.current += 1
@@ -146,6 +145,8 @@ export function ImageCropModal() {
     if (shapeSwitchCountRef.current <= 1) return
     const { width, height } = cropRef.current
     if (width === 0 || height === 0) return
+    // 清除之前的定时器
+    if (shapeGuideTimerRef.current) clearTimeout(shapeGuideTimerRef.current)
     const maxDim = Math.max(width, height)
     const relDiff = Math.abs(width - height) / maxDim
     if (relDiff <= SQ_SNAP_ON) {
@@ -153,6 +154,10 @@ export function ImageCropModal() {
     } else {
       setGuides((g) => g.filter((l) => l.type !== 'square'))
     }
+    // 300ms 后自动清除正方形指示
+    shapeGuideTimerRef.current = setTimeout(() => {
+      setGuides((g) => g.filter((l) => l.type !== 'square'))
+    }, 300)
   }, [shape, open])
 
   // 计算图片在弹窗中的显示尺寸（contain 适配）
@@ -372,20 +377,20 @@ export function ImageCropModal() {
 		        }
 
 		        // 正方形检测（相对差异 + 滞后阈值）
-		        // 第一性原理：当 ar=1 时投影天然保持正方形，不需要 uncW/uncH 检测。
-		        // 用 uncW/uncH 检测反而会因为鼠标轻微偏离对角线导致绿框闪烁。
-		        const isSquareAr = Math.abs(ar - 1) < 0.001
-		        let sqSnap: boolean
-		        if (isSquareAr) {
-		          sqSnap = true
-		          prevSnapRef.current.square = true
-		        } else {
-		          const uncMax = Math.max(uncW, uncH)
-		          const uncRelDiff = uncMax > 0 ? Math.abs(uncW - uncH) / uncMax : 0
-		          const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
-		          sqSnap = uncRelDiff <= sqThreshold
-		          prevSnapRef.current.square = sqSnap
-		        }
+			        // 第一性原理：当 ar=1 时投影天然保持正方形，不需要 uncW/uncH 检测。
+			        // 用 uncW/uncH 检测反而会因为鼠标轻微偏离对角线导致绿框闪烁。
+			        const isSquareAr = Math.abs(ar - 1) < 0.001
+			        let sqSnap: boolean
+			        if (isSquareAr) {
+			          sqSnap = true
+			          prevSnapRef.current.square = true
+			        } else {
+			          const uncMax = Math.max(uncW, uncH)
+			          const uncRelDiff = uncMax > 0 ? Math.abs(uncW - uncH) / uncMax : 0
+			          const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
+			          sqSnap = uncRelDiff <= sqThreshold
+			          prevSnapRef.current.square = sqSnap
+			        }
 
 		        // 始终用原始 ar 投影（自然尺寸），不做 aspect ratio 切换
 		        const minT = Math.max(minSize, minSize / ar)
@@ -472,10 +477,10 @@ export function ImageCropModal() {
 		            width = anchorX - x
 		            height = Math.max(minSize, Math.min(height, imgH - y))
 		          } else { // se
-		            width = Math.max(minSize, Math.min(width, imgW - x))
-		            height = Math.max(minSize, Math.min(height, imgH - y))
-		          }
-		          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
+			            width = Math.max(minSize, Math.min(width, imgW - x))
+			            height = Math.max(minSize, Math.min(height, imgH - y))
+			          }
+			          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
 		        } else {
 		          setGuides([])
 		        }
@@ -510,40 +515,41 @@ export function ImageCropModal() {
 	        }
 
 	        // 正方形检测用自然尺寸（滞后阈值）
-	        const natMax = Math.max(natWidth, natHeight)
-	        const natRelDiff = natMax > 0 ? Math.abs(natWidth - natHeight) / natMax : 0
-	        const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
-	        const sqSnap = natRelDiff <= sqThreshold
-	        prevSnapRef.current.square = sqSnap
+			        // 边缘手柄允许自由拉伸，仅当自然尺寸接近正方形时才触发吸附
+			        const natMax = Math.max(natWidth, natHeight)
+			        const natRelDiff = natMax > 0 ? Math.abs(natWidth - natHeight) / natMax : 0
+			        const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
+			        const sqSnap = natRelDiff <= sqThreshold
+			        prevSnapRef.current.square = sqSnap
 
-	        if (sqSnap) {
-	          // 磁吸修正：自由维度 = 固定维度，冻住不跟随鼠标
-	          if (corner === 'e') {
-	            width = Math.max(minSize, Math.min(natHeight, imgW - x))
-	            height = natHeight
-	          } else if (corner === 'w') {
-	            const anchorRight = drag.orig.x + drag.orig.width
-	            height = natHeight
-	            width = Math.max(minSize, Math.min(height, anchorRight))
-	            x = anchorRight - width
-	          } else if (corner === 's') {
-	            width = natWidth
-	            height = Math.max(minSize, Math.min(natWidth, imgH - y))
-	          } else if (corner === 'n') {
-	            const anchorBottom = drag.orig.y + drag.orig.height
-	            width = natWidth
-	            height = Math.max(minSize, Math.min(width, anchorBottom))
-	            y = anchorBottom - height
-	          }
-	          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
-	        } else {
-	          // 无吸附：直接用自然尺寸
-	          width = natWidth
-	          height = natHeight
-	          x = natX
-	          y = natY
-	          setGuides([])
-	        }
+			        if (sqSnap) {
+			          // 磁吸修正：冻结未拖拽的维度，让拖拽维度跟随
+			          if (corner === 'e') {
+			            width = Math.max(minSize, Math.min(natHeight, imgW - x))
+			            height = natHeight
+			          } else if (corner === 'w') {
+			            const anchorRight = drag.orig.x + drag.orig.width
+			            height = natHeight
+			            width = Math.max(minSize, Math.min(height, anchorRight))
+			            x = anchorRight - width
+			          } else if (corner === 's') {
+			            width = natWidth
+			            height = Math.max(minSize, Math.min(natWidth, imgH - y))
+			          } else if (corner === 'n') {
+			            const anchorBottom = drag.orig.y + drag.orig.height
+			            width = natWidth
+			            height = Math.max(minSize, Math.min(width, anchorBottom))
+			            y = anchorBottom - height
+			          }
+			          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
+			        } else {
+			          // 无吸附：直接用自然尺寸
+			          width = natWidth
+			          height = natHeight
+			          x = natX
+			          y = natY
+			          setGuides([])
+			        }
 	        liveCropRef.current = { x, y, width, height }
 	        setCrop({ x, y, width, height })
       }
@@ -556,7 +562,7 @@ export function ImageCropModal() {
     dragRef.current = null
     liveCropRef.current = null
     setDragMode(null)
-    // 松手后清除吸附指示
+    // 松手后清除吸附指示（短暂延迟，让用户看到吸附结果）
     setTimeout(() => setGuides([]), 300)
   }
 
@@ -682,6 +688,28 @@ export function ImageCropModal() {
         <div style={{ ...overlayStyle, left: 0, top: cropScreen.top + cropScreen.height, width: imgDisplay.width, height: imgDisplay.height - cropScreen.top - cropScreen.height }} />
         <div style={{ ...overlayStyle, left: 0, top: cropScreen.top, width: cropScreen.left, height: cropScreen.height }} />
         <div style={{ ...overlayStyle, left: cropScreen.left + cropScreen.width, top: cropScreen.top, width: imgDisplay.width - cropScreen.left - cropScreen.width, height: cropScreen.height }} />
+
+        {/* 圆形/圆角内部遮罩：框内但形状外的区域，比外部遮罩更淡 */}
+        {(shape === 'circle' || shape === 'rounded') && (
+          <div
+            style={{
+              position: 'absolute',
+              left: cropScreen.left,
+              top: cropScreen.top,
+              width: cropScreen.width,
+              height: cropScreen.height,
+              backgroundColor: 'rgba(0, 0, 0, 0.25)',
+              maskImage: shape === 'circle'
+                ? 'radial-gradient(ellipse closest-side at center, transparent 98%, white 99%)'
+                : 'radial-gradient(ellipse closest-side at center, transparent 72%, white 82%)',
+              WebkitMaskImage: shape === 'circle'
+                ? 'radial-gradient(ellipse closest-side at center, transparent 98%, white 99%)'
+                : 'radial-gradient(ellipse closest-side at center, transparent 72%, white 82%)',
+              pointerEvents: 'none',
+              zIndex: 10,
+            }}
+          />
+        )}
 
         {/* 吸附参考线（仿画布 snap line 样式）
             正方形/正圆吸附不画参考线：绿色边框已提供足够视觉反馈，在 pos:0 画线会出现在图片左边缘 */}

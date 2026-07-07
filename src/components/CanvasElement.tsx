@@ -374,11 +374,13 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     const el = elRef.current
     if (!el) return
     const zoom = useEditorStore.getState().zoom
+    // 优先使用 node.style 显式宽高（画布空间坐标），避免 overflow:visible 时
+    // getBoundingClientRect 被内容撑开导致初始尺寸跳变。
     const rect = el.getBoundingClientRect()
-    // rect.width/height 是屏幕像素，需要除以 zoom 转为画布空间坐标
-    // 否则在非 100% 缩放时，resize 初始尺寸会突变（例如 zoom=0.5 时直接缩一半）
-    const canvasW = rect.width / zoom
-    const canvasH = rect.height / zoom
+    const styleW = parseFloat(String(node.style.width))
+    const styleH = parseFloat(String(node.style.height))
+    const canvasW = Number.isFinite(styleW) ? styleW : rect.width / zoom
+    const canvasH = Number.isFinite(styleH) ? styleH : rect.height / zoom
     const start: ResizeStart = {
       clientX: e.clientX,
       clientY: e.clientY,

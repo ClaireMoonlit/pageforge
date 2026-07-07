@@ -502,6 +502,16 @@ export default function App() {
     return () => document.removeEventListener('copy', onCopy)
   }, [])
 
+  // 窗口聚焦监听：用户在外部 App 复制后切回页面时，更新外部复制时间戳
+  // 因为外部 App 的复制操作不会触发当前页面的 copy 事件
+  useEffect(() => {
+    const onFocus = () => {
+      markExternalCopy()
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
+
   return (
     <DndContext
       sensors={sensors}
@@ -543,7 +553,10 @@ export default function App() {
               // 画布有 transform: scale(zoom)，所以预览也同步缩放，保证视觉尺寸一致
               // transformOrigin: top left 确保左上角定位不变，缩放向右下展开
               ...nodeToCss(activeNode.style),
-              transform: `scale(${zoom})`,
+              // 组合 zoom 缩放 + 节点旋转（旋转在 props 中，不在 style 里）
+              transform: activeNode.props.rotation
+                ? `scale(${zoom}) rotate(${activeNode.props.rotation}deg)`
+                : `scale(${zoom})`,
               transformOrigin: 'top left',
               ...(activeNode.type === 'button'
                 ? { display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }

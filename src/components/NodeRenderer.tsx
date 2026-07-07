@@ -67,7 +67,6 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
       // 仅当有 maxHeight 时（如 .img-brand max-height:2.75rem）用 width:auto
       // 让 SVG/品牌图按 viewBox 比例显示；普通图片（含裁切后）始终填满容器
       const useAutoWidth = !!styleMaxHeight
-      const isShaped = shape !== 'rectangle'
 
       // 形状覆盖样式（裁切后的图片已包含裁切区域，不需要 cover/position）
       const shapeStyle: CSSProperties = {}
@@ -82,11 +81,17 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
           src={node.props.src}
           alt={node.props.alt || ''}
           style={{
+            // 仅品牌图（带 maxHeight）保留 width:auto 让 SVG 按 viewBox 比例；
+            // 其他所有图片均填满容器（含 height:100%），让用户可自由拉伸。
             width: useAutoWidth ? 'auto' : '100%',
-            height: isShaped ? '100%' : 'auto',
+            height: useAutoWidth ? 'auto' : '100%',
             maxWidth: '100%',
             display: 'block',
             borderRadius: 'inherit',
+            transform: [
+              node.props.flipH ? 'scaleX(-1)' : '',
+              node.props.flipV ? 'scaleY(-1)' : '',
+            ].filter(Boolean).join(' ') || undefined,
             ...shapeStyle,
           }}
         />

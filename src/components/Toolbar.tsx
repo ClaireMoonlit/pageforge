@@ -1,6 +1,6 @@
 import { useHistory, useEditorStore, findById } from '@/store/editorStore'
 import { downloadHtml } from '@/utils/exportHtml'
-import { exportAsPNG, exportAsPDF, getCanvasContentElement } from '@/utils/exportImage'
+import { exportAsPNG, exportAsPDF, getCanvasContentElement, getFileHandle } from '@/utils/exportImage'
 import { TemplatePanel } from '@/components/TemplatePanel'
 import { AlignToolbar } from '@/components/AlignToolbar'
 import { unifiedAsyncPaste } from '@/components/Canvas'
@@ -14,7 +14,7 @@ import {
 const btnCls =
   'shrink-0 whitespace-nowrap px-3 py-1.5 rounded text-sm bg-ink-700 hover:bg-ink-600 text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
 const primaryBtnCls =
-  'shrink-0 whitespace-nowrap px-3 py-1.5 rounded text-sm bg-brand-500 hover:bg-brand-400 text-white transition-colors'
+  'shrink-0 whitespace-nowrap px-3 py-1.5 rounded text-sm bg-brand-500 hover:bg-brand-400 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
 
 export function Toolbar() {
   const { undo, redo, canUndo, canRedo } = useHistory()
@@ -88,12 +88,19 @@ export function Toolbar() {
     if (!el) return
     setExporting('png')
     try {
+      // 先弹出保存对话框（用户感知即时响应），再渲染 canvas
+      const handle = await getFileHandle('pageforge-export.png', 'image/png')
+      if (handle === null && 'showSaveFilePicker' in window) {
+        // 用户取消或获取句柄失败 → 静默退出
+        setExporting(null)
+        return
+      }
       await exportAsPNG(el, 'pageforge-export.png', {
         backgroundColor: canvas.backgroundColor,
-      })
+      }, handle ?? undefined)
     } catch (err) {
       console.error('PNG export failed:', err)
-      alert('PNG 导出失败，请重试')
+      setTimeout(() => alert('PNG 导出失败，请重试'), 0)
     } finally {
       setExporting(null)
     }
@@ -105,12 +112,18 @@ export function Toolbar() {
     if (!el) return
     setExporting('pdf')
     try {
+      // 先弹出保存对话框（用户感知即时响应），再渲染 canvas
+      const handle = await getFileHandle('pageforge-export.pdf', 'application/pdf')
+      if (handle === null && 'showSaveFilePicker' in window) {
+        setExporting(null)
+        return
+      }
       await exportAsPDF(el, 'pageforge-export.pdf', {
         backgroundColor: canvas.backgroundColor,
-      })
+      }, handle ?? undefined)
     } catch (err) {
       console.error('PDF export failed:', err)
-      alert('PDF 导出失败，请重试')
+      setTimeout(() => alert('PDF 导出失败，请重试'), 0)
     } finally {
       setExporting(null)
     }
@@ -134,15 +147,15 @@ export function Toolbar() {
         <span className="text-gray-100 font-semibold">造页工坊</span>
         <span className="text-gray-500 text-xs hidden sm:inline">PageForge</span>
       </div>
-      <button onClick={() => undo()} disabled={!canUndo} className={btnCls} title="撤销 (Ctrl+Z)">
+      <button onClick={() => undo()} disabled={previewMode || !canUndo} className={btnCls} title="撤销 (Ctrl+Z)">
         <span className="inline-flex items-center gap-1.5"><IconUndo size={16} /> 撤销</span>
       </button>
-      <button onClick={() => redo()} disabled={!canRedo} className={btnCls} title="重做 (Ctrl+Shift+Z)">
+      <button onClick={() => redo()} disabled={previewMode || !canRedo} className={btnCls} title="重做 (Ctrl+Shift+Z)">
         <span className="inline-flex items-center gap-1.5"><IconRedo size={16} /> 重做</span>
       </button>
       <button
         onClick={() => selectedId && removeNode(selectedId)}
-        disabled={!selectedId}
+        disabled={previewMode || !selectedId}
         className={btnCls}
         title="删除 (Delete)"
       >
@@ -150,8 +163,8 @@ export function Toolbar() {
       </button>
       <button
         onClick={handleFormatBrush}
-        disabled={!selectedId && !formatBrushStyle}
-        className={formatBrushStyle ? primaryBtnCls : btnCls}
+        disabled={previewMode || (!selectedId && !formatBrushStyle)}
+        className={formatBrushStyle && !previewMode ? primaryBtnCls : btnCls}
         title="格式刷：先选中源元素点击激活，再点击目标元素应用样式"
       >
         <span className="inline-flex items-center gap-1.5"><IconBrush size={16} /> 格式刷</span>
@@ -159,7 +172,7 @@ export function Toolbar() {
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
       <button
         onClick={() => selectedId && copyNode(selectedId)}
-        disabled={!selectedId}
+        disabled={previewMode || !selectedId}
         className={btnCls}
         title="复制 (Ctrl+C)"
       >
@@ -172,6 +185,7 @@ export function Toolbar() {
           const ch = parseInt(canvas.height) || 800
           await unifiedAsyncPaste({ x: Math.round(cw / 2), y: Math.round(ch / 2) })
         }}
+        disabled={previewMode}
         className={btnCls}
         title="粘贴 (Ctrl+V)"
       >
@@ -179,21 +193,22 @@ export function Toolbar() {
       </button>
       <button
         onClick={() => selectedId && duplicateNode(selectedId)}
-        disabled={!selectedId}
+        disabled={previewMode || !selectedId}
         className={btnCls}
         title="重复 (Ctrl+D)"
       >
         <span className="inline-flex items-center gap-1.5"><IconDuplicate size={16} /> 重复</span>
       </button>
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
-      <button onClick={clearCanvas} className={btnCls}>清空</button>
+      <button onClick={clearCanvas} disabled={previewMode} className={btnCls}>清空</button>
       <AlignToolbar />
-      <TemplatePanel key={nodes.length} />
+      {!previewMode && <TemplatePanel key={nodes.length} />}
       <div className="ml-auto flex items-center gap-3">
         <span className="text-gray-500 text-xs">{nodeCount} 个元素</span>
         <button
           onClick={togglePreviewMode}
-          className={previewMode ? primaryBtnCls : btnCls}
+          disabled={exporting !== null}
+          className={previewMode && exporting === null ? primaryBtnCls : btnCls}
           title={previewMode ? '退出预览' : '预览交互（点击/悬停/动画/链接）'}
         >
           <span className="inline-flex items-center gap-1.5">
@@ -204,7 +219,7 @@ export function Toolbar() {
         <button
           ref={exportBtnRef}
           onClick={() => setShowExportMenu((v) => !v)}
-          disabled={nodeCount === 0 || exporting !== null}
+          disabled={nodeCount === 0 || exporting !== null || previewMode}
           className={primaryBtnCls}
           title="导出"
         >
@@ -238,7 +253,7 @@ export function Toolbar() {
             <button
               onClick={handleExportHTML}
               disabled={exporting !== null}
-              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 rounded"
               style={{ background: 'transparent' }}
             >
               <IconDownload size={14} /> HTML 文件
@@ -246,7 +261,7 @@ export function Toolbar() {
             <button
               onClick={handleExportPNG}
               disabled={exporting !== null}
-              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 rounded"
               style={{ background: 'transparent' }}
             >
               <IconDownload size={14} /> PNG 图片
@@ -254,7 +269,7 @@ export function Toolbar() {
             <button
               onClick={handleExportPDF}
               disabled={exporting !== null}
-              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 flex items-center gap-2 rounded"
+              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-ink-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 rounded"
               style={{ background: 'transparent' }}
             >
               <IconDownload size={14} /> PDF 文档

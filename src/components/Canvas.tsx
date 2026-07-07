@@ -275,33 +275,34 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
       }
       const items = e.clipboardData?.items
       if (!items) return
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.startsWith('image/')) {
-          e.preventDefault()
-          const internalTime = getLastInternalCopyTime()
-          const externalTime = getLastExternalCopyTime()
-          // 清除内部剪贴板产生的节点（如果外部复制更新或同等，则用外部图片替换）
-          const pendingId = getAndClearPendingPasteId()
-          if (externalTime >= internalTime) {
-            // 外部复制更新或同等（包括首次使用两者均为 0 的情况）
-            if (pendingId) {
-              useEditorStore.getState().removeNode(pendingId)
-            }
-            handlePaste(e as unknown as React.ClipboardEvent)
+
+      const internalTime = getLastInternalCopyTime()
+      const externalTime = getLastExternalCopyTime()
+      const pendingId = getAndClearPendingPasteId()
+
+      // 外部复制更新时，检查剪贴板内容
+      if (externalTime >= internalTime) {
+        // 先检查图片（富媒体优先）
+        let hasImage = false
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.startsWith('image/')) {
+            hasImage = true
+            break
           }
-          // 内部复制更新 → 保留内部节点，不处理外部图片
+        }
+        if (hasImage) {
+          e.preventDefault()
+          if (pendingId) {
+            useEditorStore.getState().removeNode(pendingId)
+          }
+          handlePaste(e as unknown as React.ClipboardEvent)
           return
         }
-      }
 
-      // 外部文本粘贴：创建 text 节点
-      const text = e.clipboardData?.getData('text/plain')
-      if (text && text.trim()) {
-        const internalTime = getLastInternalCopyTime()
-        const externalTime = getLastExternalCopyTime()
-        if (externalTime >= internalTime) {
+        // 再检查文本
+        const text = e.clipboardData?.getData('text/plain')
+        if (text && text.trim()) {
           e.preventDefault()
-          const pendingId = getAndClearPendingPasteId()
           if (pendingId) {
             useEditorStore.getState().removeNode(pendingId)
           }
