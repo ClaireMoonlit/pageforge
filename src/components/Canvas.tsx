@@ -813,6 +813,60 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
             }}
             onClick={closeCtxMenu}
           >
+            {/* 上移一层 */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                closeCtxMenu()
+                const sid = useEditorStore.getState().selectedId
+                if (sid) useEditorStore.getState().moveLayer(sid, 'up')
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
+                fontSize: 13,
+                userSelect: 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent'
+              }}
+            >
+              上移一层
+            </div>
+            {/* 下移一层 */}
+            <div
+              onClick={(e) => {
+                e.stopPropagation()
+                closeCtxMenu()
+                const sid = useEditorStore.getState().selectedId
+                if (sid) useEditorStore.getState().moveLayer(sid, 'down')
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
+                fontSize: 13,
+                userSelect: 'none',
+              }}
+              onMouseEnter={(e) => {
+                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.background = 'transparent'
+              }}
+            >
+              下移一层
+            </div>
+            {/* 分隔线 */}
+            {useEditorStore.getState().selectedId && (
+              <div style={{ height: 1, background: '#475569', margin: '4px 6px' }} />
+            )}
             {/* 右键复制按钮 */}
             <div
               onClick={(e) => {

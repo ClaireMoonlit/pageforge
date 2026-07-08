@@ -193,6 +193,9 @@ export const IconChevronRight = ({ size = 24 }: IconProps = {}): ReactElement =>
 export const IconChevronDown = ({ size = 24 }: IconProps = {}): ReactElement =>
   path('M6 9l6 6 6-6', size)
 
+export const IconChevronUp = ({ size = 24 }: IconProps = {}): ReactElement =>
+  path('M6 15l6-6 6 6', size)
+
 export const IconEye = ({ size = 24 }: IconProps = {}): ReactElement =>
   paths([
     { d: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z' },

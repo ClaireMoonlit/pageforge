@@ -26,6 +26,15 @@ textarea::placeholder {
   transform: translate(-50%, -50%) !important;
 }
 
+/* 图层树拖拽放置指示线 */
+.layer-drop-indicator {
+  height: 2px;
+  background: #6366f1;
+  border-radius: 1px;
+  margin-right: 8px;
+  pointer-events: none;
+}
+
 /* ═══════════════════════════════════════════════
    入场动画 keyframes：编辑器内预览模式与导出 HTML 共享同一组类名
    ═══════════════════════════════════════════════ */

@@ -107,6 +107,8 @@ interface EditorState {
   moveNode: (id: string, x: number, y: number) => void
   /** 把节点移到新父级（或不传则移到根级），并插入到指定索引位置 */
   reparentNode: (id: string, parentId: string | null, index?: number) => void
+  /** 图层排序：将节点在同级内上移或下移一层 */
+  moveLayer: (id: string, direction: 'up' | 'down') => void
   toggleVisible: (id: string) => void
   updateNodeStyle: (id: string, style: Partial<NodeStyle>) => void
   updateNodeProps: (id: string, props: Partial<NodeProps>) => void
@@ -346,6 +348,42 @@ export const useEditorStore = create<EditorState>()(
             const at = index === undefined ? arr.length : Math.max(0, Math.min(index, arr.length))
             arr.splice(at, 0, moved)
           }
+        }),
+
+      moveLayer: (id, direction) =>
+        set((state) => {
+          // 找到节点的父数组和索引
+          let parentId: string | null = null
+          let idx = -1
+          const findParent = (arr: CanvasNode[], parent: string | null): boolean => {
+            const i = arr.findIndex((n) => n.id === id)
+            if (i >= 0) { parentId = parent; idx = i; return true }
+            for (const n of arr) {
+              if (n.children.length && findParent(n.children, n.id)) return true
+            }
+            return false
+          }
+          findParent(state.nodes, null)
+          if (idx < 0) return
+
+          // 计算目标索引
+          const newIdx = direction === 'up' ? idx - 1 : idx + 1
+
+          // 获取父数组引用
+          const getArr = (arr: CanvasNode[]): CanvasNode[] | null => {
+            if (parentId === null) return arr
+            for (const n of arr) {
+              if (n.id === parentId) return n.children
+              if (n.children.length) { const r = getArr(n.children); if (r) return r }
+            }
+            return null
+          }
+          const arr = getArr(state.nodes)
+          if (!arr || newIdx < 0 || newIdx >= arr.length) return
+
+          // 交换：从旧位置移除，插入新位置
+          const [moved] = arr.splice(idx, 1)
+          arr.splice(newIdx, 0, moved)
         }),
 
       toggleVisible: (id) =>
