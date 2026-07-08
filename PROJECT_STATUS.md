@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-09（§5.21m 旋转图片拖拽 50% 缩放"飞"修复）
-> 当前版本：v0.2.0（开发中）
+> 最后更新：2026-07-09（§5.21n 等间距两端指示 + 图片比例吸附 + 图层树拖拽排序 + 模板动效）
+> 当前版本：v0.2.0
 
 ---
 
@@ -925,6 +925,28 @@ interface CanvasNode {
 	  3. `positionCanvasDrag` modifier 减去 `scaleOffsetX = w*(1-zoom)/2` 和 `scaleOffsetY = h*(1-zoom)/2`，补偿 scale-from-center 的视觉偏移
 	- **涉及文件**：`src/App.tsx`
 
+	**5.21n 等间距吸附两端指示 + 图片比例吸附 + 图层树拖拽 + 模板动效**（2026-07-09）：
+	
+	**n-1 图层树拖拽排序 + 右键上/下移一层**（`82bc138`）：
+	- **LayerTree.tsx**：集成 `@dnd-kit/core` 的 `DndContext` + `useDraggable`/`useDroppable`，实现拖拽排序。通过 `flattenTree` 将嵌套节点转为扁平列表，简化拖拽位置计算。支持拖入容器内部改变层级（`reparentNode`）。
+	- **editorStore.ts**：新增 `reparentNode(id, parentId, index)` 和 `moveLayer(id, 'up'|'down')` 两个 API。
+	- **Canvas.tsx**：右键菜单新增「上移一层」「下移一层」选项。
+	- **涉及文件**：`src/components/LayerTree.tsx`, `src/store/editorStore.ts`, `src/components/Canvas.tsx`, `src/index.css`
+
+	**n-2 模板动效 + 导出/导入不丢失**（`311779c`）：
+	- **templates.ts**：新增 `scrollAnim(type, delay, duration)` 辅助函数，为 SaaS 模板 Hero/特性/定价/CTA 区域添加 `slide-up` 滚动入场动画。
+	- **importHtml.ts**：解析 `data-pf-animate`/`data-pf-trigger`/`data-pf-link`/`data-pf-interaction`/`data-pf-hover` 属性，重建 `InteractionConfig`。
+	- **涉及文件**：`src/data/templates.ts`, `src/utils/importHtml.ts`
+
+	**n-3 等间距吸附两端指示**（`fe27d8c`）：
+	- **snapping.ts**：`SnapLine` 接口新增 `dragStart`/`dragEnd` 字段；`findEqualSpacingX/Y` 返回吸附后拖拽元素边缘坐标；`computeSnap` 填充到 SnapLine。
+	- **Canvas.tsx**：X/Y 轴间距渲染改为两端指示：左侧 `fromPos → dragStart` + 右侧 `dragEnd → toPos`，各显示独立间距值。
+	- **涉及文件**：`src/utils/snapping.ts`, `src/components/Canvas.tsx`
+
+	**n-4 图片自由拉伸原比例吸附**（`fe27d8c`）：
+	- **CanvasElement.tsx**：四角手柄 resize 时检测宽高比接近原比例时自动吸附。有裁切用 `cropRect` 比例，无裁切从 DOM `<img>` 获取 `naturalWidth/naturalHeight`。吸附阈值 3% 开启 / 6% 脱离（2x 滞后），保持鼠标驱动维度，调整另一维度。`ratioSnapRef` 跟踪吸附状态。
+	- **涉及文件**：`src/components/CanvasElement.tsx`
+
 ---
 
 ## 6. 交互功能
@@ -1125,12 +1147,12 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ### 当前迭代（2026-07-09）—— 用户提出的 4 个优化
 
-| # | 功能 | 优先级 | 涉及文件 | 难度 |
-|---|------|--------|----------|------|
-| 1 | **图层树拖拽排序 + 右键上/下移一层** | 🔴 高 | `LayerTree.tsx`, `CanvasElement.tsx`, `editorStore.ts` | 中 |
-| 2 | **模板动效 + 导出/导入不丢失** | 🟡 中 | `templates.ts`, `index.css`, `exportHtml.ts`, `importHtml.ts` | 中 |
-| 3 | **等间距吸附显示优化** | 🟡 中 | `snapping.ts`, `App.tsx` | 低 |
-| 4 | **图片自由拉伸原比例吸附** | 🟢 低 | `CanvasElement.tsx`, `ImageCropModal.tsx` | 中 |
+| # | 功能 | 状态 | 涉及文件 | 提交 |
+|---|------|------|----------|------|
+| 1 | **图层树拖拽排序 + 右键上/下移一层** | ✅ 已完成 | `LayerTree.tsx`, `Canvas.tsx`, `editorStore.ts` | `82bc138` |
+| 2 | **模板动效 + 导出/导入不丢失** | ✅ 已完成 | `templates.ts`, `index.css`, `exportHtml.ts`, `importHtml.ts` | `311779c` |
+| 3 | **等间距吸附显示优化（两端指示）** | ✅ 已完成 | `snapping.ts`, `Canvas.tsx` | `fe27d8c` |
+| 4 | **图片自由拉伸原比例吸附** | ✅ 已完成 | `CanvasElement.tsx` | `fe27d8c` |
 
 ### 详细规划
 
