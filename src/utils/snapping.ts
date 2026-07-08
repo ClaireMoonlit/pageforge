@@ -21,6 +21,10 @@ export interface SnapLine {
   fromPos?: number
   /** 等间距时：右/下目标左边缘坐标（spacing 类型时使用） */
   toPos?: number
+  /** 等间距时：拖拽元素左/上边缘坐标（用于绘制两端间距指示） */
+  dragStart?: number
+  /** 等间距时：拖拽元素右/下边缘坐标（用于绘制两端间距指示） */
+  dragEnd?: number
 }
 
 /** 上一次吸附状态（用于滞后阈值） */
@@ -180,6 +184,8 @@ export function computeSnap(
       gap: spacingSnapX.gap,
       fromPos: spacingSnapX.fromPos,
       toPos: spacingSnapX.toPos,
+      dragStart: spacingSnapX.dragStart,
+      dragEnd: spacingSnapX.dragEnd,
     })
   }
 
@@ -194,6 +200,8 @@ export function computeSnap(
       gap: spacingSnapY.gap,
       fromPos: spacingSnapY.fromPos,
       toPos: spacingSnapY.toPos,
+      dragStart: spacingSnapY.dragStart,
+      dragEnd: spacingSnapY.dragEnd,
     })
   }
 
@@ -249,7 +257,7 @@ function findEqualSpacingX(
   drag: Rect,
   targets: Rect[],
   threshold: number,
-): { dx: number; pos: number; gap: number; fromPos: number; toPos: number } | null {
+): { dx: number; pos: number; gap: number; fromPos: number; toPos: number; dragStart: number; dragEnd: number } | null {
   // 寻找拖拽元素左侧的目标（左目标右边缘 < 拖拽左边缘）和右侧的目标（右目标左边缘 > 拖拽右边缘）
   const leftTargets = targets
     .filter((t) => t.right < drag.left)
@@ -265,7 +273,15 @@ function findEqualSpacingX(
       const idealLeft = lt.right + (gap - dragWidth) / 2
       const offset = drag.left - idealLeft
       if (Math.abs(offset) <= threshold) {
-        return { dx: -offset, pos: drag.left - offset + dragWidth / 2, gap, fromPos: lt.right, toPos: rt.left }
+        return {
+          dx: -offset,
+          pos: drag.left - offset + dragWidth / 2,
+          gap,
+          fromPos: lt.right,
+          toPos: rt.left,
+          dragStart: drag.left - offset,
+          dragEnd: drag.right - offset,
+        }
       }
     }
   }
@@ -277,7 +293,7 @@ function findEqualSpacingY(
   drag: Rect,
   targets: Rect[],
   threshold: number,
-): { dy: number; pos: number; gap: number; fromPos: number; toPos: number } | null {
+): { dy: number; pos: number; gap: number; fromPos: number; toPos: number; dragStart: number; dragEnd: number } | null {
   const topTargets = targets
     .filter((t) => t.bottom < drag.top)
     .sort((a, b) => b.bottom - a.bottom)
@@ -292,7 +308,15 @@ function findEqualSpacingY(
       const idealTop = tt.bottom + (gap - dragHeight) / 2
       const offset = drag.top - idealTop
       if (Math.abs(offset) <= threshold) {
-        return { dy: -offset, pos: drag.top - offset + dragHeight / 2, gap, fromPos: tt.bottom, toPos: bt.top }
+        return {
+          dy: -offset,
+          pos: drag.top - offset + dragHeight / 2,
+          gap,
+          fromPos: tt.bottom,
+          toPos: bt.top,
+          dragStart: drag.top - offset,
+          dragEnd: drag.bottom - offset,
+        }
       }
     }
   }

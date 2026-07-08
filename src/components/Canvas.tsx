@@ -685,27 +685,13 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                     />
                     {line.type === 'spacing' && line.gap !== undefined && (
                       <>
-                        {/* 在 fromPos 到拖拽元素左边缘之间画间距括号 */}
-                        {line.fromPos !== undefined && (
+                        {/* 左侧间距：fromPos → dragStart */}
+                        {line.fromPos !== undefined && line.dragStart !== undefined && (
                           <>
-                            <line
-                              x1={line.fromPos}
-                              y1={4}
-                              x2={line.fromPos}
-                              y2={16}
-                              stroke={color}
-                              strokeWidth={2}
-                            />
-                            <line
-                              x1={line.fromPos}
-                              y1={10}
-                              x2={line.pos - 4}
-                              y2={10}
-                              stroke={color}
-                              strokeWidth={1.5}
-                            />
+                            <line x1={line.fromPos} y1={4} x2={line.fromPos} y2={16} stroke={color} strokeWidth={2} />
+                            <line x1={line.fromPos} y1={10} x2={line.dragStart} y2={10} stroke={color} strokeWidth={1.5} />
                             <rect
-                              x={(line.fromPos + line.pos) / 2 - 24}
+                              x={(line.fromPos + line.dragStart) / 2 - 24}
                               y={2}
                               width={48}
                               height={16}
@@ -714,7 +700,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                               filter="url(#snap-label-shadow)"
                             />
                             <text
-                              x={(line.fromPos + line.pos) / 2}
+                              x={(line.fromPos + line.dragStart) / 2}
                               y={13}
                               fill="#ffffff"
                               fontSize={11}
@@ -723,7 +709,35 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                               textAnchor="middle"
                               dominantBaseline="middle"
                             >
-                              ={Math.round(line.gap / 2)}px
+                              ={Math.round(line.dragStart - line.fromPos)}px
+                            </text>
+                          </>
+                        )}
+                        {/* 右侧间距：dragEnd → toPos */}
+                        {line.toPos !== undefined && line.dragEnd !== undefined && (
+                          <>
+                            <line x1={line.toPos} y1={4} x2={line.toPos} y2={16} stroke={color} strokeWidth={2} />
+                            <line x1={line.dragEnd} y1={10} x2={line.toPos} y2={10} stroke={color} strokeWidth={1.5} />
+                            <rect
+                              x={(line.dragEnd + line.toPos) / 2 - 24}
+                              y={2}
+                              width={48}
+                              height={16}
+                              rx={3}
+                              fill="#f59e0b"
+                              filter="url(#snap-label-shadow)"
+                            />
+                            <text
+                              x={(line.dragEnd + line.toPos) / 2}
+                              y={13}
+                              fill="#ffffff"
+                              fontSize={11}
+                              fontFamily="monospace"
+                              fontWeight={600}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                            >
+                              ={Math.round(line.toPos - line.dragEnd)}px
                             </text>
                           </>
                         )}
@@ -745,27 +759,14 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                   />
                   {line.type === 'spacing' && line.gap !== undefined && (
                     <>
-                      {line.fromPos !== undefined && (
+                      {/* 上方间距：fromPos → dragStart */}
+                      {line.fromPos !== undefined && line.dragStart !== undefined && (
                         <>
-                          <line
-                            x1={4}
-                            y1={line.fromPos}
-                            x2={16}
-                            y2={line.fromPos}
-                            stroke={color}
-                            strokeWidth={2}
-                          />
-                          <line
-                            x1={10}
-                            y1={line.fromPos}
-                            x2={10}
-                            y2={line.pos - 4}
-                            stroke={color}
-                            strokeWidth={1.5}
-                          />
+                          <line x1={4} y1={line.fromPos} x2={16} y2={line.fromPos} stroke={color} strokeWidth={2} />
+                          <line x1={10} y1={line.fromPos} x2={10} y2={line.dragStart} stroke={color} strokeWidth={1.5} />
                           <rect
                             x={2}
-                            y={(line.fromPos + line.pos) / 2 - 8}
+                            y={(line.fromPos + line.dragStart) / 2 - 8}
                             width={42}
                             height={16}
                             rx={3}
@@ -774,7 +775,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                           />
                           <text
                             x={23}
-                            y={(line.fromPos + line.pos) / 2}
+                            y={(line.fromPos + line.dragStart) / 2}
                             fill="#ffffff"
                             fontSize={11}
                             fontFamily="monospace"
@@ -782,7 +783,35 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                             textAnchor="middle"
                             dominantBaseline="middle"
                           >
-                            ={Math.round(line.gap / 2)}px
+                            ={Math.round(line.dragStart - line.fromPos)}px
+                          </text>
+                        </>
+                      )}
+                      {/* 下方间距：dragEnd → toPos */}
+                      {line.toPos !== undefined && line.dragEnd !== undefined && (
+                        <>
+                          <line x1={4} y1={line.toPos} x2={16} y2={line.toPos} stroke={color} strokeWidth={2} />
+                          <line x1={10} y1={line.dragEnd} x2={10} y2={line.toPos} stroke={color} strokeWidth={1.5} />
+                          <rect
+                            x={2}
+                            y={(line.dragEnd + line.toPos) / 2 - 8}
+                            width={42}
+                            height={16}
+                            rx={3}
+                            fill="#f59e0b"
+                            filter="url(#snap-label-shadow)"
+                          />
+                          <text
+                            x={23}
+                            y={(line.dragEnd + line.toPos) / 2}
+                            fill="#ffffff"
+                            fontSize={11}
+                            fontFamily="monospace"
+                            fontWeight={600}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                          >
+                            ={Math.round(line.toPos - line.dragEnd)}px
                           </text>
                         </>
                       )}

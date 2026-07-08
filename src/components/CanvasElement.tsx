@@ -39,6 +39,21 @@ interface ResizeStart {
 
 const MIN_SIZE = 20
 
+/** 获取图片目标比例：有裁切用裁切后比例，无裁切用原始图片自然比例 */
+function getImageTargetRatio(node: CanvasNode, el: HTMLDivElement | null): number {
+  // 优先使用裁切后比例
+  if (node.props.cropRect) {
+    const { width, height } = node.props.cropRect
+    if (height > 0) return width / height
+  }
+  // 回退：从 DOM 中的 <img> 获取自然尺寸
+  const img = el?.querySelector('img')
+  if (img && img.naturalWidth > 0 && img.naturalHeight > 0) {
+    return img.naturalWidth / img.naturalHeight
+  }
+  return 0
+}
+
 export const CanvasElement = memo(function CanvasElement({ node, isRoot = false }: { node: CanvasNode; isRoot?: boolean }) {
   const selectNode = useEditorStore((s) => s.selectNode)
   const toggleSelection = useEditorStore((s) => s.toggleSelection)
@@ -77,6 +92,12 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
   const startRef = useRef<ResizeStart | null>(null)
   const liveRef = useRef<{ w: number; h: number; x: number; y: number } | null>(null)
   const elRef = useRef<HTMLDivElement | null>(null)
+  /** 图片比例吸附：当前是否处于吸附状态（用于滞后阈值） */
+  const ratioSnapRef = useRef(false)
+
+  /** 图片比例吸附阈值 */
+  const RATIO_SNAP_ON = 0.03   // 3% 进入吸附
+  const RATIO_SNAP_OFF = 0.06  // 6% 脱离吸附（2x 滞后）
 
   /** 悬停预览状态 */
   const [isHovered, setIsHovered] = useState(false)
@@ -392,6 +413,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       zoom,
     }
     startRef.current = start
+    ratioSnapRef.current = false
     const initial = { w: canvasW, h: canvasH, x: start.x, y: start.y }
     liveRef.current = initial
     setResize(initial)
@@ -418,6 +440,32 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       if (s.aff.y) newY = s.y + (s.h - MIN_SIZE)
       newH = MIN_SIZE
     }
+
+    // 图片自由拉伸原比例吸附（仅四角手柄触发）
+    if (node.type === 'image' && s.aff.x && s.aff.y && s.aff.w !== 0 && s.aff.h !== 0) {
+      const targetRatio = getImageTargetRatio(node, elRef.current)
+      if (targetRatio > 0) {
+        const currentRatio = newW / newH
+        const ratioDiff = Math.abs(currentRatio - targetRatio) / targetRatio
+        const threshold = ratioSnapRef.current ? RATIO_SNAP_OFF : RATIO_SNAP_ON
+        if (ratioDiff < threshold) {
+          ratioSnapRef.current = true
+          // 保持更接近鼠标驱动的维度，调整另一维度
+          const hFromW = newW / targetRatio
+          const wFromH = newH * targetRatio
+          if (Math.abs(hFromW - newH) < Math.abs(wFromH - newW)) {
+            newH = hFromW
+            if (s.aff.y) newY = s.y + (s.h - newH) * (s.aff.h > 0 ? 0 : 1)
+          } else {
+            newW = wFromH
+            if (s.aff.x) newX = s.x + (s.w - newW) * (s.aff.w > 0 ? 0 : 1)
+          }
+        } else {
+          ratioSnapRef.current = false
+        }
+      }
+    }
+
     const next = { w: newW, h: newH, x: newX, y: newY }
     liveRef.current = next
     setResize(next)
@@ -431,6 +479,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     }
     startRef.current = null
     liveRef.current = null
+    ratioSnapRef.current = false
     setResize(null)
     ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
   }
