@@ -905,12 +905,14 @@ interface CanvasNode {
 - `src/components/CanvasElement.tsx`：Resize 初始尺寸优化
 
 **5.21l 旋转图片拖拽预览位置偏离**（`src/App.tsx`）：
-- **现象**：按住旋转过的图片拖动不松手，预览偏离实际位置，但松手位置正确
-- **根因**：DragOverlay 预览 div 的 `transformOrigin: 'top left'` 导致旋转围绕左上角，而画布上实际元素旋转围绕自身中心，两个旋转中心不同造成预览视觉偏移
-- **修复**：
-  1. `transformOrigin` 从 `'top left'` 改为 `'center center'`，旋转围绕元素中心与实际元素一致
-  2. `centerLibraryOnCursor` modifier 同步更新：`ow * curZoom / 2` → `ow / 2`（center 原点下 scale 从中心展开，视觉中心不随 zoom 变化）
-- **数学验证**：drop 位置 `overlayRect.left` 计算在两种 transformOrigin 下等价（`cursor.x - ow*zoom/2 - overRect.left`），松手位置不受影响
+- **现象**：按住旋转过的图片拖动不松手，预览向外跳，偏离实际位置（类似裁切框手柄 snap 跳跃），但松手位置正确
+- **根因**：dnd-kit 的 DragOverlay 用 `activeNodeRect`（旋转后 bounding rect 的 top-left）定位 wrapper，但实际元素按未旋转的 `(x, y)` 定位。旋转后 bounding rect 的 top-left 与未旋转 top-left 有偏移（旋转越大偏移越大），导致预览从错误位置开始渲染
+- **修复**（两处联动）：
+  1. `onDragStart` 中计算旋转位置补偿 `rotationOffsetRef`：`未旋转屏幕坐标 - bounding rect 屏幕坐标`，存入 ref
+  2. DragOverlay 预览 div 添加 `position: 'relative'; left: offsetX; top: offsetY`，将预览修正到未旋转的 top-left 位置
+  3. `transformOrigin: 'center center'` 保证旋转围绕元素中心，与实际元素一致
+  4. `centerLibraryOnCursor` modifier 同步：`ow * curZoom / 2` → `ow / 2`
+- **重置**：`onDragStart` 开头、`onDragEnd`、`onDragCancel` 均重置 `rotationOffsetRef` 为 `{0, 0}`
 - **涉及文件**：`src/App.tsx`
 
 ---

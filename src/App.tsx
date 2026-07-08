@@ -111,6 +111,8 @@ export default function App() {
   const snapOffsetRef = useRef({ x: 0, y: 0 })
   /** 上一次吸附状态（供滞后阈值防抖） */
   const prevSnapRef = useRef<PrevSnapState>({ snappedX: false, snappedY: false })
+  /** 旋转元素拖拽时的位置补偿：旋转后 bounding rect 与未旋转 top-left 的屏幕坐标差 */
+  const rotationOffsetRef = useRef({ x: 0, y: 0 })
 
   // 拖拽期间持续监听 pointermove，记录真实光标位置
   // （库拖拽 DragOverlay 居中 modifier 和画布吸附计算都会用到 cursorRef；
@@ -181,6 +183,7 @@ export default function App() {
     dragSourceRef.current = data.source
     setDragSource(data.source)
     prevSnapRef.current = { snappedX: false, snappedY: false }
+    rotationOffsetRef.current = { x: 0, y: 0 }
     // 初始化光标位置为激活点，供 modifier 居中计算
     const ae = event.activatorEvent as PointerEvent
     cursorRef.current = { x: ae.clientX, y: ae.clientY }
@@ -197,21 +200,33 @@ export default function App() {
       }
       setActiveNode(preview)
     } else if (data.source === 'canvas' && data.id) {
-	      // 画布拖拽：取真实节点做预览（含子节点，故用递归预览）
-	      const nodes = useEditorStore.getState().nodes
-	      const n = findById(nodes, data.id)
-	      setActiveNode(n)
-	      if (n) {
-	        draggingCanvasIdRef.current = data.id
-	        // 存储绝对画布坐标（含父级偏移），确保后续计算（onDragMove / onDragEnd）
-	        // 在统一坐标系下进行，避免子元素相对坐标与容器绝对坐标混用导致吸附到左上角
-	        const parentOffset = getParentOffset(nodes, data.id)
-	        dragOriginRef.current = {
-	          x: (n.style.x ?? 0) + parentOffset.x,
-	          y: (n.style.y ?? 0) + parentOffset.y,
-	        }
-	      }
-	    }
+		      // 画布拖拽：取真实节点做预览（含子节点，故用递归预览）
+		      const nodes = useEditorStore.getState().nodes
+		      const n = findById(nodes, data.id)
+		      setActiveNode(n)
+		      if (n) {
+		        draggingCanvasIdRef.current = data.id
+		        // 存储绝对画布坐标（含父级偏移），确保后续计算（onDragMove / onDragEnd）
+		        // 在统一坐标系下进行，避免子元素相对坐标与容器绝对坐标混用导致吸附到左上角
+		        const parentOffset = getParentOffset(nodes, data.id)
+		        dragOriginRef.current = {
+		          x: (n.style.x ?? 0) + parentOffset.x,
+		          y: (n.style.y ?? 0) + parentOffset.y,
+		        }
+		        // 旋转元素：计算 bounding rect 与未旋转 top-left 的屏幕坐标差，
+		        // 用于 DragOverlay 预览位置补偿，避免预览"往外跳"
+		        const activeRect = event.active.rect.current.initial
+		        const canvasEl = canvasRef.current
+		        if (activeRect && canvasEl) {
+		          const canvasRect = canvasEl.getBoundingClientRect()
+		          const zoom = useEditorStore.getState().zoom
+		          rotationOffsetRef.current = {
+		            x: canvasRect.left + dragOriginRef.current.x * zoom - activeRect.left,
+		            y: canvasRect.top + dragOriginRef.current.y * zoom - activeRect.top,
+		          }
+		        }
+		      }
+		    }
   }
 
   const onDragEnd = (event: DragEndEvent) => {
@@ -225,6 +240,7 @@ export default function App() {
     setSnapLines([])
     snapOffsetRef.current = { x: 0, y: 0 }
     prevSnapRef.current = { snappedX: false, snappedY: false }
+    rotationOffsetRef.current = { x: 0, y: 0 }
     draggingCanvasIdRef.current = null
     const data = active.data.current as
       | { source: 'library' | 'canvas'; type?: string; id?: string; x?: number; y?: number }
@@ -309,6 +325,7 @@ export default function App() {
     setSnapLines([])
     snapOffsetRef.current = { x: 0, y: 0 }
     prevSnapRef.current = { snappedX: false, snappedY: false }
+    rotationOffsetRef.current = { x: 0, y: 0 }
     draggingCanvasIdRef.current = null
   }
 
@@ -552,9 +569,13 @@ export default function App() {
               // 不用 position: absolute，让 DragOverlay wrapper 自然包裹内容
               // 画布有 transform: scale(zoom)，所以预览也同步缩放，保证视觉尺寸一致
               ...nodeToCss(activeNode.style),
+              // 旋转元素：补偿 bounding rect 与未旋转 top-left 的差值，
+              // 避免旋转后预览"往外跳"（与裁切框手柄 snap 跳跃类似）
+              position: 'relative',
+              left: rotationOffsetRef.current.x,
+              top: rotationOffsetRef.current.y,
               // 组合 zoom 缩放 + 节点旋转（旋转在 props 中，不在 style 里）
-              // transformOrigin: center center —— 旋转围绕元素中心，与画布上实际元素一致，
-              // 避免 top left 导致的旋转中心偏移使预览视觉偏离。
+              // transformOrigin: center center —— 旋转围绕元素中心，与画布上实际元素一致
               transform: activeNode.props.rotation
                 ? `scale(${zoom}) rotate(${activeNode.props.rotation}deg)`
                 : `scale(${zoom})`,
