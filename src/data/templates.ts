@@ -1,4 +1,4 @@
-import type { CanvasConfig, CanvasNode } from '@/types'
+import type { AnimationType, CanvasConfig, CanvasNode } from '@/types'
 
 export interface PageTemplate {
   id: string
@@ -13,6 +13,11 @@ let idCounter = 0
 function nid(): string {
   idCounter += 1
   return `t_n${idCounter}`
+}
+
+/** 快捷创建滚动入场动画配置 */
+function scrollAnim(type: AnimationType, delay = 0, duration = 600) {
+  return { interaction: { animation: { type, duration, delay, easing: 'ease-out' as const, trigger: 'scroll' as const } } }
 }
 
 // ─── 共用色板 ───
@@ -139,11 +144,11 @@ export const pageTemplates: PageTemplate[] = [
       { id: nid(), type: 'button', children: [], visible: true, props: { text: '免费试用' }, style: { x: 1020, y: 22, width: '100px', height: '36px', fontSize: '14px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '8px 0', borderRadius: '8px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
 
       // Hero
-      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '用拖拽搭建你的网页', level: 1 }, style: { x: 200, y: 110, width: '800px', fontSize: '48px', fontWeight: '800', color: C.sDark, textAlign: 'center', letterSpacing: '-0.03em', padding: '0', fontFamily: C.fSpace } },
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需代码，10 分钟创建专业落地页。一键导出 HTML，部署到任何地方。' }, style: { x: 220, y: 195, width: '760px', fontSize: '18px', color: C.sGray, textAlign: 'center', lineHeight: '1.65', padding: '0', fontFamily: C.fInter } },
+      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '用拖拽搭建你的网页', level: 1 }, style: { x: 200, y: 110, width: '800px', fontSize: '48px', fontWeight: '800', color: C.sDark, textAlign: 'center', letterSpacing: '-0.03em', padding: '0', fontFamily: C.fSpace }, ...scrollAnim('slide-up', 0) },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需代码，10 分钟创建专业落地页。一键导出 HTML，部署到任何地方。' }, style: { x: 220, y: 195, width: '760px', fontSize: '18px', color: C.sGray, textAlign: 'center', lineHeight: '1.65', padding: '0', fontFamily: C.fInter }, ...scrollAnim('slide-up', 100) },
       // Hero 按钮：x=500 让 240 宽按钮居中在 1200 画布中心（600 - 120 = 480 ≈ 500，给一点视觉偏移修正 padding 收缩）
-      { id: nid(), type: 'button', children: [], visible: true, props: { text: '开始免费使用 →' }, style: { x: 500, y: 270, width: '200px', height: '50px', fontSize: '16px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '14px 0', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter } },
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需信用卡 · 永久免费版可用' }, style: { x: 460, y: 330, width: '280px', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
+      { id: nid(), type: 'button', children: [], visible: true, props: { text: '开始免费使用 →' }, style: { x: 500, y: 270, width: '200px', height: '50px', fontSize: '16px', fontWeight: '600', color: C.white, backgroundColor: C.sPrimary, padding: '14px 0', borderRadius: '10px', textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: C.fInter }, ...scrollAnim('slide-up', 200) },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无需信用卡 · 永久免费版可用' }, style: { x: 460, y: 330, width: '280px', fontSize: '13px', color: '#9ca3af', textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter }, ...scrollAnim('slide-up', 300) },
 
       // 数据条（4 列严格等分：1040px / 4 = 260px 每列，x=0/260/520/780）
       {
@@ -162,8 +167,8 @@ export const pageTemplates: PageTemplate[] = [
       },
 
       // 特性区标题
-      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '核心特性', level: 2 }, style: { x: 400, y: 560, width: '400px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: '一切你需要的，我们都有' }, style: { x: 380, y: 608, width: '440px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
+      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '核心特性', level: 2 }, style: { x: 400, y: 560, width: '400px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace }, ...scrollAnim('slide-up', 0) },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: '一切你需要的，我们都有' }, style: { x: 380, y: 608, width: '440px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter }, ...scrollAnim('slide-up', 100) },
 
       // ═══════════════════════════════════════════════
       // 6 张卡片统一宽版 320px，与 CTA 容器（x=80, w=1040）对齐
@@ -171,24 +176,25 @@ export const pageTemplates: PageTemplate[] = [
       // ═══════════════════════════════════════════════
 
       // 3 张特性卡片（320px 宽版，内容舒展）
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '拖拽编辑', subtitle: '直观的拖拽操作，无需代码即可自由布局。所见即所得，实时预览效果。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 80, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '一键导出', subtitle: '生成独立 HTML 文件，代码干净、结构清晰。部署到 Netlify、Vercel 或任意静态托管。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 440, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '响应式设计', subtitle: '桌面端绝对定位 + 移动端流式堆叠。一套设计，完美适配电脑、平板、手机。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 800, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '拖拽编辑', subtitle: '直观的拖拽操作，无需代码即可自由布局。所见即所得，实时预览效果。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 80, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 0) },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '一键导出', subtitle: '生成独立 HTML 文件，代码干净、结构清晰。部署到 Netlify、Vercel 或任意静态托管。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 440, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 100) },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '响应式设计', subtitle: '桌面端绝对定位 + 移动端流式堆叠。一套设计，完美适配电脑、平板、手机。', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 800, y: 680, width: '320px', height: '160px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 200) },
 
       // 定价区标题（特性卡片底部 840，间距 60 → y=900）
-      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '选择适合你的方案', level: 2 }, style: { x: 310, y: 900, width: '580px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace } },
-      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无论个人还是企业，都有合适的方案' }, style: { x: 360, y: 948, width: '480px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter } },
+      { id: nid(), type: 'heading', children: [], visible: true, props: { text: '选择适合你的方案', level: 2 }, style: { x: 310, y: 900, width: '580px', fontSize: '30px', fontWeight: '700', color: C.sDark, textAlign: 'center', padding: '0', fontFamily: C.fSpace }, ...scrollAnim('slide-up', 0) },
+      { id: nid(), type: 'text', children: [], visible: true, props: { text: '无论个人还是企业，都有合适的方案' }, style: { x: 360, y: 948, width: '480px', fontSize: '16px', color: C.sGray, textAlign: 'center', lineHeight: '1.5', padding: '0', fontFamily: C.fInter }, ...scrollAnim('slide-up', 100) },
 
       // 3 张定价卡片（320px 宽版，与特性卡、CTA 容器对齐；y=1020，与副标题间距 72px）
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 80, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.5 }, style: { x: 440, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
-      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 800, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter } },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '免费版 · ¥0/月', subtitle: '✓ 3 个项目\n✓ 基础组件库\n✓ HTML 导出\n✓ 社区支持', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 80, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 0) },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '专业版 · ¥99/月', subtitle: '✓ 无限项目\n✓ 全部组件\n✓ 高级导出\n✓ 优先支持\n✓ 自定义域名', titleFontSize: '18px', titleColor: C.white, subtitleFontSize: '14px', subtitleColor: '#c7d2fe', subtitleLineHeight: 1.5 }, style: { x: 440, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.sPrimary, borderRadius: '12px', boxShadow: '0 4px 16px rgba(79,70,229,0.3)', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 100) },
+      { id: nid(), type: 'card', children: [], visible: true, props: { text: '企业版 · 联系我们', subtitle: '✓ 专业版全部功能\n✓ 团队协作\n✓ API 接口\n✓ 专属支持\n✓ 定制开发', titleFontSize: '18px', titleColor: C.sDark, subtitleFontSize: '14px', subtitleColor: C.sGray, subtitleLineHeight: 1.5 }, style: { x: 800, y: 1020, width: '320px', height: '200px', padding: '24px', backgroundColor: C.white, borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', fontFamily: C.fInter }, ...scrollAnim('slide-up', 200) },
 
       // 底部 CTA 容器（定价卡片底部 1220，间距 40 → y=1260；height 200 + padding 40 40 增加内部留白）
       // 外部下留白 = 画布 1520 - (1260 + 200) = 60px（保持）
       {
         id: nid(), type: 'container', visible: true, props: {},
         style: { x: 80, y: 1260, width: '1040px', height: '200px', padding: '40px 40px', backgroundColor: '#312e81', borderRadius: '12px', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
+        ...scrollAnim('slide-up', 0),
         children: [
           // 关键修正：子元素 x 是相对父容器的 left，不是相对画布。
           // 父容器 x=80, width=1040, padding=40 横向 → 内容区 x=40 到 x=1000（相对父容器），

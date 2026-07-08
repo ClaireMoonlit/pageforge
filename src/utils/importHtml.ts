@@ -1,4 +1,4 @@
-import type { CanvasConfig, CanvasNode, ComponentType, NodeStyle } from '@/types'
+import type { AnimationType, CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeStyle } from '@/types'
 import { ICON_PATHS } from './iconPaths'
 
 let idCounter = 0
@@ -1210,6 +1210,45 @@ function buildElement(
     props: props as CanvasNode['props'],
     style: nodeStyleBase as NodeStyle,
     children: [],
+  }
+
+  // 解析 PageForge 导出的交互数据（动画、链接、点击、悬停）
+  if (pfType) {
+    const interaction: InteractionConfig = {}
+    // 入场动画
+    const animClass = el.getAttribute('data-pf-animate')
+    if (animClass) {
+      const animType = animClass.replace('pf-animate-', '') as AnimationType
+      interaction.animation = {
+        type: animType || 'fade-in',
+        duration: 600,
+        delay: parseFloat(el.getAttribute('data-pf-delay') || '0'),
+        easing: 'ease',
+        trigger: (el.getAttribute('data-pf-trigger') as 'load' | 'scroll') || 'load',
+        threshold: el.getAttribute('data-pf-threshold') ? parseFloat(el.getAttribute('data-pf-threshold')!) : undefined,
+      }
+    }
+    // 链接
+    const linkHref = el.getAttribute('data-pf-link')
+    if (linkHref) {
+      interaction.link = {
+        href: linkHref,
+        target: (el.getAttribute('data-pf-link-target') as '_self' | '_blank') || '_self',
+      }
+    }
+    // 点击动作
+    const onClickRaw = el.getAttribute('data-pf-interaction')
+    if (onClickRaw) {
+      try { interaction.onClick = JSON.parse(onClickRaw) } catch { /* ignore */ }
+    }
+    // 悬停效果
+    const hoverRaw = el.getAttribute('data-pf-hover')
+    if (hoverRaw) {
+      try { interaction.onHover = JSON.parse(hoverRaw) } catch { /* ignore */ }
+    }
+    if (Object.keys(interaction).length > 0) {
+      node.interaction = interaction
+    }
   }
 
   return { el, type, style: style as Record<string, string>, pad, props, effectiveW, node, localVars, childStyles, inheritedStyle: computedInheritedStyle }
