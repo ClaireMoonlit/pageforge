@@ -140,23 +140,23 @@ export default function App() {
    * 非 library 时（画布拖拽）原样返回 transform，避免重置画布拖拽位置。
    */
   const centerLibraryOnCursor: Modifier = ({ transform, activeNodeRect, draggingNodeRect }) => {
-	    if (dragSourceRef.current !== 'library') return transform
-	    const el = overlayRef.current
-	    const ow = el?.offsetWidth ?? 100
-	    const oh = el?.offsetHeight ?? 40
-	    const curZoom = useEditorStore.getState().zoom
-	    // wrapper 用的是 activeNodeRect（库项位置），modifier 返回的是 delta
-	    const anr = activeNodeRect ?? draggingNodeRect
-	    const baseLeft = anr?.left ?? 0
-	    const baseTop = anr?.top ?? 0
-	    // 预览 overlay 有 transform: scale(zoom)，视觉宽高 = ow * zoom，oh * zoom
-	    return {
-	      x: cursorRef.current.x - (ow * curZoom) / 2 - baseLeft,
-	      y: cursorRef.current.y - (oh * curZoom) / 2 - baseTop,
-	      scaleX: 1,
-	      scaleY: 1,
-	    }
-	  }
+		    if (dragSourceRef.current !== 'library') return transform
+		    const el = overlayRef.current
+		    const ow = el?.offsetWidth ?? 100
+		    const oh = el?.offsetHeight ?? 40
+		    // wrapper 用的是 activeNodeRect（库项位置），modifier 返回的是 delta
+		    const anr = activeNodeRect ?? draggingNodeRect
+		    const baseLeft = anr?.left ?? 0
+		    const baseTop = anr?.top ?? 0
+		    // transformOrigin: center center —— scale 从中心展开，视觉中心 = wrapper 中心（ow/2），
+		    // 不需要乘以 zoom（因 scale 不改变 center 位置）
+		    return {
+		      x: cursorRef.current.x - ow / 2 - baseLeft,
+		      y: cursorRef.current.y - oh / 2 - baseTop,
+		      scaleX: 1,
+		      scaleY: 1,
+		    }
+		  }
 
   /**
    * 库拖拽 modifier：把 snap offset 应用到 DragOverlay。
@@ -551,13 +551,14 @@ export default function App() {
             style={{
               // 不用 position: absolute，让 DragOverlay wrapper 自然包裹内容
               // 画布有 transform: scale(zoom)，所以预览也同步缩放，保证视觉尺寸一致
-              // transformOrigin: top left 确保左上角定位不变，缩放向右下展开
               ...nodeToCss(activeNode.style),
               // 组合 zoom 缩放 + 节点旋转（旋转在 props 中，不在 style 里）
+              // transformOrigin: center center —— 旋转围绕元素中心，与画布上实际元素一致，
+              // 避免 top left 导致的旋转中心偏移使预览视觉偏离。
               transform: activeNode.props.rotation
                 ? `scale(${zoom}) rotate(${activeNode.props.rotation}deg)`
                 : `scale(${zoom})`,
-              transformOrigin: 'top left',
+              transformOrigin: 'center center',
               ...(activeNode.type === 'button'
                 ? { display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }
                 : {}),

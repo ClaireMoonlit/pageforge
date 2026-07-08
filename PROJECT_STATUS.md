@@ -1,7 +1,7 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-08（§5.21 旋转预览 + 预览模式工具栏 + PNG 安全警告 + 图片自由拉伸）
+> 最后更新：2026-07-08（§5.21l 旋转预览 transformOrigin 修复）
 > 当前版本：v0.2.0（开发中）
 
 ---
@@ -903,6 +903,15 @@ interface CanvasNode {
 - `src/components/ImageCropModal.tsx`：内部遮罩、形状切换指示消失
 - `src/components/Canvas.tsx`：粘贴逻辑优化
 - `src/components/CanvasElement.tsx`：Resize 初始尺寸优化
+
+**5.21l 旋转图片拖拽预览位置偏离**（`src/App.tsx`）：
+- **现象**：按住旋转过的图片拖动不松手，预览偏离实际位置，但松手位置正确
+- **根因**：DragOverlay 预览 div 的 `transformOrigin: 'top left'` 导致旋转围绕左上角，而画布上实际元素旋转围绕自身中心，两个旋转中心不同造成预览视觉偏移
+- **修复**：
+  1. `transformOrigin` 从 `'top left'` 改为 `'center center'`，旋转围绕元素中心与实际元素一致
+  2. `centerLibraryOnCursor` modifier 同步更新：`ow * curZoom / 2` → `ow / 2`（center 原点下 scale 从中心展开，视觉中心不随 zoom 变化）
+- **数学验证**：drop 位置 `overlayRect.left` 计算在两种 transformOrigin 下等价（`cursor.x - ow*zoom/2 - overRect.left`），松手位置不受影响
+- **涉及文件**：`src/App.tsx`
 
 ---
 
