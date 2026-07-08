@@ -111,8 +111,7 @@ export default function App() {
   const snapOffsetRef = useRef({ x: 0, y: 0 })
   /** 上一次吸附状态（供滞后阈值防抖） */
   const prevSnapRef = useRef<PrevSnapState>({ snappedX: false, snappedY: false })
-  /** 旋转元素拖拽时的位置补偿：旋转后 bounding rect 与未旋转 top-left 的屏幕坐标差 */
-  const rotationOffsetRef = useRef({ x: 0, y: 0 })
+  
 
   // 拖拽期间持续监听 pointermove，记录真实光标位置
   // （库拖拽 DragOverlay 居中 modifier 和画布吸附计算都会用到 cursorRef；
@@ -183,7 +182,6 @@ export default function App() {
     dragSourceRef.current = data.source
     setDragSource(data.source)
     prevSnapRef.current = { snappedX: false, snappedY: false }
-    rotationOffsetRef.current = { x: 0, y: 0 }
     // 初始化光标位置为激活点，供 modifier 居中计算
     const ae = event.activatorEvent as PointerEvent
     cursorRef.current = { x: ae.clientX, y: ae.clientY }
@@ -213,18 +211,7 @@ export default function App() {
 		          x: (n.style.x ?? 0) + parentOffset.x,
 		          y: (n.style.y ?? 0) + parentOffset.y,
 		        }
-		        // 旋转元素：计算 bounding rect 与未旋转 top-left 的屏幕坐标差，
-		        // 用于 DragOverlay 预览位置补偿，避免预览"往外跳"
-		        const activeRect = event.active.rect.current.initial
-		        const canvasEl = canvasRef.current
-		        if (activeRect && canvasEl) {
-		          const canvasRect = canvasEl.getBoundingClientRect()
-		          const zoom = useEditorStore.getState().zoom
-		          rotationOffsetRef.current = {
-		            x: canvasRect.left + dragOriginRef.current.x * zoom - activeRect.left,
-		            y: canvasRect.top + dragOriginRef.current.y * zoom - activeRect.top,
-		          }
-		        }
+		        
 		      }
 		    }
   }
@@ -240,7 +227,6 @@ export default function App() {
     setSnapLines([])
     snapOffsetRef.current = { x: 0, y: 0 }
     prevSnapRef.current = { snappedX: false, snappedY: false }
-    rotationOffsetRef.current = { x: 0, y: 0 }
     draggingCanvasIdRef.current = null
     const data = active.data.current as
       | { source: 'library' | 'canvas'; type?: string; id?: string; x?: number; y?: number }
@@ -325,7 +311,6 @@ export default function App() {
     setSnapLines([])
     snapOffsetRef.current = { x: 0, y: 0 }
     prevSnapRef.current = { snappedX: false, snappedY: false }
-    rotationOffsetRef.current = { x: 0, y: 0 }
     draggingCanvasIdRef.current = null
   }
 
@@ -398,15 +383,29 @@ export default function App() {
     }
   }
 
-  /** modifier：把 snap offset 应用到画布拖拽 overlay 的 transform，让预览也吸附 */
-  const applySnap: Modifier = ({ transform }) => {
+  /** modifier：画布拖拽时把旋转偏移 + snap 补偿到 overlay 的 transform。
+   * 仿照 centerLibraryOnCursor 的模式：在 modifier 中直接计算正确的 transform，
+   * 而不是用 onDragStart 中的 event.active.rect.current.initial（该值在 onDragStart
+   * 调用时永远为 null，因为 dispatch(DragStart) 在 onDragStart 之后执行）。
+   * activeNodeRect 在 DragOverlay 渲染时已可用，包含旋转后的 bounding box 位置。 */
+  const positionCanvasDrag: Modifier = ({ transform, activeNodeRect }) => {
     if (dragSourceRef.current !== 'canvas') return transform
+    const anr = activeNodeRect
+    if (!anr) return transform
+    const canvasEl = canvasRef.current
+    if (!canvasEl) return transform
+    const canvasRect = canvasEl.getBoundingClientRect()
     const zoom = useEditorStore.getState().zoom
-    // snapOffset 是画布空间，transform.x 是屏幕空间，需要乘以 zoom
+    // 未旋转元素的屏幕位置
+    const unrotatedX = canvasRect.left + dragOriginRef.current.x * zoom
+    const unrotatedY = canvasRect.top + dragOriginRef.current.y * zoom
+    // PositionedOverlay 定位在 anr.left/top（旋转后 bounding box），
+    // 补偿旋转偏移 + drag delta + snap delta
     return {
-      ...transform,
-      x: transform.x + snapOffsetRef.current.x * zoom,
-      y: transform.y + snapOffsetRef.current.y * zoom,
+      x: unrotatedX - anr.left + transform.x + snapOffsetRef.current.x * zoom,
+      y: unrotatedY - anr.top + transform.y + snapOffsetRef.current.y * zoom,
+      scaleX: 1,
+      scaleY: 1,
     }
   }
 
@@ -553,13 +552,13 @@ export default function App() {
             不作用于 DragOverlay），否则库拖拽时看不见的 library item 被定位，画面看到
             的 DragOverlay 仍按 dnd-kit 默认 transform 渲染，造成"飞"
           - 库拖拽：centerLibraryOnCursor 把中心贴到光标 + applySnapToLibrary 同步吸附
-          - 画布拖拽：applySnap 同步吸附 */}
+          - 画布拖拽：positionCanvasDrag 补偿旋转偏移 + 同步吸附 */}
       {activeNode && (
         <DragOverlay
           dropAnimation={null}
           modifiers={
             dragSource === 'canvas'
-              ? [applySnap]
+              ? [positionCanvasDrag]
               : [centerLibraryOnCursor, applySnapToLibrary]
           }
         >
@@ -569,11 +568,7 @@ export default function App() {
               // 不用 position: absolute，让 DragOverlay wrapper 自然包裹内容
               // 画布有 transform: scale(zoom)，所以预览也同步缩放，保证视觉尺寸一致
               ...nodeToCss(activeNode.style),
-              // 旋转元素：补偿 bounding rect 与未旋转 top-left 的差值，
-              // 避免旋转后预览"往外跳"（与裁切框手柄 snap 跳跃类似）
-              position: 'relative',
-              left: rotationOffsetRef.current.x,
-              top: rotationOffsetRef.current.y,
+              // 旋转偏移补偿已移到 positionCanvasDrag modifier 中处理
               // 组合 zoom 缩放 + 节点旋转（旋转在 props 中，不在 style 里）
               // transformOrigin: center center —— 旋转围绕元素中心，与画布上实际元素一致
               transform: activeNode.props.rotation
