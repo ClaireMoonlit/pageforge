@@ -1,7 +1,7 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-08（§5.21l 旋转预览 transformOrigin 修复）
+> 最后更新：2026-07-09（§5.21m 旋转图片拖拽 50% 缩放"飞"修复）
 > 当前版本：v0.2.0（开发中）
 
 ---
@@ -905,15 +905,25 @@ interface CanvasNode {
 - `src/components/CanvasElement.tsx`：Resize 初始尺寸优化
 
 **5.21l 旋转图片拖拽预览位置偏离**（`src/App.tsx`）：
-- **现象**：按住旋转过的图片拖动不松手，预览向外跳，偏离实际位置（类似裁切框手柄 snap 跳跃），但松手位置正确
-- **根因**：dnd-kit 的 DragOverlay 用 `activeNodeRect`（旋转后 bounding rect 的 top-left）定位 wrapper，但实际元素按未旋转的 `(x, y)` 定位。旋转后 bounding rect 的 top-left 与未旋转 top-left 有偏移（旋转越大偏移越大），导致预览从错误位置开始渲染
-- **修复**（两处联动）：
-  1. `onDragStart` 中计算旋转位置补偿 `rotationOffsetRef`：`未旋转屏幕坐标 - bounding rect 屏幕坐标`，存入 ref
-  2. DragOverlay 预览 div 添加 `position: 'relative'; left: offsetX; top: offsetY`，将预览修正到未旋转的 top-left 位置
-  3. `transformOrigin: 'center center'` 保证旋转围绕元素中心，与实际元素一致
-  4. `centerLibraryOnCursor` modifier 同步：`ow * curZoom / 2` → `ow / 2`
-- **重置**：`onDragStart` 开头、`onDragEnd`、`onDragCancel` 均重置 `rotationOffsetRef` 为 `{0, 0}`
-- **涉及文件**：`src/App.tsx`
+	- **现象**：按住旋转过的图片拖动不松手，预览向外跳，偏离实际位置（类似裁切框手柄 snap 跳跃），但松手位置正确
+	- **根因**：dnd-kit 的 DragOverlay 用 `activeNodeRect`（旋转后 bounding rect 的 top-left）定位 wrapper，但实际元素按未旋转的 `(x, y)` 定位。旋转后 bounding rect 的 top-left 与未旋转 top-left 有偏移（旋转越大偏移越大），导致预览从错误位置开始渲染
+	- **修复**（两处联动）：
+	  1. `onDragStart` 中计算旋转位置补偿 `rotationOffsetRef`：`未旋转屏幕坐标 - bounding rect 屏幕坐标`，存入 ref
+	  2. DragOverlay 预览 div 添加 `position: 'relative'; left: offsetX; top: offsetY`，将预览修正到未旋转的 top-left 位置
+	  3. `transformOrigin: 'center center'` 保证旋转围绕元素中心，与实际元素一致
+	  4. `centerLibraryOnCursor` modifier 同步：`ow * curZoom / 2` → `ow / 2`
+	- **重置**：`onDragStart` 开头、`onDragEnd`、`onDragCancel` 均重置 `rotationOffsetRef` 为 `{0, 0}`
+
+	**5.21m 旋转图片拖拽 50% 缩放"飞"修复**（`src/App.tsx`）：
+	- **现象**：画布 100% 缩放时旋转图片拖拽正常，50% 缩放时预览"飞"（偏移），其他非旋转组件正常
+	- **第一性原理彻查**：
+	  1. 深入分析 dnd-kit 源码发现 `activeNodeRect` 使用 `getTransformAgnosticClientRect` 测量，**忽略了元素自身的 CSS transform（包括旋转）**。因此之前的 `unrotatedX - anr.left` 旋转补偿始终为 0，是死代码。
+	  2. 真正根因是**缩放原点不一致**：画布 canvas 使用 `transformOrigin: 'top left'`（从左上角缩放），而 DragOverlay overlay 使用 `transformOrigin: 'center center'`（为了旋转正确）。当 zoom ≠ 100% 时，从中心缩放导致视觉中心偏移 `(w*(1-zoom)/2, h*(1-zoom)/2)`。100% 缩放时偏移为 0，50% 时偏移为 `(w/4, h/4)`。
+	- **修复**：
+	  1. 新增 `dragSizeRef` 存储拖拽元素的画布空间尺寸（w/h）
+	  2. `onDragStart` 中填充 `dragSizeRef`（库拖拽和画布拖拽均覆盖）
+	  3. `positionCanvasDrag` modifier 减去 `scaleOffsetX = w*(1-zoom)/2` 和 `scaleOffsetY = h*(1-zoom)/2`，补偿 scale-from-center 的视觉偏移
+	- **涉及文件**：`src/App.tsx`
 
 ---
 
@@ -1070,7 +1080,7 @@ interface InteractionConfig {
 
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| [src/App.tsx](file:///d:/My%20Projects/PageForge/src/App.tsx) | ~540 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算 |
+| [src/App.tsx](file:///d:/My%20Projects/PageForge/src/App.tsx) | ~610 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算、scale-from-center 补偿 |
 | [src/utils/importHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/importHtml.ts) | ~1611 | HTML 解析核心，CSS 选择器处理、特判逻辑 |
 | [src/utils/exportHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/exportHtml.ts) | ~432 | 节点 → HTML 导出：groupRows 分行、responsiveCSS 三层断点、字体收集、SVG 图标、交互属性 |
 | [src/utils/interactionRuntime.ts](file:///d:/My%20Projects/PageForge/src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
@@ -1113,11 +1123,53 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ## 11. 接下来的工作建议
 
-1. **组件库扩充**：轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion
-2. **样式系统深化**：CSS 变量、全局主题切换、颜色调色板
-3. **体验优化**：撤销栈粒度优化、编组/解组、快捷键补全
-4. **交互扩展**：在 `onClick` 中支持 `confirm` 对话框、`navigate-back`、`state` 切换（条件显示）；新增 `onLoad` 触发时序编排
-5. **测试与部署**：完善自动化测试覆盖、GitHub Pages 持续部署
+### 当前迭代（2026-07-09）—— 用户提出的 4 个优化
+
+| # | 功能 | 优先级 | 涉及文件 | 难度 |
+|---|------|--------|----------|------|
+| 1 | **图层树拖拽排序 + 右键上/下移一层** | 🔴 高 | `LayerTree.tsx`, `CanvasElement.tsx`, `editorStore.ts` | 中 |
+| 2 | **模板动效 + 导出/导入不丢失** | 🟡 中 | `templates.ts`, `index.css`, `exportHtml.ts`, `importHtml.ts` | 中 |
+| 3 | **等间距吸附显示优化** | 🟡 中 | `snapping.ts`, `App.tsx` | 低 |
+| 4 | **图片自由拉伸原比例吸附** | 🟢 低 | `CanvasElement.tsx`, `ImageCropModal.tsx` | 中 |
+
+### 详细规划
+
+#### 1. 图层树拖拽排序 + 右键上/下移一层
+- **LayerTree.tsx**：集成 `@dnd-kit/sortable`，拖拽图层项改变 `node.children` 顺序 → `reparentNode(id, parentId, newIndex)`
+- **editorStore.ts**：新增 `moveLayerUp(id)` / `moveLayerDown(id)` 方法（在兄弟节点中交换位置）
+- **CanvasElement.tsx**：右键菜单新增「上移一层」「下移一层」按钮，调用 store 方法
+- **注意**：图层顺序 = 渲染顺序（z-index），顶层节点在 LayerTree 顶部显示
+
+#### 2. 模板动效 + 导出/入不丢失
+- **templates.ts**：为已有模板节点添加 `interaction.animation` 配置（如 Hero 区 fade-in、特性卡 slide-up）
+- **index.css**：已有 `@keyframes pf-animate-*` 类，确保动效类型齐全
+- **exportHtml.ts**：验证动效信息（`data-pf-animate` 属性 + CSS class）在导出 HTML 中正确输出
+- **importHtml.ts**：验证 `data-pf-animate` 属性在导入时还原为 `interaction.animation` 配置
+- **测试**：导出模板 HTML → 浏览器打开确认动效 → 重新导入确认动效配置保留
+
+#### 3. 等间距吸附显示优化
+- **现状**：间距吸附线只在一端显示（如左边缘对齐），不显示间距数值
+- **snapping.ts**：`computeSnap` 中增加间距吸附线类型（两端均显示，中间标注间距值）
+- **App.tsx / Canvas.tsx**：`snapLines` 渲染支持间距标签（如 `← 40px →`）
+- **视觉**：粉色虚线两端各一条短线 + 中间间距数值标签
+
+#### 4. 图片自由拉伸原比例吸附
+- **CanvasElement.tsx** resize 手柄：在自由拉伸时检测当前宽高比是否接近原比例
+  - 无裁切图片：使用 `naturalWidth / naturalHeight`
+  - 有裁切图片：使用 `cropRect.width / cropRect.height`
+- **吸附逻辑**（类似正方形吸附，但比例动态）：
+  - 吸附阈值：相对差异 `|currentRatio - targetRatio| / targetRatio < 3%`
+  - 滞后：5% 退出吸附
+  - 吸附时固定对角锚点，修正另一维度
+- **视觉反馈**：接近原比例时显示蓝色辅助线/边框
+
+### 中长期规划
+
+5. **组件库扩充**：轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion
+6. **样式系统深化**：CSS 变量、全局主题切换、颜色调色板
+7. **体验优化**：撤销栈粒度优化、编组/解组、快捷键补全（Ctrl+A 全选）
+8. **交互扩展**：`onClick` 支持 `confirm` 对话框、`navigate-back`、条件显示；新增 `onLoad` 触发时序编排
+9. **测试与部署**：完善自动化测试覆盖、GitHub Pages 持续部署
 
 ---
 

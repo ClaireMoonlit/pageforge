@@ -111,6 +111,8 @@ export default function App() {
   const snapOffsetRef = useRef({ x: 0, y: 0 })
   /** 上一次吸附状态（供滞后阈值防抖） */
   const prevSnapRef = useRef<PrevSnapState>({ snappedX: false, snappedY: false })
+  /** 拖拽中 active node 的画布空间尺寸（用于补偿 scale(zoom) 从 center 缩放导致的视觉偏移） */
+  const dragSizeRef = useRef<{ w: number; h: number }>({ w: 100, h: 40 })
   
 
   // 拖拽期间持续监听 pointermove，记录真实光标位置
@@ -197,6 +199,10 @@ export default function App() {
         children: [],
       }
       setActiveNode(preview)
+      dragSizeRef.current = {
+        w: parsePxLocal(def.defaultStyle.width) ?? 100,
+        h: parsePxLocal(def.defaultStyle.height) ?? 40,
+      }
     } else if (data.source === 'canvas' && data.id) {
 		      // 画布拖拽：取真实节点做预览（含子节点，故用递归预览）
 		      const nodes = useEditorStore.getState().nodes
@@ -211,7 +217,10 @@ export default function App() {
 		          x: (n.style.x ?? 0) + parentOffset.x,
 		          y: (n.style.y ?? 0) + parentOffset.y,
 		        }
-		        
+		        dragSizeRef.current = {
+		          w: parsePxLocal(n.style.width) ?? 100,
+		          h: parsePxLocal(n.style.height) ?? 40,
+		        }
 		      }
 		    }
   }
@@ -383,11 +392,14 @@ export default function App() {
     }
   }
 
-  /** modifier：画布拖拽时把旋转偏移 + snap 补偿到 overlay 的 transform。
-   * 仿照 centerLibraryOnCursor 的模式：在 modifier 中直接计算正确的 transform，
-   * 而不是用 onDragStart 中的 event.active.rect.current.initial（该值在 onDragStart
-   * 调用时永远为 null，因为 dispatch(DragStart) 在 onDragStart 之后执行）。
-   * activeNodeRect 在 DragOverlay 渲染时已可用，包含旋转后的 bounding box 位置。 */
+  /** modifier：画布拖拽时把位置 + snap 补偿到 overlay 的 transform。
+   * 第一性原理：
+   * 1. dnd-kit 的 activeNodeRect 使用 getTransformAgnosticClientRect 测量，
+   *    忽略了元素自身的旋转，所以旋转不需要额外补偿（overlay 自身的 CSS rotate 即可）
+   * 2. 画布 canvas 使用 transformOrigin: 'top left' 缩放，而 overlay div 使用
+   *    transformOrigin: 'center center'（为了旋转正确）。当 zoom ≠ 1 时，
+   *    scale(zoom) 从 center 缩放会导致视觉中心偏移 (w*(1-zoom)/2, h*(1-zoom)/2)。
+   *    必须在 modifier 中减去此偏移量补偿。 */
   const positionCanvasDrag: Modifier = ({ transform, activeNodeRect }) => {
     if (dragSourceRef.current !== 'canvas') return transform
     const anr = activeNodeRect
@@ -396,14 +408,22 @@ export default function App() {
     if (!canvasEl) return transform
     const canvasRect = canvasEl.getBoundingClientRect()
     const zoom = useEditorStore.getState().zoom
-    // 未旋转元素的屏幕位置
+    // 未旋转元素的屏幕坐标（左上角）
     const unrotatedX = canvasRect.left + dragOriginRef.current.x * zoom
     const unrotatedY = canvasRect.top + dragOriginRef.current.y * zoom
-    // PositionedOverlay 定位在 anr.left/top（旋转后 bounding box），
-    // 补偿旋转偏移 + drag delta + snap delta
+    // activeNodeRect 忽略了元素自身旋转（getTransformAgnosticClientRect），
+    // 所以 anr.left/top 就是未旋转的屏幕位置，与 unrotatedX/Y 一致。
+    // 关键补偿：overlay div 使用 transformOrigin: 'center center' 进行 scale(zoom)，
+    // 而画布 canvas 使用 'top left'。从 center 缩放时，视觉中心偏移了
+    // (w*(1-zoom)/2, h*(1-zoom)/2)，需要减去此偏移使 overlay 视觉中心
+    // 与画布上未旋转元素的视觉中心对齐。
+    const { w, h } = dragSizeRef.current
+    const scaleOffsetX = w * (1 - zoom) / 2
+    const scaleOffsetY = h * (1 - zoom) / 2
     return {
-      x: unrotatedX - anr.left + transform.x + snapOffsetRef.current.x * zoom,
-      y: unrotatedY - anr.top + transform.y + snapOffsetRef.current.y * zoom,
+      // unrotatedX - anr.left 为 0（activeNodeRect 忽略旋转），保留以文档化
+      x: unrotatedX - anr.left + transform.x + snapOffsetRef.current.x * zoom - scaleOffsetX,
+      y: unrotatedY - anr.top + transform.y + snapOffsetRef.current.y * zoom - scaleOffsetY,
       scaleX: 1,
       scaleY: 1,
     }
