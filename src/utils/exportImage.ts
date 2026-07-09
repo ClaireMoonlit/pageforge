@@ -127,13 +127,14 @@ function triggerDownload(url: string, filename: string): void {
 
 /**
  * 在 html2canvas 的 onclone 回调中调用：剥掉 canvas 容器上的
- * position / top / left / transform，让 html2canvas 在"干净"的 DOM 上渲染。
- * 这解决了 fillText 基线受 CSS transform 和 absolute 定位干扰导致的文字下移。
+ * transform / top / left，但保留 position: relative 维持子元素
+ * （全部是 position: absolute）的定位上下文。
+ * 这解决了 fillText 基线受 CSS transform 干扰导致的文字下移。
  */
 function stripCanvasStyles(el: HTMLElement): void {
-  el.style.position = 'static'
-  el.style.top = ''
-  el.style.left = ''
+  el.style.position = 'relative'
+  el.style.top = '0'
+  el.style.left = '0'
   el.style.right = ''
   el.style.bottom = ''
   el.style.transform = ''
