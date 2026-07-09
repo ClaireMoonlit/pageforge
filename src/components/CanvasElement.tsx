@@ -350,26 +350,25 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     }
   }
 
-  // 预览模式：进入预览时触发入场动画（仅 load 类型）
+  // 预览模式：触发入场动画（支持 load 和 scroll 两种触发方式）
   useEffect(() => {
     if (!previewMode) return
     const anim = node.interaction?.animation
-    if (!anim || anim.type === 'none' || anim.trigger !== 'load') return
+    if (!anim || anim.type === 'none') return
     const el = elRef.current
     if (!el) return
-    // 与导出运行时一致：加 pf-animate-* 类，animationend 后清除 transform
+
     const cls = `pf-animate-${anim.type}`
-    if (anim.delay > 0) {
-      const t = setTimeout(() => {
-        el.classList.add(cls)
-        const onEnd = () => {
-          el.style.transform = 'none'
-          el.removeEventListener('animationend', onEnd)
-        }
-        el.addEventListener('animationend', onEnd)
-      }, anim.delay)
-      return () => clearTimeout(t)
-    } else {
+
+    // 设置 CSS 自定义属性，与导出运行时一致
+    const setAnimProps = () => {
+      el.style.setProperty('--pf-duration', `${anim.duration}ms`)
+      el.style.setProperty('--pf-delay', `${anim.delay}ms`)
+      el.style.setProperty('--pf-easing', anim.easing)
+    }
+
+    const addAnimClass = () => {
+      setAnimProps()
       el.classList.add(cls)
       const onEnd = () => {
         el.style.transform = 'none'
@@ -377,10 +376,54 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       }
       el.addEventListener('animationend', onEnd)
     }
-    // 卸载时清理类名，避免切回编辑模式时残留动画
-    return () => {
+
+    const cleanup = () => {
       el.classList.remove(cls)
+      el.style.transform = 'none'
+      el.style.removeProperty('--pf-duration')
+      el.style.removeProperty('--pf-delay')
+      el.style.removeProperty('--pf-easing')
     }
+
+    // load 触发：进入预览后延迟执行
+    if (anim.trigger === 'load') {
+      if (anim.delay > 0) {
+        const t = setTimeout(addAnimClass, anim.delay)
+        return () => { clearTimeout(t); cleanup() }
+      }
+      addAnimClass()
+      return cleanup
+    }
+
+    // scroll 触发：IntersectionObserver 检测元素进入视口
+    if (anim.trigger === 'scroll') {
+      const scrollContainer = el.closest('.overflow-auto') as HTMLElement | null
+      let triggered = false
+      const observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting && !triggered) {
+              triggered = true
+              observer.unobserve(el)
+              if (anim.delay > 0) {
+                setTimeout(addAnimClass, anim.delay)
+              } else {
+                addAnimClass()
+              }
+            }
+          }
+        },
+        {
+          root: scrollContainer,
+          rootMargin: '0px 0px -50px 0px',
+          threshold: anim.threshold ?? 0,
+        },
+      )
+      observer.observe(el)
+      return () => { observer.disconnect(); cleanup() }
+    }
+
+    return cleanup
   }, [previewMode, node.interaction?.animation])
 
   // 预览模式：在 DOM 上挂载时给节点加 data-pf-* 属性，与导出运行时使用相同标记
