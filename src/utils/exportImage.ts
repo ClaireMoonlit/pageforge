@@ -13,10 +13,51 @@ interface ExportOptions {
 }
 
 /**
+ * 第一性原理：手动 clone 画布 DOM，剥离所有干扰 html2canvas 的样式，
+ * 配合 foreignObjectRendering: true 实现像素级精准的文本渲染。
+ *
+ * 核心设计：
+ * 1. 外层的 wrapper（position:fixed）仅用于隐藏 clone，不参与渲染
+ * 2. clone 本身保持 position:relative + 干净坐标，确保 SVG viewport 从原点开始
+ * 3. 子元素保留 position:absolute —— foreignObject 内浏览器原生渲染，文本位置完全精准
+ */
+function prepareExportClone(): { clone: HTMLElement; wrapper: HTMLElement } | null {
+  const original = getCanvasContentElement()
+  if (!original) return null
+
+  const clone = original.cloneNode(true) as HTMLElement
+
+  // 剥离父容器上干扰 html2canvas / foreignObject 的样式
+  clone.style.position = 'relative'
+  clone.style.top = '0'
+  clone.style.left = '0'
+  clone.style.right = ''
+  clone.style.bottom = ''
+  clone.style.transform = ''
+  clone.style.transformOrigin = ''
+  // 显式设为 visible：wrapper 的 visibility:hidden 是继承属性，
+  // 若不覆盖，foreignObject 内的内容也会被隐藏，导致导出纯背景图
+  clone.style.visibility = 'visible'
+
+  // 创建隐藏 wrapper：wrapper 定位到 (0,0) 而非 -9999px，
+  // 确保 foreignObject 的 SVG viewport 与元素实际渲染区域一致
+  const wrapper = document.createElement('div')
+  wrapper.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;z-index:-1'
+  wrapper.appendChild(clone)
+  document.body.appendChild(wrapper)
+
+  return { clone, wrapper }
+}
+
+function removeExportClone(result: { clone: HTMLElement; wrapper: HTMLElement } | null): void {
+  if (result?.wrapper?.parentNode) {
+    result.wrapper.parentNode.removeChild(result.wrapper)
+  }
+}
+
+/**
  * 导出画布内容为 PNG 图片并触发下载。
  * 图片分辨率 = 画布逻辑尺寸 × scale（默认 2x）
- *
- * 性能优化：使用 canvas.toBlob() + blob URL 替代 toDataURL（异步编码 + 避免 base64 膨胀）
  */
 export async function exportAsPNG(
   element: HTMLElement,
@@ -28,15 +69,17 @@ export async function exportAsPNG(
 
   await ensureExportReady()
 
+  // 手动 clone 干净 DOM + foreignObject 渲染：文字位置与浏览器完全一致，无下移
+  const cloneResult = prepareExportClone()
+  if (!cloneResult) return
+
   try {
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(cloneResult.clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
-      // onclone: 在 html2canvas 内部 clone 上剥掉 position/transform，
-      // 让 fillText 基线计算不受这些属性干扰，解决文字下移问题
-      onclone: (_, clonedEl) => stripCanvasStyles(clonedEl),
+      foreignObjectRendering: true,
     })
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -46,9 +89,9 @@ export async function exportAsPNG(
     })
     const url = URL.createObjectURL(blob)
     triggerDownload(url, filename)
-    // 延迟释放 blob URL，确保浏览器已开始下载
     setTimeout(() => URL.revokeObjectURL(url), 3000)
   } finally {
+    removeExportClone(cloneResult)
     restoreExportState()
   }
 }
@@ -56,8 +99,6 @@ export async function exportAsPNG(
 /**
  * 导出画布内容为 PDF 并触发下载。
  * 自动判断页面方向（宽 > 高 → 横版），内容超出单页时自动分页。
- *
- * 性能优化：JPEG 质量 0.85（平衡速度与品质）
  */
 export async function exportAsPDF(
   element: HTMLElement,
@@ -69,13 +110,16 @@ export async function exportAsPDF(
 
   await ensureExportReady()
 
+  const cloneResult = prepareExportClone()
+  if (!cloneResult) return
+
   try {
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(cloneResult.clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
-      onclone: (_, clonedEl) => stripCanvasStyles(clonedEl),
+      foreignObjectRendering: true,
     })
 
     let imgData: string
@@ -87,7 +131,6 @@ export async function exportAsPDF(
     const imgW = canvas.width
     const imgH = canvas.height
 
-    // 根据宽高比判断方向
     const orientation = imgW >= imgH ? 'landscape' : 'portrait'
     const pdf = new jsPDF({ orientation, unit: 'px', format: [imgW, imgH] })
 
@@ -95,13 +138,11 @@ export async function exportAsPDF(
     const pageH = pdf.internal.pageSize.getHeight()
     const ratio = imgW / imgH
 
-    // 图片适配页面宽度
     const renderW = pageW
     const renderH = pageW / ratio
 
     pdf.addImage(imgData, 'JPEG', 0, 0, renderW, renderH)
 
-    // 如果高度超过一页，自动分页
     let remainingH = renderH - pageH
     while (remainingH > 0) {
       pdf.addPage()
@@ -111,6 +152,7 @@ export async function exportAsPDF(
 
     pdf.save(filename)
   } finally {
+    removeExportClone(cloneResult)
     restoreExportState()
   }
 }
@@ -125,25 +167,9 @@ function triggerDownload(url: string, filename: string): void {
   document.body.removeChild(a)
 }
 
-/**
- * 在 html2canvas 的 onclone 回调中调用：剥掉 canvas 容器上的
- * transform / top / left，但保留 position: relative 维持子元素
- * （全部是 position: absolute）的定位上下文。
- * 这解决了 fillText 基线受 CSS transform 干扰导致的文字下移。
- */
-function stripCanvasStyles(el: HTMLElement): void {
-  el.style.position = 'relative'
-  el.style.top = '0'
-  el.style.left = '0'
-  el.style.right = ''
-  el.style.bottom = ''
-  el.style.transform = ''
-  el.style.transformOrigin = ''
-}
-
 // ——— 导出前准备：进入预览模式 + 设为 100% zoom ———
 // 预览模式隐藏选中边框和手柄，确保截图干净；
-// 文字位置修正由 onclone → stripCanvasStyles 在 html2canvas 内部完成。
+// 文字位置由 foreignObjectRendering + 手动 clone 保证与浏览器渲染一致。
 
 let savedZoom = 1
 let savedPreviewMode = false
