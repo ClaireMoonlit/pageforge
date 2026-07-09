@@ -36,6 +36,9 @@ export async function exportAsPNG(
       backgroundColor: bg,
       useCORS: true,
       logging: false,
+      // foreignObjectRendering: 用 SVG foreignObject 渲染，直接复用浏览器真实布局，
+      // 解决 html2canvas 默认 fillText() 基线计算偏差导致的文字下移问题
+      foreignObjectRendering: true,
     })
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -74,6 +77,7 @@ export async function exportAsPDF(
       backgroundColor: bg,
       useCORS: true,
       logging: false,
+      foreignObjectRendering: true,
     })
 
     let imgData: string
