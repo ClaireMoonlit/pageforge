@@ -1,6 +1,6 @@
 import { useHistory, useEditorStore, findById } from '@/store/editorStore'
 import { downloadHtml } from '@/utils/exportHtml'
-import { exportAsPNG, exportAsPDF, getCanvasContentElement, getFileHandle } from '@/utils/exportImage'
+import { exportAsPNG, exportAsPDF, getCanvasContentElement } from '@/utils/exportImage'
 import { TemplatePanel } from '@/components/TemplatePanel'
 import { AlignToolbar } from '@/components/AlignToolbar'
 import { unifiedAsyncPaste } from '@/components/Canvas'
@@ -88,16 +88,9 @@ export function Toolbar() {
     if (!el) return
     setExporting('png')
     try {
-      // 先弹出保存对话框（用户感知即时响应），再渲染 canvas
-      const handle = await getFileHandle('pageforge-export.png', 'image/png')
-      if (handle === null && 'showSaveFilePicker' in window) {
-        // 用户取消或获取句柄失败 → 静默退出
-        setExporting(null)
-        return
-      }
       await exportAsPNG(el, 'pageforge-export.png', {
         backgroundColor: canvas.backgroundColor,
-      }, handle ?? undefined)
+      })
     } catch (err) {
       console.error('PNG export failed:', err)
       setTimeout(() => alert('PNG 导出失败，请重试'), 0)
@@ -112,15 +105,9 @@ export function Toolbar() {
     if (!el) return
     setExporting('pdf')
     try {
-      // 先弹出保存对话框（用户感知即时响应），再渲染 canvas
-      const handle = await getFileHandle('pageforge-export.pdf', 'application/pdf')
-      if (handle === null && 'showSaveFilePicker' in window) {
-        setExporting(null)
-        return
-      }
       await exportAsPDF(el, 'pageforge-export.pdf', {
         backgroundColor: canvas.backgroundColor,
-      }, handle ?? undefined)
+      })
     } catch (err) {
       console.error('PDF export failed:', err)
       setTimeout(() => alert('PDF 导出失败，请重试'), 0)

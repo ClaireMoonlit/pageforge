@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-10（§5.21o 隐藏逻辑统一 + 预览模式图层树禁用 + 预览模式文字防选中 + 等间距辅助线延长 + §5.21p 等间距与边缘/中心吸附正交组合）
-> 当前版本：v0.2.0
+> 最后更新：2026-07-06（§5.18 图片/视频本地上传 + PNG/PDF 导出 + 双击上传）
+> 当前版本：v0.1.0（开发中）
 
 ---
 
@@ -710,311 +710,6 @@ interface CanvasNode {
 
 ---
 
-### 5.19 图片裁切模态框（ImageCropModal）—— 形状 + 吸附系统（2026-07-07）
-
-**用户需求**：
-1. 图片上传后弹出裁切弹窗，支持矩形/圆形/圆角矩形三种形状
-2. 裁切框支持 8 向拖拽手柄（4 角 + 4 边中点），角手柄保持等比缩放
-3. 正方形/正圆吸附：拖拽接近正方形时自动吸附，带绿色指示框和磁吸手感
-4. 居中/边缘吸附：裁切框移动时自动吸附到图片中心线和边缘
-
-**实现**（`src/components/ImageCropModal.tsx`，新建，~700 行）：
-
-**5.19a 裁切核心逻辑**：
-- 形状切换：`rectangle` / `circle` / `rounded`（圆角 12px），`circle` 和 `rounded` 强制正方形裁切
-- 8 向 resize 手柄：角手柄（nw/ne/sw/se）保持等比缩放，边缘手柄（n/s/e/w）自由拉伸单维度
-- 移动模式：拖拽裁切框内部移动位置，clamp 到图片边界内
-- 最小尺寸限制：`minSize = 20px`
-- 画布缩放适配：`scaleRef` 跟踪 `imgDisplay` 尺寸与原始尺寸的比例，闭包中避免 stale state
-
-**5.19b 正方形/正圆吸附系统**（核心难点，多轮迭代）：
-- **检测方式**：相对差异 `|w-h| / max(w,h)`，与图片尺度无关（500×400 和 50×40 判定一致）
-- **滞后阈值**：`SQ_SNAP_ON = 1.5%`（进入吸附）、`SQ_SNAP_OFF = 4%`（退出吸附），滞后比 2.67x 提供稳定黏性
-- **角手柄吸附**：检测到接近正方形时，对角锚点固定，尺寸直接修正为 `size = (w+h)/2`，产生"咔嗒"磁吸感
-- **边缘手柄吸附**：检测到接近正方形时，冻结自由维度（如拖右边缘时冻结高度 = 宽度），产生磁吸冻感
-- **自然尺寸检测**：正方形检测使用鼠标原始坐标计算的自然尺寸（`natWidth/natHeight`），而非修正后尺寸，确保滞后逻辑正确运作
-- **ar=1 恒绿**：当选区宽高比恰好为 1 时，跳过检测直接判定吸附，绿色指示框常亮，避免闪烁
-- **初始状态抑制**：弹窗打开时默认尺寸不显示绿色指示，仅主动拖拽或切换形状时才显示
-- **绿色指示**：吸附激活时显示绿色裁切框 + 发光效果，SVG 渲染中过滤掉 square 类型参考线避免左侧绿线
-- **吸附标签**：已移除"正方形吸附"文字标签，仅保留绿色视觉反馈
-
-**5.19c 居中/边缘吸附**（与画布 snapping.ts 一致）：
-- **阈值**：`SNAP_ON = 8px`、`SNAP_OFF = 12px`，滞后比 1.5x
-- **居中吸附**：裁切框中心对齐图片中心（水平/垂直）
-- **边缘吸附**：裁切框边缘对齐图片边缘
-- **移动模式**：应用位置修正，移动时跳过边缘吸附避免裁切框跳跃
-- **调整大小模式**：跳过居中/边缘吸附，仅角手柄应用正方形吸附
-
-**5.19d 确认裁切**：
-- 计算裁切区域：`crop = { x, y, width, height }`（原始图片坐标）
-- Canvas 绘制：`drawImage` 按形状裁剪（圆形用 `arc` + `clip`，圆角矩形用 `roundRect` + `clip`）
-- 输出 `dataUrl`（PNG 格式，支持透明背景）
-- 结果回传 `onConfirm`：`croppedDataUrl`、`originalSrc`、`shape`、`cropRect`
-- 最终尺寸：最大 400px 等比缩放，圆形/圆角矩形设置 `backgroundColor: transparent`
-
-**关键决策**：
-- 投影法等比缩放：角手柄拖拽时将鼠标位置投影到等比约束线，公式 `t = (ar·Δx + Δy) / (ar² + 1)`，实现连续平滑缩放
-- 直接修正而非投影法做正方形：投影法（effectiveAr=1）磁吸感弱，直接修正 `(w+h)/2` 产生更明显的"咔嗒"感
-- 自然尺寸检测：用鼠标原始坐标而非修正后尺寸做检测，保证滞后逻辑正确运作
-
-**涉及文件**：
-- `src/components/ImageCropModal.tsx`：新建，裁切模态框完整实现
-- `src/store/editorStore.ts`：新增 `cropModal` 状态、`openCropModal`/`closeCropModal` 方法、`CropModalResult` 类型
-- `src/components/Canvas.tsx`：`pasteImageFromDataUrl` 共享流程，粘贴图片后自动打开裁切弹窗
-- `src/types/index.ts`：新增 `ImageShape` 类型（`'rectangle' | 'circle' | 'rounded'`）
-
----
-
-### 5.20 统一剪贴板 + 右键菜单 + 外部文本粘贴 + 占位符优化（2026-07-07）
-
-**用户需求**：
-1. 统一所有粘贴入口（Ctrl+V、工具栏按钮、右键菜单）的粘贴逻辑
-2. 判断内部/外部复制时间戳，粘贴最新复制的内容
-3. 右键菜单添加复制功能
-4. 从外部复制文字粘贴到画布上创建 text 节点
-5. 双击图片/视频占位符时避免文本被选中
-
-**实现**：
-
-**5.20a 统一剪贴板时间戳机制**（`src/store/editorStore.ts`）：
-- 模块级变量：`lastInternalCopyTime`（内部复制时间戳）、`lastExternalCopyTime`（外部复制时间戳）
-- 所有内部复制操作（`copyNode`、`duplicateNode`、右键复制）统一调用 `setLastInternalCopyTime()`
-- 外部复制通过 `window.addEventListener('copy')` 监听，设置 `lastExternalCopyTime`
-- 导出函数：`getLastInternalCopyTime()`、`getLastExternalCopyTime()`、`getClipboard()`
-
-**5.20b 统一粘贴入口**（`src/components/Canvas.tsx`）：
-- `unifiedAsyncPaste(pos)`: 比较内部/外部时间戳，优先粘贴最新内容
-  - 内部更新 → 调用 `pasteNode()` 粘贴内部剪贴板中的节点
-  - 外部更新 → 通过 `navigator.clipboard.read()` 读取系统剪贴板，先图片后文本
-  - 回退：系统剪贴板无内容或无权限 → 回退到内部剪贴板
-- 文档级 `paste` 监听器：同时处理图片和文本粘贴（不依赖焦点/位置）
-  - 图片分支：比较时间戳，外部更新时清除内部预创建的节点，使用外部图片
-  - 文本分支：`getData('text/plain')` 获取文本，创建 text 节点
-- 三种粘贴入口（Ctrl+V、工具栏按钮、右键菜单）均调用 `unifiedAsyncPaste`
-
-**5.20c 右键菜单增强**（`src/components/Canvas.tsx` + `src/components/CanvasElement.tsx`）：
-- 右键菜单新增「复制」按钮：调用 `copyNode(id)` 并设置内部时间戳
-- 右键粘贴修复：先粘贴再关闭菜单（`closeCtxMenu` 在 `navigator.clipboard.read()` 之前调用会丢失用户手势上下文）
-- 右键菜单外部点击关闭：`pointerdown` 监听器添加 `ctxMenuRef`，点击菜单内部时不关闭
-- 菜单使用 `createPortal` 渲染到 `document.body`
-
-**5.20d 外部文本粘贴**（`src/components/Canvas.tsx`）：
-- 文档级 paste 监听器：检测 `text/plain` 类型，外部时间戳更新时创建 text 节点
-- `unifiedAsyncPaste`：`navigator.clipboard.read()` 后检查 `text/plain` 类型，创建 text 节点
-- 粘贴位置：使用 `lastMousePosRef` 记录的最后鼠标位置
-
-**5.20e 占位符优化**（`src/components/NodeRenderer.tsx`）：
-- 图片/视频占位符文本改为引导性提示："双击上传图片" / "双击上传视频"
-- 占位符添加 `userSelect: 'none'` 样式，防止双击时浏览器选中文本
-- 双击处理：使用 `setTimeout(() => window.getSelection()?.removeAllRanges(), 0)` 异步清除选区
-
-**涉及文件**：
-- `src/store/editorStore.ts`：新增剪贴板时间戳模块变量和导出函数
-- `src/components/Canvas.tsx`：`unifiedAsyncPaste` 统一入口、文档级 paste 监听器、右键菜单增强
-- `src/components/CanvasElement.tsx`：右键菜单复制功能、双击粘贴逻辑
-- `src/components/NodeRenderer.tsx`：占位符文本和 `userSelect` 样式
-- `src/components/Toolbar.tsx`：工具栏粘贴按钮调用 `unifiedAsyncPaste`
-
----
-
-### 5.21 旋转图片拖拽预览 + 预览模式工具栏禁用 + PNG 安全警告 + 图片自由拉伸 + 圆形裁切内部遮罩（2026-07-08）
-
-**用户需求**：
-1. 旋转后的图片在拖拽时预览仍是正的
-2. 预览模式（包括导出时）工具栏所有按钮应该禁用
-3. PNG 打开时老是警告"未知发行商"
-4. 图片应该支持自由拉伸（高度也应填满容器）
-5. 圆形裁切框内但形状外的区域应有视觉区分
-6. 从外部 App 复制后切回页面粘贴，应使用外部内容
-
-**实现**：
-
-**5.21a 旋转图片拖拽预览**（`src/App.tsx`）：
-- DragOverlay 中 `transform` 从仅 `scale(${zoom})` 改为组合 `scale(${zoom}) rotate(${rotation}deg)`
-- 旋转信息存储在 `node.props.rotation` 中（非 style），需要单独读取
-- 修复后拖拽旋转图片时预览与落点视觉效果一致
-
-**5.21b 预览模式工具栏完全禁用**（`src/components/Toolbar.tsx`）：
-- 所有按钮添加 `disabled={previewMode || ...}` 条件：撤销、重做、删除、格式刷、复制、粘贴、重复、清空
-- 预览模式下隐藏 `TemplatePanel`：`{!previewMode && <TemplatePanel key={nodes.length} />}`
-- 导出按钮禁用：`disabled={nodeCount === 0 || exporting !== null || previewMode}`
-- 预览按钮在导出中禁用：`disabled={exporting !== null}`
-- primaryBtnCls 增加 `disabled:opacity-40 disabled:cursor-not-allowed` 样式
-- 导出下拉菜单项增加 `disabled:cursor-not-allowed`
-
-**5.21c PNG/PDF 安全警告修复**（`src/utils/exportImage.ts` + `src/components/Toolbar.tsx`）：
-- **根因**：传统 `<a download>` 方式下载的文件被浏览器标记为"来自互联网"（Mark of the Web），Windows 打开时弹出安全警告
-- **修复**：使用 `showSaveFilePicker` + `FileSystemWritableFileStream` 直接写入磁盘，绕过浏览器下载标记
-- 新增 `getFileHandle(filename, mimeType)`：在渲染前立即弹出保存对话框，用户感知即时响应
-- 新增 `writeToHandle(handle, blob)`：通过 `createWritable()` → `write()` → `close()` 写入文件
-- 新增 `saveBlob(blob, filename, mimeType)`：优先 File System Access API，不支持时回退传统 `<a download>` 方式
-- 写入错误处理：检测 `NotAllowedError`/`InvalidStateError`/`NoModificationAllowedError`/`QuotaExceededError`，用 `setTimeout(() => alert(...), 0)` 避免 React #185 死循环
-- PNG 导出：data URL → blob + FileSystemWritableFileStream
-- PDF 导出：`pdf.save()` → blob + FileSystemWritableFileStream
-- Toolbar 中导出流程调整：先调 `getFileHandle` 弹对话框，再 `await exportAsPNG/PDF()` 渲染
-
-**5.21d 图片自由拉伸**（`src/components/NodeRenderer.tsx` + `src/utils/exportHtml.ts`）：
-- **根因**：图片高度 `height: isShaped ? '100%' : 'auto'`，非裁切图片高度为 auto 不可拉伸
-- **修复**：统一为 `height: useAutoWidth ? 'auto' : '100%'`，仅品牌图（带 maxHeight 的 SVG）保留 auto，其余图片均填满容器允许自由拉伸
-- 导出 HTML 同步：所有图片统一 `height:100%`（之前非裁切图片是 `height:auto`）
-- 镜像翻转（flipH/flipV）通过 CSS `transform: scaleX(-1)/scaleY(-1)` 应用于 img 元素
-
-**5.21e 导出图片旋转与镜像分离**（`src/utils/exportHtml.ts`）：
-- **旋转**：应用于外层容器（`transform:rotate(${rotation}deg)`），与编辑器一致（框随图片旋转）
-- **镜像**：仅应用于 img 元素（`transform:scaleX(-1)/scaleY(-1)`），只翻转内容不翻转框
-- 非矩形裁切：外层 div 做形状裁切（`overflow:hidden` + `border-radius`），内层 img 做镜像
-- 修复前旋转和镜像都混在 img 的 transform 中，导致框不随图片旋转
-
-**5.21f 圆形/圆角裁切内部遮罩**（`src/components/ImageCropModal.tsx`）：
-- 圆形/圆角模式下，裁切框内但形状外的区域添加半透明遮罩（`rgba(0,0,0,0.25)`）
-- 使用 `mask-image: radial-gradient(ellipse closest-side ...)` 精确控制可见区域
-- 圆形：`transparent 98% → white 99%`（边缘清晰）
-- 圆角：`transparent 72% → white 82%`（过渡柔和）
-- 同时设置 `maskImage` 和 `WebkitMaskImage` 兼容不同浏览器
-
-**5.21g 形状切换绿色指示自动消失**（`src/components/ImageCropModal.tsx`）：
-- 形状切换时检测到正方形吸附后，300ms 自动清除绿色指示
-- 使用 `shapeGuideTimerRef` 管理定时器，避免多次切换时残留
-
-**5.21h 窗口聚焦剪贴板同步**（`src/App.tsx`）：
-- 新增 `window.addEventListener('focus', onFocus)` 监听
-- 用户在外部 App 复制后切回页面时，自动更新外部复制时间戳（`markExternalCopy()`）
-- 解决外部 App 的复制操作不触发当前页面 `copy` 事件的问题
-
-**5.21i 粘贴逻辑优化**（`src/components/Canvas.tsx`）：
-- 重构文档级 paste 监听器：先检查外部时间戳，再分别处理图片和文本
-- 逻辑更清晰：外部复制 → 检查图片优先 → 再检查文本 → 回退内部
-
-**5.21j Resize 初始尺寸优化**（`src/components/CanvasElement.tsx`）：
-- 优先使用 `node.style.width/height` 显式值作为 resize 初始尺寸
-- 避免 `overflow:visible` 时 `getBoundingClientRect` 被内容撑开导致尺寸跳变
-- 仅当 style 中没有显式宽高时才回退到 `getBoundingClientRect / zoom`
-
-**5.21k 平板媒体查询移除 height:auto!important**（`src/utils/exportHtml.ts`）：
-- 移除 `@media(min-width:769px) and (max-width:1024px)` 中的 `height:auto!important`
-- 修复 HTML 导出元素框架脱离实际图片边缘的问题
-
-**涉及文件**：
-- `src/App.tsx`：旋转预览、窗口聚焦剪贴板同步
-- `src/components/Toolbar.tsx`：预览模式全按钮禁用、导出流程优化
-- `src/utils/exportImage.ts`：FileSystemWritableFileStream 写入、错误处理、saveBlob 回退
-- `src/components/NodeRenderer.tsx`：图片自由拉伸、镜像翻转
-- `src/utils/exportHtml.ts`：旋转/镜像分离、图片高度统一、移除 height:auto!important
-- `src/components/ImageCropModal.tsx`：内部遮罩、形状切换指示消失
-- `src/components/Canvas.tsx`：粘贴逻辑优化
-- `src/components/CanvasElement.tsx`：Resize 初始尺寸优化
-
-**5.21l 旋转图片拖拽预览位置偏离**（`src/App.tsx`）：
-	- **现象**：按住旋转过的图片拖动不松手，预览向外跳，偏离实际位置（类似裁切框手柄 snap 跳跃），但松手位置正确
-	- **根因**：dnd-kit 的 DragOverlay 用 `activeNodeRect`（旋转后 bounding rect 的 top-left）定位 wrapper，但实际元素按未旋转的 `(x, y)` 定位。旋转后 bounding rect 的 top-left 与未旋转 top-left 有偏移（旋转越大偏移越大），导致预览从错误位置开始渲染
-	- **修复**（两处联动）：
-	  1. `onDragStart` 中计算旋转位置补偿 `rotationOffsetRef`：`未旋转屏幕坐标 - bounding rect 屏幕坐标`，存入 ref
-	  2. DragOverlay 预览 div 添加 `position: 'relative'; left: offsetX; top: offsetY`，将预览修正到未旋转的 top-left 位置
-	  3. `transformOrigin: 'center center'` 保证旋转围绕元素中心，与实际元素一致
-	  4. `centerLibraryOnCursor` modifier 同步：`ow * curZoom / 2` → `ow / 2`
-	- **重置**：`onDragStart` 开头、`onDragEnd`、`onDragCancel` 均重置 `rotationOffsetRef` 为 `{0, 0}`
-
-	**5.21m 旋转图片拖拽 50% 缩放"飞"修复**（`src/App.tsx`）：
-	- **现象**：画布 100% 缩放时旋转图片拖拽正常，50% 缩放时预览"飞"（偏移），其他非旋转组件正常
-	- **第一性原理彻查**：
-	  1. 深入分析 dnd-kit 源码发现 `activeNodeRect` 使用 `getTransformAgnosticClientRect` 测量，**忽略了元素自身的 CSS transform（包括旋转）**。因此之前的 `unrotatedX - anr.left` 旋转补偿始终为 0，是死代码。
-	  2. 真正根因是**缩放原点不一致**：画布 canvas 使用 `transformOrigin: 'top left'`（从左上角缩放），而 DragOverlay overlay 使用 `transformOrigin: 'center center'`（为了旋转正确）。当 zoom ≠ 100% 时，从中心缩放导致视觉中心偏移 `(w*(1-zoom)/2, h*(1-zoom)/2)`。100% 缩放时偏移为 0，50% 时偏移为 `(w/4, h/4)`。
-	- **修复**：
-	  1. 新增 `dragSizeRef` 存储拖拽元素的画布空间尺寸（w/h）
-	  2. `onDragStart` 中填充 `dragSizeRef`（库拖拽和画布拖拽均覆盖）
-	  3. `positionCanvasDrag` modifier 减去 `scaleOffsetX = w*(1-zoom)/2` 和 `scaleOffsetY = h*(1-zoom)/2`，补偿 scale-from-center 的视觉偏移
-	- **涉及文件**：`src/App.tsx`
-
-	**5.21n 等间距吸附两端指示 + 图片比例吸附 + 图层树拖拽 + 模板动效**（2026-07-09）：
-	
-	**n-1 图层树拖拽排序 + 右键上/下移一层**（`82bc138`）：
-	- **LayerTree.tsx**：集成 `@dnd-kit/core` 的 `DndContext` + `useDraggable`/`useDroppable`，实现拖拽排序。通过 `flattenTree` 将嵌套节点转为扁平列表，简化拖拽位置计算。支持拖入容器内部改变层级（`reparentNode`）。
-	- **editorStore.ts**：新增 `reparentNode(id, parentId, index)` 和 `moveLayer(id, 'up'|'down')` 两个 API。
-	- **Canvas.tsx**：右键菜单新增「上移一层」「下移一层」选项。
-	- **涉及文件**：`src/components/LayerTree.tsx`, `src/store/editorStore.ts`, `src/components/Canvas.tsx`, `src/index.css`
-
-	**n-2 模板动效 + 导出/导入不丢失**（`311779c`）：
-	- **templates.ts**：新增 `scrollAnim(type, delay, duration)` 辅助函数，为 SaaS 模板 Hero/特性/定价/CTA 区域添加 `slide-up` 滚动入场动画。
-	- **importHtml.ts**：解析 `data-pf-animate`/`data-pf-trigger`/`data-pf-link`/`data-pf-interaction`/`data-pf-hover` 属性，重建 `InteractionConfig`。
-	- **涉及文件**：`src/data/templates.ts`, `src/utils/importHtml.ts`
-
-	**n-3 等间距吸附两端指示**（`fe27d8c`）：
-	- **snapping.ts**：`SnapLine` 接口新增 `dragStart`/`dragEnd` 字段；`findEqualSpacingX/Y` 返回吸附后拖拽元素边缘坐标；`computeSnap` 填充到 SnapLine。
-	- **Canvas.tsx**：X/Y 轴间距渲染改为两端指示：左侧 `fromPos → dragStart` + 右侧 `dragEnd → toPos`，各显示独立间距值。
-	- **涉及文件**：`src/utils/snapping.ts`, `src/components/Canvas.tsx`
-
-	**n-4 图片自由拉伸原比例吸附**（`fe27d8c`）：
-	- **CanvasElement.tsx**：四角手柄 resize 时检测宽高比接近原比例时自动吸附。有裁切用 `cropRect` 比例，无裁切从 DOM `<img>` 获取 `naturalWidth/naturalHeight`。吸附阈值 3% 开启 / 6% 脱离（2x 滞后），保持鼠标驱动维度，调整另一维度。`ratioSnapRef` 跟踪吸附状态。
-	- **涉及文件**：`src/components/CanvasElement.tsx`
-
-	**5.21o 隐藏逻辑统一 + 预览模式一致性 + 等间距误触发修复**（2026-07-10）：
-
-	**o-1 隐藏元素在所有导出场景一致性隐藏**（`src/components/CanvasElement.tsx`）：
-	- **现象**：用户反馈"隐藏之后点预览，还是显示半灰状态，导出 HTML 倒是完全消失了，但是导出其他的就出现了"
-	- **根因**：原代码中 `display: 'none'` / `opacity` 条件样式在 `baseStyle` 中排在 `nodeToCss(node.style)` 之前，**被 `node.style` 中的 `display` 属性覆盖**，导致预览模式下隐藏元素仍然可见
-	- **修复**：将隐藏逻辑的 `display: 'none'` / `opacity` 条件样式从 `nodeToCss` 之前移到之后，确保优先级：
-	  - **编辑模式**：隐藏元素半透明（opacity: 0.25）—— 保留可见性便于编辑
-	  - **预览模式**：隐藏元素完全消失（display: none）—— 与导出 HTML 一致
-	  - **导出 HTML**：`nodeToHtml` 在 `exportHtml.ts` 中直接跳过 `visible===false` 的节点
-	  - **导出 PNG/PDF**：`exportImage.ts` 的 `ensureExportReady()` 进入预览模式 → `display: none` 生效
-	- **统一后逻辑**：四种场景（编辑 / 预览 / 导出 HTML / 导出 PNG/PDF）行为完全一致
-
-	**o-2 预览模式下图层树功能完全禁用**（`src/components/LayerTree.tsx`）：
-	- **现象**：预览模式下图层树的拖拽、上下移动、隐藏、删除按钮仍然可操作
-	- **修复**：传递 `previewMode` 到 `LayerItem` 组件，预览模式下：
-	  - 禁用拖拽：`draggable={false}` + 所有 drag 事件置为 `undefined`
-	  - 禁用点击选中：`onClick={undefined}`
-	  - 禁用展开/折叠：按钮 `onClick={undefined}`
-	  - 隐藏所有操作按钮（上移/下移/显示/删除）：用 `!previewMode && (...)` 包裹
-	  - 光标变为 `cursor-default`
-	- **导出模式不受影响**：用户希望导出时仍可操作图层树（不影响导出流程）
-
-	**o-3 预览模式下画布文字防选中**（`src/components/CanvasElement.tsx`）：
-	- **现象**：预览模式下画布文字元素可以被双击选中（出现蓝色背景选区）
-	- **修复**：`baseStyle` 中添加 `userSelect: previewMode ? 'none' : undefined`
-	- **一致性**：与图片/视频占位符提示文字（双击上传提示）的 `userSelect: 'none'` 处理方式一致
-
-	**o-4 等间距辅助线延长 + 误触发修复**（`src/components/Canvas.tsx` + `src/utils/snapping.ts`）：
-	- **现象 1**：用户怀疑"看起来错的等间距线是检测到和下面其他元素等间距了" —— 拖拽元素 B 在画布上方，但等间距线指向画布下方的元素
-	- **现象 2**：等间距参与的边线（fromPos/dragStart/dragEnd/toPos）只是短竖线（y=2~18），用户无法直观看到是哪几条边在等间距
-	- **修复 1（误触发）**：`snapping.ts` 中 `findEqualSpacingX/Y` 增加垂直/水平重叠约束：
-	  ```ts
-	  // X 轴等间距：左右目标必须与拖拽元素在垂直方向重叠
-	  const verticalOverlap = (t: Rect) => !(t.bottom <= drag.top || t.top >= drag.bottom)
-	  ```
-	  - 修复前：等间距检测会遍历**所有**左右目标对，包括画布上/下方完全无关的元素
-	  - 修复后：只匹配**与拖拽元素在垂直/水平方向有重叠**的目标对
-	- **修复 2（边线延长）**：`Canvas.tsx` 中等间距参与的 4 条边（fromPos / dragStart / dragEnd / toPos）从短竖线（y=2~18）改为**贯穿画布全高的蓝色虚线**：
-	  ```tsx
-	  <line x1={line.fromPos} y1={0} x2={line.fromPos} y2={ch} 
-	        stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
-	  ```
-	  - 用户可以一眼看到"是这四条边在等间距"
-	- **箭头样式**：双头箭头（实线 + 三角箭头）标注左右两侧间距，箭头头部紧贴参考线无缝隙
-	- **颜色统一**：等间距线与边缘吸附线同为蓝色 `#3b82f6`（移除原橙黄色变体）
-
-	**涉及文件**：
-	- `src/components/CanvasElement.tsx`：隐藏逻辑位置调整、userSelect 样式
-	- `src/components/LayerTree.tsx`：previewMode 状态透传 + 拖拽/按钮禁用
-	- `src/components/Canvas.tsx`：等间距辅助线延长 + 双头箭头
-	- `src/utils/snapping.ts`：垂直/水平重叠约束避免误触发
-
-	**5.21p 等间距与边缘/中心吸附正交组合**（2026-07-10）：
-	- **现象**：等间距触发的时候不会触发其他吸附，用户想"等间距的同时保持水平"无法实现
-	- **根因**（[snapping.ts:208-210](file:///d:/My%20Projects/PageForge/src/utils/snapping.ts#L208-L210)）：原代码中只要 X 或 Y 任一轴触发了等间距吸附，就 `return { dx, dy, lines }` 提前退出，导致**两个轴都不再做边缘/中心吸附**
-	- **修复**：
-	  1. 移除提前 return
-	  2. X 轴回退分支：仅当 X 轴**没有**触发等间距时才执行（`if (!spacingSnapX || Math.abs(spacingSnapX.dx) > xThreshold + 4)`）
-	  3. Y 轴回退分支：仅当 Y 轴**没有**触发等间距时才执行
-	- **结果**：X/Y 轴相互独立，等间距和边缘/中心吸附可以**正交组合**：
-	  - X 轴等间距 + Y 轴边缘对齐：拖拽元素水平居中两个目标之间 + 顶部/底部对齐第三个目标
-	  - Y 轴等间距 + X 轴中心对齐：拖拽元素垂直居中两个目标之间 + 水平中心对齐第三个目标
-	  - X+Y 都等间距：两个轴都等间距吸附（最常见场景，行为不变）
-	  - X+Y 都边缘吸附：行为完全不变
-	- **涉及文件**：`src/utils/snapping.ts`
-
----
-
 ## 6. 交互功能
 
 PageForge 现在支持零代码配置交互效果，导出 HTML 自带 vanilla JS 运行时。
@@ -1108,16 +803,6 @@ interface InteractionConfig {
 
 - ~~响应式导出~~：`groupRows` 分行 + 三层断点 CSS（桌面/平板/手机）已在 `exportHtml.ts` 实现，见 5.15
 - ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
-- ~~图片裁切模态框~~：形状切换 + 8 向手柄 + 正方形/居中/边缘三套吸附系统，见 5.19
-- ~~统一剪贴板~~：时间戳机制 + 统一粘贴入口（Ctrl+V/工具栏/右键菜单），见 5.20
-- ~~右键菜单增强~~：复制 + 粘贴 + Portal 渲染，见 5.20
-- ~~外部文本粘贴~~：文档级 paste 监听器 + unifiedAsyncPaste 均支持 text/plain → text 节点，见 5.20
-- ~~占位符优化~~：引导文本 + userSelect: 'none' + 异步清除选区，见 5.20
-- ~~隐藏逻辑统一~~：display:none 在 nodeToCss 之后避免被覆盖，编辑/预览/导出 HTML/PNG/PDF 全部一致，见 5.21o-1
-- ~~预览模式图层树禁用~~：拖拽、按钮、点击选中全部禁用，见 5.21o-2
-- ~~预览模式文字防选中~~：userSelect: 'none'，见 5.21o-3
-- ~~等间距辅助线延长 + 误触发修复~~：边线贯穿画布 + 重叠约束，见 5.21o-4
-- ~~等间距与边缘/中心吸附正交组合~~：移除提前 return，X/Y 轴独立吸附，见 5.21p
 
 ---
 
@@ -1173,7 +858,7 @@ interface InteractionConfig {
 
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| [src/App.tsx](file:///d:/My%20Projects/PageForge/src/App.tsx) | ~610 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算、scale-from-center 补偿 |
+| [src/App.tsx](file:///d:/My%20Projects/PageForge/src/App.tsx) | ~540 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算 |
 | [src/utils/importHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/importHtml.ts) | ~1611 | HTML 解析核心，CSS 选择器处理、特判逻辑 |
 | [src/utils/exportHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/exportHtml.ts) | ~432 | 节点 → HTML 导出：groupRows 分行、responsiveCSS 三层断点、字体收集、SVG 图标、交互属性 |
 | [src/utils/interactionRuntime.ts](file:///d:/My%20Projects/PageForge/src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
@@ -1182,12 +867,11 @@ interface InteractionConfig {
 | [src/utils/snapping.ts](file:///d:/My%20Projects/PageForge/src/utils/snapping.ts) | - | 拖拽吸附辅助线 |
 | [src/utils/fileUpload.ts](file:///d:/My%20Projects/PageForge/src/utils/fileUpload.ts) | ~35 | 文件读取、类型/大小校验（FileReader → data URL） |
 | [src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts) | ~120 | PNG/PDF 导出（html2canvas + jspdf），导出前进入预览模式 |
-| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~500+ | 画布渲染、缩放、统一粘贴入口、右键菜单、手型平移 |
-| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 + 右键复制 |
-| [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree、占位符引导文本 |
+| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
+| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 |
+| [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
 | [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1300+ | 属性面板 + 交互配置 + ID 复制 + 本地上传 |
-| [src/components/ImageCropModal.tsx](file:///d:/My%20Projects/PageForge/src/components/ImageCropModal.tsx) | ~700 | 图片裁切模态框：形状切换、8 向手柄、正方形/居中/边缘吸附 |
-| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal + 统一粘贴） |
+| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal） |
 | [src/components/AlignToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
 | [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
@@ -1216,34 +900,11 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ## 11. 接下来的工作建议
 
-### 历史迭代
-
-#### 2026-07-09 —— 用户提出的 4 个优化（已完成）
-
-| # | 功能 | 状态 | 涉及文件 | 提交 |
-|---|------|------|----------|------|
-| 1 | **图层树拖拽排序 + 右键上/下移一层** | ✅ 已完成 | `LayerTree.tsx`, `Canvas.tsx`, `editorStore.ts` | `82bc138` |
-| 2 | **模板动效 + 导出/导入不丢失** | ✅ 已完成 | `templates.ts`, `index.css`, `exportHtml.ts`, `importHtml.ts` | `311779c` |
-| 3 | **等间距吸附显示优化（两端指示）** | ✅ 已完成 | `snapping.ts`, `Canvas.tsx` | `fe27d8c` |
-| 4 | **图片自由拉伸原比例吸附** | ✅ 已完成 | `CanvasElement.tsx` | `fe27d8c` |
-
-#### 2026-07-10 —— 隐藏逻辑统一 + 预览模式一致性 + 等间距误触发修复
-
-| # | 功能 | 状态 | 涉及文件 |
-|---|------|------|----------|
-| 1 | **隐藏元素所有场景一致性** | ✅ 已完成 | `CanvasElement.tsx` |
-| 2 | **预览模式图层树完全禁用** | ✅ 已完成 | `LayerTree.tsx` |
-| 3 | **预览模式画布文字防选中** | ✅ 已完成 | `CanvasElement.tsx` |
-| 4 | **等间距辅助线延长 + 误触发修复** | ✅ 已完成 | `Canvas.tsx`, `snapping.ts` |
-| 5 | **等间距与边缘/中心吸附正交组合** | ✅ 已完成 | `snapping.ts` |
-
-### 中长期规划
-
-5. **组件库扩充**：轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion
-6. **样式系统深化**：CSS 变量、全局主题切换、颜色调色板
-7. **体验优化**：撤销栈粒度优化、编组/解组、快捷键补全（Ctrl+A 全选）
-8. **交互扩展**：`onClick` 支持 `confirm` 对话框、`navigate-back`、条件显示；新增 `onLoad` 触发时序编排
-9. **测试与部署**：完善自动化测试覆盖、GitHub Pages 持续部署
+1. **组件库扩充**：轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion
+2. **样式系统深化**：CSS 变量、全局主题切换、颜色调色板
+3. **体验优化**：撤销栈粒度优化、编组/解组、快捷键补全
+4. **交互扩展**：在 `onClick` 中支持 `confirm` 对话框、`navigate-back`、`state` 切换（条件显示）；新增 `onLoad` 触发时序编排
+5. **测试与部署**：完善自动化测试覆盖、GitHub Pages 持续部署
 
 ---
 
