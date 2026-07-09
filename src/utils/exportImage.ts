@@ -13,46 +13,28 @@ interface ExportOptions {
 }
 
 /**
- * 第一性原理：手动 clone 画布 DOM，剥离所有干扰 html2canvas 的样式，
- * 配合 foreignObjectRendering: true 实现像素级精准的文本渲染。
+ * 第一性原理导出方案：
  *
- * 核心设计：
- * 1. 外层的 wrapper（position:fixed）仅用于隐藏 clone，不参与渲染
- * 2. clone 本身保持 position:relative + 干净坐标，确保 SVG viewport 从原点开始
- * 3. 子元素保留 position:absolute —— foreignObject 内浏览器原生渲染，文本位置完全精准
+ * 问题：html2canvas 的 fillText() 基线计算对 position:absolute + top/left
+ * 偏移的元素存在 2-5px 向下偏移，且 transform:scale(zoom) 干扰渲染。
+ *
+ * 方案：foreignObjectRendering: true 将 HTML 嵌入 SVG <foreignObject>，
+ * 由浏览器原生渲染引擎处理，文字位置与浏览器显示完全一致。
+ *
+ * 在 onclone 回调中剥离父容器的 position/transform，确保 SVG viewport
+ * 从原点开始计算（之前"只显示右半"的根因是 viewport 被 position:absolute
+ * 偏移导致错位）。
  */
-function prepareExportClone(): { clone: HTMLElement; wrapper: HTMLElement } | null {
-  const original = getCanvasContentElement()
-  if (!original) return null
-
-  const clone = original.cloneNode(true) as HTMLElement
-
-  // 剥离父容器上干扰 html2canvas / foreignObject 的样式
-  clone.style.position = 'relative'
-  clone.style.top = '0'
-  clone.style.left = '0'
-  clone.style.right = ''
-  clone.style.bottom = ''
-  clone.style.transform = ''
-  clone.style.transformOrigin = ''
-  // 显式设为 visible：wrapper 的 visibility:hidden 是继承属性，
-  // 若不覆盖，foreignObject 内的内容也会被隐藏，导致导出纯背景图
-  clone.style.visibility = 'visible'
-
-  // 创建隐藏 wrapper：wrapper 定位到 (0,0) 而非 -9999px，
-  // 确保 foreignObject 的 SVG viewport 与元素实际渲染区域一致
-  const wrapper = document.createElement('div')
-  wrapper.style.cssText = 'position:fixed;top:0;left:0;visibility:hidden;pointer-events:none;z-index:-1'
-  wrapper.appendChild(clone)
-  document.body.appendChild(wrapper)
-
-  return { clone, wrapper }
-}
-
-function removeExportClone(result: { clone: HTMLElement; wrapper: HTMLElement } | null): void {
-  if (result?.wrapper?.parentNode) {
-    result.wrapper.parentNode.removeChild(result.wrapper)
-  }
+function stripCanvasForExport(clonedDoc: Document): void {
+  const el = clonedDoc.querySelector('[data-pf-export-target]') as HTMLElement | null
+  if (!el) return
+  el.style.position = 'relative'
+  el.style.top = '0'
+  el.style.left = '0'
+  el.style.right = ''
+  el.style.bottom = ''
+  el.style.transform = ''
+  el.style.transformOrigin = ''
 }
 
 /**
@@ -69,17 +51,14 @@ export async function exportAsPNG(
 
   await ensureExportReady()
 
-  // 手动 clone 干净 DOM + foreignObject 渲染：文字位置与浏览器完全一致，无下移
-  const cloneResult = prepareExportClone()
-  if (!cloneResult) return
-
   try {
-    const canvas = await html2canvas(cloneResult.clone, {
+    const canvas = await html2canvas(element, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
       foreignObjectRendering: true,
+      onclone: stripCanvasForExport,
     })
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -91,7 +70,6 @@ export async function exportAsPNG(
     triggerDownload(url, filename)
     setTimeout(() => URL.revokeObjectURL(url), 3000)
   } finally {
-    removeExportClone(cloneResult)
     restoreExportState()
   }
 }
@@ -110,16 +88,14 @@ export async function exportAsPDF(
 
   await ensureExportReady()
 
-  const cloneResult = prepareExportClone()
-  if (!cloneResult) return
-
   try {
-    const canvas = await html2canvas(cloneResult.clone, {
+    const canvas = await html2canvas(element, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
       foreignObjectRendering: true,
+      onclone: stripCanvasForExport,
     })
 
     let imgData: string
@@ -152,7 +128,6 @@ export async function exportAsPDF(
 
     pdf.save(filename)
   } finally {
-    removeExportClone(cloneResult)
     restoreExportState()
   }
 }
@@ -169,7 +144,7 @@ function triggerDownload(url: string, filename: string): void {
 
 // ——— 导出前准备：进入预览模式 + 设为 100% zoom ———
 // 预览模式隐藏选中边框和手柄，确保截图干净；
-// 文字位置由 foreignObjectRendering + 手动 clone 保证与浏览器渲染一致。
+// 文字位置由 foreignObjectRendering + onclone 保证与浏览器渲染一致。
 
 let savedZoom = 1
 let savedPreviewMode = false
