@@ -62,6 +62,7 @@ export function LayerTree() {
   const moveLayer = useEditorStore((s) => s.moveLayer)
   const toggleVisible = useEditorStore((s) => s.toggleVisible)
   const removeNode = useEditorStore((s) => s.removeNode)
+  const previewMode = useEditorStore((s) => s.previewMode)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   // 拖拽状态
@@ -200,6 +201,7 @@ export function LayerTree() {
               isCollapsed={isCollapsed}
               label={label}
               hasCustomIcon={hasCustomIcon}
+              previewMode={previewMode}
               onSelect={() => selectNode(node.id)}
               onToggleCollapse={() => toggleCollapse(node.id)}
               onMoveUp={() => moveLayer(node.id, 'up')}
@@ -254,6 +256,7 @@ function LayerItem({
   isCollapsed,
   label,
   hasCustomIcon,
+  previewMode,
   onSelect,
   onToggleCollapse,
   onMoveUp,
@@ -275,6 +278,7 @@ function LayerItem({
   isCollapsed: boolean
   label: string
   hasCustomIcon: boolean
+  previewMode: boolean
   onSelect: () => void
   onToggleCollapse: () => void
   onMoveUp: () => void
@@ -290,14 +294,16 @@ function LayerItem({
   return (
     <div
       data-layer-id={node.id}
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
-      onClick={onSelect}
-      className={`group flex items-center gap-1 px-2 py-1 rounded text-sm cursor-pointer select-none transition-colors ${
+      draggable={!previewMode}
+      onDragStart={previewMode ? undefined : onDragStart}
+      onDragOver={previewMode ? undefined : onDragOver}
+      onDragLeave={previewMode ? undefined : onDragLeave}
+      onDrop={previewMode ? undefined : onDrop}
+      onDragEnd={previewMode ? undefined : onDragEnd}
+      onClick={previewMode ? undefined : onSelect}
+      className={`group flex items-center gap-1 px-2 py-1 rounded text-sm select-none transition-colors ${
+        previewMode ? 'cursor-default' : 'cursor-pointer'
+      } ${
         isDragging ? 'opacity-40' : ''
       } ${isSelected ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-ink-700'}`}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
@@ -305,7 +311,7 @@ function LayerItem({
       {/* 展开/折叠 */}
       {hasChildren ? (
         <button
-          onClick={(e) => {
+          onClick={previewMode ? undefined : (e) => {
             e.stopPropagation()
             onToggleCollapse()
           }}
@@ -348,7 +354,8 @@ function LayerItem({
         {node.id}
       </span>
 
-      {/* 操作按钮（hover 显示） */}
+      {/* 操作按钮（hover 显示）- 预览模式下隐藏 */}
+      {!previewMode && (
       <div
         className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
         onPointerDown={(e) => e.stopPropagation()}
@@ -403,6 +410,7 @@ function LayerItem({
           <IconX size={12} />
         </button>
       </div>
+      )}
     </div>
   )
 }

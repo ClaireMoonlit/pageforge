@@ -259,11 +259,14 @@ function findEqualSpacingX(
   threshold: number,
 ): { dx: number; pos: number; gap: number; fromPos: number; toPos: number; dragStart: number; dragEnd: number } | null {
   // 寻找拖拽元素左侧的目标（左目标右边缘 < 拖拽左边缘）和右侧的目标（右目标左边缘 > 拖拽右边缘）
+  // 关键约束：左右目标必须与拖拽元素在垂直方向上重叠（即它们"夹住"拖拽元素在同一水平带），
+  // 避免选中画布上/下方完全无关的元素（例如拖拽元素 B 在上半部分，但等间距却匹配了下半部分的元素）
+  const verticalOverlap = (t: Rect) => !(t.bottom <= drag.top || t.top >= drag.bottom)
   const leftTargets = targets
-    .filter((t) => t.right < drag.left)
+    .filter((t) => t.right < drag.left && verticalOverlap(t))
     .sort((a, b) => b.right - a.right) // 最近的在前
   const rightTargets = targets
-    .filter((t) => t.left > drag.right)
+    .filter((t) => t.left > drag.right && verticalOverlap(t))
     .sort((a, b) => a.left - b.left) // 最近的在前
 
   for (const lt of leftTargets) {
@@ -294,11 +297,13 @@ function findEqualSpacingY(
   targets: Rect[],
   threshold: number,
 ): { dy: number; pos: number; gap: number; fromPos: number; toPos: number; dragStart: number; dragEnd: number } | null {
+  // 关键约束：上下目标必须与拖拽元素在水平方向上重叠，避免误匹配画布左右两侧无关元素
+  const horizontalOverlap = (t: Rect) => !(t.right <= drag.left || t.left >= drag.right)
   const topTargets = targets
-    .filter((t) => t.bottom < drag.top)
+    .filter((t) => t.bottom < drag.top && horizontalOverlap(t))
     .sort((a, b) => b.bottom - a.bottom)
   const bottomTargets = targets
-    .filter((t) => t.top > drag.bottom)
+    .filter((t) => t.top > drag.bottom && horizontalOverlap(t))
     .sort((a, b) => a.top - b.top)
 
   for (const tt of topTargets) {

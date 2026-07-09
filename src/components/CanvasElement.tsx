@@ -506,7 +506,6 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       : draggable.isDragging
         ? undefined
         : CSS.Transform.toString(draggable.transform),
-    opacity: draggable.isDragging ? 0.3 : node.visible === false ? 0.25 : 1,
     cursor: previewMode
       ? (node.interaction?.onClick && node.interaction.onClick.action !== 'none') || node.interaction?.link?.href
         ? 'pointer'
@@ -529,6 +528,13 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
     outlineOffset: 0,
     zIndex: draggable.isDragging ? 100 : isMultiSelected ? 10 : isPrimary ? 11 : 1,
     ...nodeToCss(node.style),
+    // 隐藏元素：预览模式用 display:none 完全隐藏，编辑模式用 opacity 半透明
+    // 放在 nodeToCss 之后，确保不被 node.style 中的 display 属性覆盖
+    ...(previewMode && node.visible === false
+      ? { display: 'none' as const }
+      : { opacity: draggable.isDragging ? 0.3 : node.visible === false ? 0.25 : 1 }),
+    // 预览模式：禁用文字选中（与图片/视频占位提示文字一致）
+    userSelect: previewMode ? 'none' : undefined,
     ...(previewDisplayOverride !== undefined ? { display: previewDisplayOverride } : {}),
     ...(resize ? { width: `${resize.w}px`, height: `${resize.h}px` } : {}),
     // 悬停效果预览

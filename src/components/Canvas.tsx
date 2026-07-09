@@ -655,7 +655,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           {/* 对齐/分布操作结果高亮（临时显示 2.5s） */}
           <AlignInfoOverlay cw={cw} ch={ch} />
 
-          {/* 智能吸附参考线：蓝=边缘，紫=中心，橙=等间距（带数值标签） */}
+          {/* 智能吸附参考线：蓝=边缘/等间距，紫=中心 */}
           <svg
             style={{
               position: 'absolute',
@@ -668,13 +668,8 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
               overflow: 'visible',
             }}
           >
-            <defs>
-              <filter id="snap-label-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.5" />
-              </filter>
-            </defs>
             {snapLines.map((line, i) => {
-              const color = line.type === 'spacing' ? '#f59e0b' : line.type === 'center' ? '#a855f7' : '#3b82f6'
+              const color = line.type === 'center' ? '#a855f7' : '#3b82f6'
               if (line.axis === 'x') {
                 return (
                   <g key={`x-${i}`}>
@@ -689,78 +684,35 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                     />
                     {line.type === 'spacing' && line.gap !== undefined && (
                       <>
-                        {/* X 轴主参考线：覆盖整个画布高（紫色虚线） */}
-                        <line
-                          x1={line.pos}
-                          y1={0}
-                          x2={line.pos}
-                          y2={ch}
-                          stroke="#3b82f6"
-                          strokeWidth={1}
-                          strokeDasharray="4 4"
-                          opacity={0.5}
-                        />
-                        {/* 左侧间距括号：fromPos → dragStart（图二风格） */}
+                        {/* 等间距参与的边：延长参考线到画布全高，让用户清楚看到是哪几条边在等间距 */}
+                        {line.fromPos !== undefined && (
+                          <line x1={line.fromPos} y1={0} x2={line.fromPos} y2={ch} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.dragStart !== undefined && (
+                          <line x1={line.dragStart} y1={0} x2={line.dragStart} y2={ch} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.dragEnd !== undefined && (
+                          <line x1={line.dragEnd} y1={0} x2={line.dragEnd} y2={ch} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.toPos !== undefined && (
+                          <line x1={line.toPos} y1={0} x2={line.toPos} y2={ch} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {/* 左侧间距双头箭头：fromPos → dragStart */}
                         {line.fromPos !== undefined && line.dragStart !== undefined && (
-                          <g>
-                            {/* 左端圆点 */}
-                            <circle cx={line.fromPos} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                            <line x1={line.fromPos} y1={10} x2={line.dragStart} y2={10} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
-                            {/* 右端圆点 */}
-                            <circle cx={line.dragStart} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                            {/* 间距文本 */}
-                            <rect
-                              x={(line.fromPos + line.dragStart) / 2 - 28}
-                              y={2}
-                              width={56}
-                              height={16}
-                              rx={3}
-                              fill="#3b82f6"
-                              filter="url(#snap-label-shadow)"
-                            />
-                            <text
-                              x={(line.fromPos + line.dragStart) / 2}
-                              y={13}
-                              fill="#ffffff"
-                              fontSize={11}
-                              fontFamily="monospace"
-                              fontWeight={600}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                            >
-                              ={Math.round(line.dragStart - line.fromPos)}px
-                            </text>
-                          </g>
-                        )}
-                        {/* 右侧间距括号：dragEnd → toPos */}
-                        {line.toPos !== undefined && line.dragEnd !== undefined && (
-                          <g>
-                            <circle cx={line.dragEnd} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                            <line x1={line.dragEnd} y1={10} x2={line.toPos} y2={10} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
-                            <circle cx={line.toPos} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                            <rect
-                              x={(line.dragEnd + line.toPos) / 2 - 28}
-                              y={2}
-                              width={56}
-                              height={16}
-                              rx={3}
-                              fill="#3b82f6"
-                              filter="url(#snap-label-shadow)"
-                            />
-                            <text
-                              x={(line.dragEnd + line.toPos) / 2}
-                              y={13}
-                              fill="#ffffff"
-                              fontSize={11}
-                              fontFamily="monospace"
-                              fontWeight={600}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                            >
-                              ={Math.round(line.toPos - line.dragEnd)}px
-                            </text>
-                          </g>
-                        )}
+                            <g>
+                              <line x1={line.fromPos} y1={10} x2={line.dragStart} y2={10} stroke="#3b82f6" strokeWidth={1.5} />
+                              <polygon points={`${line.fromPos},10 ${line.fromPos+6},6 ${line.fromPos+6},14`} fill="#3b82f6" />
+                              <polygon points={`${line.dragStart},10 ${line.dragStart-6},6 ${line.dragStart-6},14`} fill="#3b82f6" />
+                            </g>
+                          )}
+                        {/* 右侧间距双头箭头：dragEnd → toPos */}
+                        {line.dragEnd !== undefined && line.toPos !== undefined && (
+                            <g>
+                              <line x1={line.dragEnd} y1={10} x2={line.toPos} y2={10} stroke="#3b82f6" strokeWidth={1.5} />
+                              <polygon points={`${line.dragEnd},10 ${line.dragEnd+6},6 ${line.dragEnd+6},14`} fill="#3b82f6" />
+                              <polygon points={`${line.toPos},10 ${line.toPos-6},6 ${line.toPos-6},14`} fill="#3b82f6" />
+                            </g>
+                          )}
                       </>
                     )}
                   </g>
@@ -778,80 +730,38 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                     strokeDasharray={line.type === 'center' ? '4 4' : 'none'}
                   />
                   {line.type === 'spacing' && line.gap !== undefined && (
-                    <>
-                      {/* Y 轴主参考线：覆盖整个画布宽（蓝色虚线） */}
-                      <line
-                        x1={0}
-                        y1={line.pos}
-                        x2={cw}
-                        y2={line.pos}
-                        stroke="#3b82f6"
-                        strokeWidth={1}
-                        strokeDasharray="4 4"
-                        opacity={0.5}
-                      />
-                      {/* 上方间距：fromPos → dragStart（图二风格） */}
-                      {line.fromPos !== undefined && line.dragStart !== undefined && (
-                        <g>
-                          {/* 上端圆点 */}
-                          <circle cx={10} cy={line.fromPos} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                          <line x1={10} y1={line.fromPos} x2={10} y2={line.dragStart} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
-                          {/* 下端圆点 */}
-                          <circle cx={10} cy={line.dragStart} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                          <rect
-                            x={2}
-                            y={(line.fromPos + line.dragStart) / 2 - 8}
-                            width={56}
-                            height={16}
-                            rx={3}
-                            fill="#3b82f6"
-                            filter="url(#snap-label-shadow)"
-                          />
-                          <text
-                            x={30}
-                            y={(line.fromPos + line.dragStart) / 2}
-                            fill="#ffffff"
-                            fontSize={11}
-                            fontFamily="monospace"
-                            fontWeight={600}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            ={Math.round(line.dragStart - line.fromPos)}px
-                          </text>
-                        </g>
-                      )}
-                      {/* 下方间距：dragEnd → toPos */}
-                      {line.toPos !== undefined && line.dragEnd !== undefined && (
-                        <g>
-                          <circle cx={10} cy={line.dragEnd} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                          <line x1={10} y1={line.dragEnd} x2={10} y2={line.toPos} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
-                          <circle cx={10} cy={line.toPos} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
-                          <rect
-                            x={2}
-                            y={(line.dragEnd + line.toPos) / 2 - 8}
-                            width={56}
-                            height={16}
-                            rx={3}
-                            fill="#3b82f6"
-                            filter="url(#snap-label-shadow)"
-                          />
-                          <text
-                            x={30}
-                            y={(line.dragEnd + line.toPos) / 2}
-                            fill="#ffffff"
-                            fontSize={11}
-                            fontFamily="monospace"
-                            fontWeight={600}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                          >
-                            ={Math.round(line.toPos - line.dragEnd)}px
-                          </text>
-                        </g>
-                      )}
-                    </>
-                  )}
+                      <>
+                        {/* 等间距参与的边：延长参考线到画布全宽，让用户清楚看到是哪几条边在等间距 */}
+                        {line.fromPos !== undefined && (
+                          <line x1={0} y1={line.fromPos} x2={cw} y2={line.fromPos} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.dragStart !== undefined && (
+                          <line x1={0} y1={line.dragStart} x2={cw} y2={line.dragStart} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.dragEnd !== undefined && (
+                          <line x1={0} y1={line.dragEnd} x2={cw} y2={line.dragEnd} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {line.toPos !== undefined && (
+                          <line x1={0} y1={line.toPos} x2={cw} y2={line.toPos} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+                        )}
+                        {/* 上方间距双头箭头：fromPos → dragStart */}
+                        {line.fromPos !== undefined && line.dragStart !== undefined && (
+                          <g>
+                            <line x1={10} y1={line.fromPos} x2={10} y2={line.dragStart} stroke="#3b82f6" strokeWidth={1.5} />
+                            <polygon points={`10,${line.fromPos} 6,${line.fromPos+6} 14,${line.fromPos+6}`} fill="#3b82f6" />
+                            <polygon points={`10,${line.dragStart} 6,${line.dragStart-6} 14,${line.dragStart-6}`} fill="#3b82f6" />
+                          </g>
+                        )}
+                        {/* 下方间距双头箭头：dragEnd → toPos */}
+                        {line.dragEnd !== undefined && line.toPos !== undefined && (
+                          <g>
+                            <line x1={10} y1={line.dragEnd} x2={10} y2={line.toPos} stroke="#3b82f6" strokeWidth={1.5} />
+                            <polygon points={`10,${line.dragEnd} 6,${line.dragEnd+6} 14,${line.dragEnd+6}`} fill="#3b82f6" />
+                            <polygon points={`10,${line.toPos} 6,${line.toPos-6} 14,${line.toPos-6}`} fill="#3b82f6" />
+                          </g>
+                        )}
+                      </>
+                    )}
                 </g>
               )
             })}

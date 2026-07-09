@@ -1,7 +1,7 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-09（§5.21n 等间距两端指示 + 图片比例吸附 + 图层树拖拽排序 + 模板动效）
+> 最后更新：2026-07-10（§5.21o 隐藏逻辑统一 + 预览模式图层树禁用 + 预览模式文字防选中 + 等间距辅助线延长）
 > 当前版本：v0.2.0
 
 ---
@@ -947,6 +947,58 @@ interface CanvasNode {
 	- **CanvasElement.tsx**：四角手柄 resize 时检测宽高比接近原比例时自动吸附。有裁切用 `cropRect` 比例，无裁切从 DOM `<img>` 获取 `naturalWidth/naturalHeight`。吸附阈值 3% 开启 / 6% 脱离（2x 滞后），保持鼠标驱动维度，调整另一维度。`ratioSnapRef` 跟踪吸附状态。
 	- **涉及文件**：`src/components/CanvasElement.tsx`
 
+	**5.21o 隐藏逻辑统一 + 预览模式一致性 + 等间距误触发修复**（2026-07-10）：
+
+	**o-1 隐藏元素在所有导出场景一致性隐藏**（`src/components/CanvasElement.tsx`）：
+	- **现象**：用户反馈"隐藏之后点预览，还是显示半灰状态，导出 HTML 倒是完全消失了，但是导出其他的就出现了"
+	- **根因**：原代码中 `display: 'none'` / `opacity` 条件样式在 `baseStyle` 中排在 `nodeToCss(node.style)` 之前，**被 `node.style` 中的 `display` 属性覆盖**，导致预览模式下隐藏元素仍然可见
+	- **修复**：将隐藏逻辑的 `display: 'none'` / `opacity` 条件样式从 `nodeToCss` 之前移到之后，确保优先级：
+	  - **编辑模式**：隐藏元素半透明（opacity: 0.25）—— 保留可见性便于编辑
+	  - **预览模式**：隐藏元素完全消失（display: none）—— 与导出 HTML 一致
+	  - **导出 HTML**：`nodeToHtml` 在 `exportHtml.ts` 中直接跳过 `visible===false` 的节点
+	  - **导出 PNG/PDF**：`exportImage.ts` 的 `ensureExportReady()` 进入预览模式 → `display: none` 生效
+	- **统一后逻辑**：四种场景（编辑 / 预览 / 导出 HTML / 导出 PNG/PDF）行为完全一致
+
+	**o-2 预览模式下图层树功能完全禁用**（`src/components/LayerTree.tsx`）：
+	- **现象**：预览模式下图层树的拖拽、上下移动、隐藏、删除按钮仍然可操作
+	- **修复**：传递 `previewMode` 到 `LayerItem` 组件，预览模式下：
+	  - 禁用拖拽：`draggable={false}` + 所有 drag 事件置为 `undefined`
+	  - 禁用点击选中：`onClick={undefined}`
+	  - 禁用展开/折叠：按钮 `onClick={undefined}`
+	  - 隐藏所有操作按钮（上移/下移/显示/删除）：用 `!previewMode && (...)` 包裹
+	  - 光标变为 `cursor-default`
+	- **导出模式不受影响**：用户希望导出时仍可操作图层树（不影响导出流程）
+
+	**o-3 预览模式下画布文字防选中**（`src/components/CanvasElement.tsx`）：
+	- **现象**：预览模式下画布文字元素可以被双击选中（出现蓝色背景选区）
+	- **修复**：`baseStyle` 中添加 `userSelect: previewMode ? 'none' : undefined`
+	- **一致性**：与图片/视频占位符提示文字（双击上传提示）的 `userSelect: 'none'` 处理方式一致
+
+	**o-4 等间距辅助线延长 + 误触发修复**（`src/components/Canvas.tsx` + `src/utils/snapping.ts`）：
+	- **现象 1**：用户怀疑"看起来错的等间距线是检测到和下面其他元素等间距了" —— 拖拽元素 B 在画布上方，但等间距线指向画布下方的元素
+	- **现象 2**：等间距参与的边线（fromPos/dragStart/dragEnd/toPos）只是短竖线（y=2~18），用户无法直观看到是哪几条边在等间距
+	- **修复 1（误触发）**：`snapping.ts` 中 `findEqualSpacingX/Y` 增加垂直/水平重叠约束：
+	  ```ts
+	  // X 轴等间距：左右目标必须与拖拽元素在垂直方向重叠
+	  const verticalOverlap = (t: Rect) => !(t.bottom <= drag.top || t.top >= drag.bottom)
+	  ```
+	  - 修复前：等间距检测会遍历**所有**左右目标对，包括画布上/下方完全无关的元素
+	  - 修复后：只匹配**与拖拽元素在垂直/水平方向有重叠**的目标对
+	- **修复 2（边线延长）**：`Canvas.tsx` 中等间距参与的 4 条边（fromPos / dragStart / dragEnd / toPos）从短竖线（y=2~18）改为**贯穿画布全高的蓝色虚线**：
+	  ```tsx
+	  <line x1={line.fromPos} y1={0} x2={line.fromPos} y2={ch} 
+	        stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" opacity={0.6} />
+	  ```
+	  - 用户可以一眼看到"是这四条边在等间距"
+	- **箭头样式**：双头箭头（实线 + 三角箭头）标注左右两侧间距，箭头头部紧贴参考线无缝隙
+	- **颜色统一**：等间距线与边缘吸附线同为蓝色 `#3b82f6`（移除原橙黄色变体）
+
+	**涉及文件**：
+	- `src/components/CanvasElement.tsx`：隐藏逻辑位置调整、userSelect 样式
+	- `src/components/LayerTree.tsx`：previewMode 状态透传 + 拖拽/按钮禁用
+	- `src/components/Canvas.tsx`：等间距辅助线延长 + 双头箭头
+	- `src/utils/snapping.ts`：垂直/水平重叠约束避免误触发
+
 ---
 
 ## 6. 交互功能
@@ -1047,6 +1099,10 @@ interface InteractionConfig {
 - ~~右键菜单增强~~：复制 + 粘贴 + Portal 渲染，见 5.20
 - ~~外部文本粘贴~~：文档级 paste 监听器 + unifiedAsyncPaste 均支持 text/plain → text 节点，见 5.20
 - ~~占位符优化~~：引导文本 + userSelect: 'none' + 异步清除选区，见 5.20
+- ~~隐藏逻辑统一~~：display:none 在 nodeToCss 之后避免被覆盖，编辑/预览/导出 HTML/PNG/PDF 全部一致，见 5.21o-1
+- ~~预览模式图层树禁用~~：拖拽、按钮、点击选中全部禁用，见 5.21o-2
+- ~~预览模式文字防选中~~：userSelect: 'none'，见 5.21o-3
+- ~~等间距辅助线延长 + 误触发修复~~：边线贯穿画布 + 重叠约束，见 5.21o-4
 
 ---
 
@@ -1145,7 +1201,9 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ## 11. 接下来的工作建议
 
-### 当前迭代（2026-07-09）—— 用户提出的 4 个优化
+### 历史迭代
+
+#### 2026-07-09 —— 用户提出的 4 个优化（已完成）
 
 | # | 功能 | 状态 | 涉及文件 | 提交 |
 |---|------|------|----------|------|
@@ -1154,36 +1212,14 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 | 3 | **等间距吸附显示优化（两端指示）** | ✅ 已完成 | `snapping.ts`, `Canvas.tsx` | `fe27d8c` |
 | 4 | **图片自由拉伸原比例吸附** | ✅ 已完成 | `CanvasElement.tsx` | `fe27d8c` |
 
-### 详细规划
+#### 2026-07-10 —— 隐藏逻辑统一 + 预览模式一致性 + 等间距误触发修复
 
-#### 1. 图层树拖拽排序 + 右键上/下移一层
-- **LayerTree.tsx**：集成 `@dnd-kit/sortable`，拖拽图层项改变 `node.children` 顺序 → `reparentNode(id, parentId, newIndex)`
-- **editorStore.ts**：新增 `moveLayerUp(id)` / `moveLayerDown(id)` 方法（在兄弟节点中交换位置）
-- **CanvasElement.tsx**：右键菜单新增「上移一层」「下移一层」按钮，调用 store 方法
-- **注意**：图层顺序 = 渲染顺序（z-index），顶层节点在 LayerTree 顶部显示
-
-#### 2. 模板动效 + 导出/入不丢失
-- **templates.ts**：为已有模板节点添加 `interaction.animation` 配置（如 Hero 区 fade-in、特性卡 slide-up）
-- **index.css**：已有 `@keyframes pf-animate-*` 类，确保动效类型齐全
-- **exportHtml.ts**：验证动效信息（`data-pf-animate` 属性 + CSS class）在导出 HTML 中正确输出
-- **importHtml.ts**：验证 `data-pf-animate` 属性在导入时还原为 `interaction.animation` 配置
-- **测试**：导出模板 HTML → 浏览器打开确认动效 → 重新导入确认动效配置保留
-
-#### 3. 等间距吸附显示优化
-- **现状**：间距吸附线只在一端显示（如左边缘对齐），不显示间距数值
-- **snapping.ts**：`computeSnap` 中增加间距吸附线类型（两端均显示，中间标注间距值）
-- **App.tsx / Canvas.tsx**：`snapLines` 渲染支持间距标签（如 `← 40px →`）
-- **视觉**：粉色虚线两端各一条短线 + 中间间距数值标签
-
-#### 4. 图片自由拉伸原比例吸附
-- **CanvasElement.tsx** resize 手柄：在自由拉伸时检测当前宽高比是否接近原比例
-  - 无裁切图片：使用 `naturalWidth / naturalHeight`
-  - 有裁切图片：使用 `cropRect.width / cropRect.height`
-- **吸附逻辑**（类似正方形吸附，但比例动态）：
-  - 吸附阈值：相对差异 `|currentRatio - targetRatio| / targetRatio < 3%`
-  - 滞后：5% 退出吸附
-  - 吸附时固定对角锚点，修正另一维度
-- **视觉反馈**：接近原比例时显示蓝色辅助线/边框
+| # | 功能 | 状态 | 涉及文件 |
+|---|------|------|----------|
+| 1 | **隐藏元素所有场景一致性** | ✅ 已完成 | `CanvasElement.tsx` |
+| 2 | **预览模式图层树完全禁用** | ✅ 已完成 | `LayerTree.tsx` |
+| 3 | **预览模式画布文字防选中** | ✅ 已完成 | `CanvasElement.tsx` |
+| 4 | **等间距辅助线延长 + 误触发修复** | ✅ 已完成 | `Canvas.tsx`, `snapping.ts` |
 
 ### 中长期规划
 
