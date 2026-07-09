@@ -205,48 +205,55 @@ export function computeSnap(
     })
   }
 
-  if (spacingSnapX || spacingSnapY) {
-    return { dx, dy, lines }
-  }
+  // 关键：等间距不抢占另一轴的吸附
+  // X 轴等间距触发时，Y 轴仍可做边缘/中心吸附（保持水平同时等间距）
+  // Y 轴等间距触发时，X 轴仍可做边缘/中心吸附
+  // 仅当两个轴都触发了等间距时，才提前返回（避免被回退分支覆盖）
 
   // 回退：独立 X 吸附（left/right/centerX 的边缘对齐）
-  const xCandidates: Array<{ target: number; offset: number; type: SnapLine['type'] }> = []
-  for (const t of targets) {
-    xCandidates.push({ target: t.left, offset: dragRect.left - t.left, type: 'edge' })
-    xCandidates.push({ target: t.right, offset: dragRect.right - t.right, type: 'edge' })
-    xCandidates.push({ target: t.centerX, offset: dragRect.centerX - t.centerX, type: 'center' })
-  }
-  let bestX: { offset: number; target: number; type: SnapLine['type'] } | null = null
-  for (const c of xCandidates) {
-    if (Math.abs(c.offset) <= xThreshold) {
-      if (!bestX || Math.abs(c.offset) < Math.abs(bestX.offset)) {
-        bestX = { offset: c.offset, target: c.target, type: c.type }
+  // 如果 X 轴已经等间距吸附，跳过 X 轴回退，避免覆盖
+  if (!spacingSnapX || Math.abs(spacingSnapX.dx) > xThreshold + 4) {
+    const xCandidates: Array<{ target: number; offset: number; type: SnapLine['type'] }> = []
+    for (const t of targets) {
+      xCandidates.push({ target: t.left, offset: dragRect.left - t.left, type: 'edge' })
+      xCandidates.push({ target: t.right, offset: dragRect.right - t.right, type: 'edge' })
+      xCandidates.push({ target: t.centerX, offset: dragRect.centerX - t.centerX, type: 'center' })
+    }
+    let bestX: { offset: number; target: number; type: SnapLine['type'] } | null = null
+    for (const c of xCandidates) {
+      if (Math.abs(c.offset) <= xThreshold) {
+        if (!bestX || Math.abs(c.offset) < Math.abs(bestX.offset)) {
+          bestX = { offset: c.offset, target: c.target, type: c.type }
+        }
       }
     }
-  }
-  if (bestX) {
-    dx = -bestX.offset
-    lines.push({ pos: bestX.target, axis: 'x', type: bestX.type })
+    if (bestX) {
+      dx = -bestX.offset
+      lines.push({ pos: bestX.target, axis: 'x', type: bestX.type })
+    }
   }
 
   // 回退：独立 Y 吸附
-  const yCandidates: Array<{ target: number; offset: number; type: SnapLine['type'] }> = []
-  for (const t of targets) {
-    yCandidates.push({ target: t.top, offset: dragRect.top - t.top, type: 'edge' })
-    yCandidates.push({ target: t.bottom, offset: dragRect.bottom - t.bottom, type: 'edge' })
-    yCandidates.push({ target: t.centerY, offset: dragRect.centerY - t.centerY, type: 'center' })
-  }
-  let bestY: { offset: number; target: number; type: SnapLine['type'] } | null = null
-  for (const c of yCandidates) {
-    if (Math.abs(c.offset) <= yThreshold) {
-      if (!bestY || Math.abs(c.offset) < Math.abs(bestY.offset)) {
-        bestY = { offset: c.offset, target: c.target, type: c.type }
+  // 如果 Y 轴已经等间距吸附，跳过 Y 轴回退，避免覆盖
+  if (!spacingSnapY || Math.abs(spacingSnapY.dy) > yThreshold + 4) {
+    const yCandidates: Array<{ target: number; offset: number; type: SnapLine['type'] }> = []
+    for (const t of targets) {
+      yCandidates.push({ target: t.top, offset: dragRect.top - t.top, type: 'edge' })
+      yCandidates.push({ target: t.bottom, offset: dragRect.bottom - t.bottom, type: 'edge' })
+      yCandidates.push({ target: t.centerY, offset: dragRect.centerY - t.centerY, type: 'center' })
+    }
+    let bestY: { offset: number; target: number; type: SnapLine['type'] } | null = null
+    for (const c of yCandidates) {
+      if (Math.abs(c.offset) <= yThreshold) {
+        if (!bestY || Math.abs(c.offset) < Math.abs(bestY.offset)) {
+          bestY = { offset: c.offset, target: c.target, type: c.type }
+        }
       }
     }
-  }
-  if (bestY) {
-    dy = -bestY.offset
-    lines.push({ pos: bestY.target, axis: 'y', type: bestY.type })
+    if (bestY) {
+      dy = -bestY.offset
+      lines.push({ pos: bestY.target, axis: 'y', type: bestY.type })
+    }
   }
 
   return { dx, dy, lines }
