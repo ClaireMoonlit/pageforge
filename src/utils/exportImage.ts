@@ -28,11 +28,11 @@ interface ExportOptions {
 function stripCanvasForExport(clonedDoc: Document): void {
   const el = clonedDoc.querySelector('[data-pf-export-target]') as HTMLElement | null
   if (!el) return
-  el.style.position = 'relative'
+  // 保留 position: absolute（子元素 absolute 定位需要它作为包含块），
+  // 仅清零 top/left 确保 SVG foreignObject 的 viewport 从原点开始。
+  // 之前改成 position:relative 导致子元素宽度计算异常（fit-content 参照物变了）。
   el.style.top = '0'
   el.style.left = '0'
-  el.style.right = ''
-  el.style.bottom = ''
   el.style.transform = ''
   el.style.transformOrigin = ''
 }
