@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -366,8 +366,9 @@ export const useEditorStore = create<EditorState>()(
           findParent(state.nodes, null)
           if (idx < 0) return
 
-          // 计算目标索引
-          const newIdx = direction === 'up' ? idx - 1 : idx + 1
+          // 图层树是倒序的：数组靠后 = 视觉上靠上
+          // 因此 'up'（视觉上向上）= idx + 1，'down'（视觉上向下）= idx - 1
+          const newIdx = direction === 'up' ? idx + 1 : idx - 1
 
           // 获取父数组引用
           const getArr = (arr: CanvasNode[]): CanvasNode[] | null => {

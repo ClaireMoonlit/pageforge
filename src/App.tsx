@@ -93,6 +93,38 @@ export default function App() {
 		  const cropKey = useEditorStore((s) => s.cropModal.cropKey)
 		  const canvasRef = useRef<HTMLDivElement>(null)
   const [activeNode, setActiveNode] = useState<CanvasNode | null>(null)
+  /** 调试用：将 store 暴露到 window */
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      ;(window as unknown as { __pf: typeof useEditorStore }).__pf = useEditorStore
+    }
+    // 测试模式：URL 含 ?test=layer 时加载 5 个测试节点
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('test') === 'layer') {
+      // 生成 400x300 的 4:3 测试图（蓝色背景 + 白色文字）作为 data URL
+      // 仅当 image 节点没有 src 时生成（避免 React 18 strict mode 重复执行时双倍生成）
+      const c = document.createElement('canvas')
+      c.width = 400; c.height = 300
+      const ctx = c.getContext('2d')!
+      ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, 0, 400, 300)
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 48px sans-serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText('Test 4:3', 200, 150)
+      const testImgSrc = c.toDataURL('image/png')
+      const { addNode, addNodes } = useEditorStore.getState()
+      // 测试模式下，使用 updateNodes 防止 React 18 strict mode 双倍加载
+      const existing = useEditorStore.getState().nodes
+      if (existing.length > 0) return
+      addNodes([
+        { id: 't1', type: 'heading', visible: true, props: { text: '标题 A', level: 1 }, style: { x: 100, y: 50, fontSize: '32px' }, children: [] },
+        { id: 't2', type: 'text', visible: true, props: { text: '正文 B' }, style: { x: 100, y: 120, fontSize: '16px' }, children: [] },
+        { id: 't3', type: 'container', visible: true, props: {}, style: { x: 100, y: 200, width: '400px', minHeight: '150px', backgroundColor: '#f1f5f9', padding: '20px' }, children: [
+          { id: 't3-1', type: 'text', visible: true, props: { text: '容器内文字' }, style: { x: 0, y: 0, fontSize: '14px' }, children: [] },
+        ] },
+        { id: 't4', type: 'button', visible: true, props: { text: '按钮 D' }, style: { x: 100, y: 400, width: '120px', height: '40px' }, children: [] },
+        { id: 't5', type: 'image', visible: true, props: { src: testImgSrc, originalWidth: 400, originalHeight: 300, alt: '4:3 测试图' }, style: { x: 100, y: 500, width: '200px', height: '150px' }, children: [] },
+      ])
+    }
+  }, [])
   /** 记录当前拖拽来源，供 modifier 判断是否需要把预览贴到光标 */
   const dragSourceRef = useRef<'library' | 'canvas' | null>(null)
   /** 拖拽期间持续跟踪光标真实位置（不依赖 dnd-kit 的 delta/activatorEvent） */

@@ -1,14 +1,4 @@
-import { useState, useRef, useCallback, useMemo, type ReactNode } from 'react'
-import {
-  DndContext,
-  DragOverlay,
-  useDraggable,
-  useDroppable,
-  pointerWithin,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-} from '@dnd-kit/core'
+import { useState, useCallback, useMemo, type DragEvent } from 'react'
 import { useEditorStore } from '@/store/editorStore'
 import type { CanvasNode, ComponentType } from '@/types'
 import { Icon, AutoIcon } from './Icon'
@@ -38,9 +28,12 @@ interface FlatItem {
   depth: number
   parentId: string | null
   index: number
+  /** 在根数组中的索引（用于倒序显示） */
+  rootIndex: number
 }
 
-/** 将嵌套树扁平化为列表，跳过折叠的子树 */
+/** 将嵌套树扁平化为列表，跳过折叠的子树。
+ *  返回顺序：后画的（数组末尾）排在前面 → 第一个节点在 LayerTree 顶部 */
 function flattenTree(
   nodes: CanvasNode[],
   depth: number,
@@ -48,11 +41,14 @@ function flattenTree(
   collapsed: Set<string>,
 ): FlatItem[] {
   const result: FlatItem[] = []
-  for (let i = 0; i < nodes.length; i++) {
+  // 倒序遍历：后画的（数组靠后）放在最上（符合"后画在最上"的视觉直觉）
+  for (let i = nodes.length - 1; i >= 0; i--) {
     const node = nodes[i]
-    result.push({ node, depth, parentId, index: i })
+    result.push({ node, depth, parentId, index: i, rootIndex: i })
     if (node.children.length > 0 && !collapsed.has(node.id)) {
-      result.push(...flattenTree(node.children, depth + 1, node.id, collapsed))
+      // 子节点也要倒序：reverse 父级之前的子节点顺序
+      const children = flattenTree(node.children, depth + 1, node.id, collapsed)
+      result.push(...children)
     }
   }
   return result
@@ -63,13 +59,14 @@ export function LayerTree() {
   const selectNode = useEditorStore((s) => s.selectNode)
   const selectedId = useEditorStore((s) => s.selectedId)
   const reparentNode = useEditorStore((s) => s.reparentNode)
+  const moveLayer = useEditorStore((s) => s.moveLayer)
+  const toggleVisible = useEditorStore((s) => s.toggleVisible)
+  const removeNode = useEditorStore((s) => s.removeNode)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
-  // 拖拽排序状态
-  const [activeId, setActiveId] = useState<string | null>(null)
-  const [overId, setOverId] = useState<string | null>(null)
-  const [insertBefore, setInsertBefore] = useState(true)
-  const cursorRef = useRef({ x: 0, y: 0 })
+  // 拖拽状态
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overInfo, setOverInfo] = useState<{ id: string; position: 'before' | 'after' | 'inside' } | null>(null)
 
   const toggleCollapse = (id: string) => {
     setCollapsed((prev) => {
@@ -80,80 +77,88 @@ export function LayerTree() {
     })
   }
 
-  // 扁平化节点列表（用于拖拽排序）
+  // 扁平化节点列表（用于拖拽排序 + 渲染）
   const flatItems = useMemo(
     () => flattenTree(nodes, 0, null, collapsed),
     [nodes, collapsed],
   )
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const id = String(event.active.id)
-    setActiveId(id)
-    const ae = event.activatorEvent as PointerEvent
-    cursorRef.current = { x: ae.clientX, y: ae.clientY }
+  /** 判断 overItem 是否是 dragItem 的子孙（不能拖入自己的子孙，防环） */
+  const isDescendant = (ancestorId: string, candidateId: string): boolean => {
+    const ancestor = findNode(nodes, ancestorId)
+    if (!ancestor) return false
+    const walk = (n: CanvasNode): boolean => {
+      if (n.id === candidateId) return true
+      return n.children.some(walk)
+    }
+    return walk(ancestor)
+  }
+
+  const handleDragStart = useCallback((e: DragEvent<HTMLDivElement>, id: string) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+    setDragId(id)
   }, [])
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const over = event.over
-    if (!over) {
-      setOverId(null)
-      return
-    }
-    const targetId = String(over.id)
-    setOverId(targetId)
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>, id: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (!dragId || dragId === id) return
 
-    // 判断光标在目标元素的上半部分还是下半部分
-    const targetEl = document.querySelector(`[data-layer-id="${targetId}"]`)
-    if (targetEl) {
-      const rect = targetEl.getBoundingClientRect()
-      const midY = rect.top + rect.height / 2
-      setInsertBefore(cursorRef.current.y < midY)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const offsetY = e.clientY - rect.top
+    const ratio = offsetY / rect.height
+    // 上 1/4 → before；下 1/4 → after；中间 → inside（拖入容器）
+    let position: 'before' | 'after' | 'inside'
+    if (ratio < 0.25) position = 'before'
+    else if (ratio > 0.75) position = 'after'
+    else position = 'inside'
+    setOverInfo({ id, position })
+  }, [dragId])
+
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    // 仅当真正离开图层树时清除
+    const rt = e.relatedTarget as HTMLElement | null
+    if (!rt || !rt.closest('[data-layer-id]')) {
+      // 不清除，保持指示线稳定
     }
   }, [])
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      setActiveId(null)
-      setOverId(null)
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>, overId: string) => {
+    e.preventDefault()
+    const activeId = e.dataTransfer.getData('text/plain') || dragId
+    setDragId(null)
+    setOverInfo(null)
+    if (!activeId || activeId === overId) return
+    if (isDescendant(activeId, overId)) return // 防环
 
-      if (!over) return
+    const overItem = flatItems.find((f) => f.node.id === overId)
+    if (!overItem) return
+    const position = overInfo?.id === overId ? overInfo.position : 'before'
 
-      const activeNodeId = String(active.id)
-      const overNodeId = String(over.id)
-      if (activeNodeId === overNodeId) return
-
-      // 在扁平列表中查找
-      const activeIdx = flatItems.findIndex((f) => f.node.id === activeNodeId)
-      const overIdx = flatItems.findIndex((f) => f.node.id === overNodeId)
-      if (activeIdx < 0 || overIdx < 0) return
-
-      const activeItem = flatItems[activeIdx]
-      const overItem = flatItems[overIdx]
-
-      // 计算目标索引（在目标父级中的位置）
-      let targetIndex = overItem.index
-      if (!insertBefore) targetIndex++
-
-      // 如果同父级且原位置在目标位置之前，需要调整（因为移除后索引会前移）
-      if (activeItem.parentId === overItem.parentId && activeItem.index < targetIndex) {
-        targetIndex--
-      }
-
-      // 如果没变化，跳过
-      if (activeItem.parentId === overItem.parentId && activeItem.index === targetIndex) return
-
-      reparentNode(activeNodeId, overItem.parentId, targetIndex)
-    },
-    [flatItems, insertBefore, reparentNode],
-  )
-
-  // 拖拽期间监听指针移动
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (activeId) {
-      cursorRef.current = { x: e.clientX, y: e.clientY }
+    let targetParentId = overItem.parentId
+    let targetIndex: number
+    if (position === 'inside') {
+      // 拖入容器（仅当目标是容器）：放到容器子节点数组最前（最上层）
+      if (overItem.node.type !== 'container') return
+      targetParentId = overItem.node.id
+      targetIndex = 0
+    } else if (position === 'after') {
+      // 视觉"上方" = 更高 zIndex = 数组中 overItem 之后
+      // （图层树倒序渲染，数组中靠后 = 视觉上靠上）
+      targetIndex = overItem.index + 1
+    } else {
+      // 视觉"下方" = 更低 zIndex = 数组中 overItem 之前
+      targetIndex = overItem.index
     }
-  }, [activeId])
+
+    reparentNode(activeId, targetParentId, targetIndex)
+  }, [dragId, flatItems, overInfo, reparentNode])
+
+  const handleDragEnd = useCallback(() => {
+    setDragId(null)
+    setOverInfo(null)
+  }, [])
 
   if (nodes.length === 0) {
     return (
@@ -163,96 +168,79 @@ export function LayerTree() {
     )
   }
 
-  const renderNode = (node: CanvasNode, depth: number): ReactNode => {
-    const isSelected = node.id === selectedId
-    const hasChildren = node.children.length > 0
-    const isCollapsed = collapsed.has(node.id)
-    const isHidden = node.visible === false
-    const label = node.props.text || TYPE_LABEL[node.type]
-    const hasCustomIcon = node.type === 'icon' && node.props.icon
-    const isActive = node.id === activeId
-    const isOver = node.id === overId
-
-    return (
-      <div key={node.id}>
-        {/* 拖入指示线（上方） */}
-        {isOver && insertBefore && (
-          <div
-            className="layer-drop-indicator"
-            style={{ marginLeft: `${8 + depth * 14}px` }}
-          />
-        )}
-        <LayerItem
-          node={node}
-          depth={depth}
-          isSelected={isSelected}
-          isActive={isActive}
-          isOver={isOver}
-          isHidden={isHidden}
-          hasChildren={hasChildren}
-          isCollapsed={isCollapsed}
-          label={label}
-          hasCustomIcon={!!hasCustomIcon}
-          onSelect={() => selectNode(node.id)}
-          onToggleCollapse={() => toggleCollapse(node.id)}
-        />
-        {/* 拖入指示线（下方） */}
-        {isOver && !insertBefore && (
-          <div
-            className="layer-drop-indicator"
-            style={{ marginLeft: `${8 + depth * 14}px` }}
-          />
-        )}
-        {/* 子节点 */}
-        {hasChildren && !isCollapsed && (
-          <div>{node.children.map((c) => renderNode(c, depth + 1))}</div>
-        )}
-      </div>
-    )
-  }
-
   return (
-    <DndContext
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="pb-2" onPointerMove={handlePointerMove}>
-        {nodes.map((n) => renderNode(n, 0))}
-      </div>
-      <DragOverlay dropAnimation={null}>
-        {activeId ? (
-          <DragPreview nodeId={activeId} flatItems={flatItems} />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+    <div className="pb-2">
+      {flatItems.map((item) => {
+        const { node, depth } = item
+        const isSelected = node.id === selectedId
+        const hasChildren = node.children.length > 0
+        const isCollapsed = collapsed.has(node.id)
+        const isHidden = node.visible === false
+        const label = node.props.text || TYPE_LABEL[node.type]
+        const hasCustomIcon = !!(node.type === 'icon' && node.props.icon)
+        const isDragging = node.id === dragId
+        const isOver = overInfo?.id === node.id ? overInfo : null
+
+        return (
+          <div key={node.id} className="relative">
+            {/* after 指示线：图二风格，蓝色虚线在节点底部 */}
+            {isOver?.position === 'after' && (
+              <div
+                className="absolute left-0 right-0 h-0.5 bg-brand-400 z-10 pointer-events-none"
+                style={{ top: -1, marginLeft: `${8 + depth * 14}px` }}
+              />
+            )}
+            <LayerItem
+              node={node}
+              depth={depth}
+              isSelected={isSelected}
+              isDragging={isDragging}
+              isHidden={isHidden}
+              hasChildren={hasChildren}
+              isCollapsed={isCollapsed}
+              label={label}
+              hasCustomIcon={hasCustomIcon}
+              onSelect={() => selectNode(node.id)}
+              onToggleCollapse={() => toggleCollapse(node.id)}
+              onMoveUp={() => moveLayer(node.id, 'up')}
+              onMoveDown={() => moveLayer(node.id, 'down')}
+              onToggleVisible={() => toggleVisible(node.id)}
+              onRemove={() => removeNode(node.id)}
+              onDragStart={(e) => handleDragStart(e, node.id)}
+              onDragOver={(e) => handleDragOver(e, node.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, node.id)}
+              onDragEnd={handleDragEnd}
+            />
+            {/* before 指示线：拖到节点下方（在视觉下移） */}
+            {isOver?.position === 'before' && (
+              <div
+                className="absolute left-0 right-0 h-0.5 bg-brand-400 z-10 pointer-events-none"
+                style={{ bottom: -1, marginLeft: `${8 + depth * 14}px` }}
+              />
+            )}
+            {/* inside 指示：边框高亮 */}
+            {isOver?.position === 'inside' && (
+              <div
+                className="absolute inset-0 rounded border-2 border-brand-400 pointer-events-none z-10"
+                style={{ marginLeft: `${depth * 14}px` }}
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
-/** 拖拽预览 */
-function DragPreview({ nodeId, flatItems }: { nodeId: string; flatItems: FlatItem[] }) {
-  const item = flatItems.find((f) => f.node.id === nodeId)
-  if (!item) return null
-  const node = item.node
-  const label = node.props.text || TYPE_LABEL[node.type]
-  const hasCustomIcon = node.type === 'icon' && node.props.icon
-  return (
-    <div
-      className="flex items-center gap-1 px-2 py-1 rounded text-sm bg-brand-600 text-white"
-      style={{ paddingLeft: `${8 + item.depth * 14}px`, minWidth: 120 }}
-    >
-      <span className="w-4" />
-      <span className="w-4 h-4 flex items-center justify-center text-brand-200">
-        {hasCustomIcon ? (
-          <AutoIcon value={node.props.icon!} size={14} />
-        ) : (
-          <Icon type="svg" value={node.type} size={14} />
-        )}
-      </span>
-      <span className="flex-1 truncate">{label}</span>
-    </div>
-  )
+/** 在节点树中按 id 查找节点 */
+function findNode(nodes: CanvasNode[], id: string): CanvasNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n
+    const c = findNode(n.children, id)
+    if (c) return c
+  }
+  return null
 }
 
 /** 单个图层项：可拖拽、可放置 */
@@ -260,8 +248,7 @@ function LayerItem({
   node,
   depth,
   isSelected,
-  isActive,
-  isOver,
+  isDragging,
   isHidden,
   hasChildren,
   isCollapsed,
@@ -269,12 +256,20 @@ function LayerItem({
   hasCustomIcon,
   onSelect,
   onToggleCollapse,
+  onMoveUp,
+  onMoveDown,
+  onToggleVisible,
+  onRemove,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
 }: {
   node: CanvasNode
   depth: number
   isSelected: boolean
-  isActive: boolean
-  isOver: boolean
+  isDragging: boolean
   isHidden: boolean
   hasChildren: boolean
   isCollapsed: boolean
@@ -282,37 +277,29 @@ function LayerItem({
   hasCustomIcon: boolean
   onSelect: () => void
   onToggleCollapse: () => void
+  onMoveUp: () => void
+  onMoveDown: () => void
+  onToggleVisible: () => void
+  onRemove: () => void
+  onDragStart: (e: DragEvent<HTMLDivElement>) => void
+  onDragOver: (e: DragEvent<HTMLDivElement>) => void
+  onDragLeave: (e: DragEvent<HTMLDivElement>) => void
+  onDrop: (e: DragEvent<HTMLDivElement>) => void
+  onDragEnd: (e: DragEvent<HTMLDivElement>) => void
 }) {
-  const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({
-    id: node.id,
-    data: { node },
-  })
-  const { setNodeRef: setDropRef } = useDroppable({
-    id: node.id,
-    data: { node },
-  })
-
-  // 合并 refs
-  const combinedRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      setDragRef(el)
-      setDropRef(el)
-    },
-    [setDragRef, setDropRef],
-  )
-
   return (
     <div
-      ref={combinedRef}
       data-layer-id={node.id}
-      {...attributes}
-      {...listeners}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       onClick={onSelect}
       className={`group flex items-center gap-1 px-2 py-1 rounded text-sm cursor-pointer select-none transition-colors ${
-        isActive ? 'opacity-40' : ''
-      } ${isOver ? 'ring-1 ring-brand-400' : ''} ${
-        isSelected ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-ink-700'
-      }`}
+        isDragging ? 'opacity-40' : ''
+      } ${isSelected ? 'bg-brand-600 text-white' : 'text-gray-300 hover:bg-ink-700'}`}
       style={{ paddingLeft: `${8 + depth * 14}px` }}
     >
       {/* 展开/折叠 */}
@@ -322,6 +309,7 @@ function LayerItem({
             e.stopPropagation()
             onToggleCollapse()
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="w-4 h-4 flex items-center justify-center hover:text-white"
           title={isCollapsed ? '展开' : '折叠'}
         >
@@ -361,78 +349,60 @@ function LayerItem({
       </span>
 
       {/* 操作按钮（hover 显示） */}
-      <LayerActions id={node.id} isSelected={isSelected} />
-    </div>
-  )
-}
-
-/** 行操作按钮：上移、下移、显示/隐藏、删除 */
-function LayerActions({ id, isSelected }: { id: string; isSelected: boolean }) {
-  const moveLayer = useEditorStore((s) => s.moveLayer)
-  const toggleVisible = useEditorStore((s) => s.toggleVisible)
-  const removeNode = useEditorStore((s) => s.removeNode)
-  const visible = useEditorStore((s) => {
-    const find = (arr: CanvasNode[]): boolean | undefined => {
-      for (const n of arr) {
-        if (n.id === id) return n.visible !== false
-        const v = find(n.children)
-        if (v !== undefined) return v
-      }
-      return undefined
-    }
-    return find(s.nodes)
-  })
-
-  return (
-    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          moveLayer(id, 'up')
-        }}
-        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
-          isSelected ? 'text-white' : 'text-gray-400'
-        }`}
-        title="上移一层"
+      <div
+        className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <IconChevronUp size={12} />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          moveLayer(id, 'down')
-        }}
-        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
-          isSelected ? 'text-white' : 'text-gray-400'
-        }`}
-        title="下移一层"
-      >
-        <span style={{ transform: 'rotate(180deg)', display: 'inline-flex' }}><IconChevronUp size={12} /></span>
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          toggleVisible(id)
-        }}
-        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
-          isSelected ? 'text-white' : 'text-gray-400'
-        }`}
-        title={visible === false ? '显示' : '隐藏'}
-      >
-        {visible === false ? <IconEyeOff size={14} /> : <IconEye size={14} />}
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          removeNode(id)
-        }}
-        className={`w-5 h-5 flex items-center justify-center rounded hover:bg-red-600/80 ${
-          isSelected ? 'text-white' : 'text-gray-400'
-        }`}
-        title="删除"
-      >
-        <IconX size={12} />
-      </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveUp()
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
+            isSelected ? 'text-white' : 'text-gray-400'
+          }`}
+          title="上移一层"
+        >
+          <IconChevronUp size={12} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onMoveDown()
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
+            isSelected ? 'text-white' : 'text-gray-400'
+          }`}
+          title="下移一层"
+        >
+          <span style={{ transform: 'rotate(180deg)', display: 'inline-flex' }}><IconChevronUp size={12} /></span>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleVisible()
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded hover:bg-black/20 ${
+            isSelected ? 'text-white' : 'text-gray-400'
+          }`}
+          title={isHidden ? '显示' : '隐藏'}
+        >
+          {isHidden ? <IconEyeOff size={14} /> : <IconEye size={14} />}
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
+          className={`w-5 h-5 flex items-center justify-center rounded hover:bg-red-600/80 ${
+            isSelected ? 'text-white' : 'text-gray-400'
+          }`}
+          title="删除"
+        >
+          <IconX size={12} />
+        </button>
+      </div>
     </div>
   )
 }

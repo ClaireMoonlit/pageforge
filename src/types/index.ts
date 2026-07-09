@@ -191,6 +191,8 @@ export interface NodeProps {
   originalSrc?: string // 未裁切的原图（重新裁切时使用）
   imageShape?: 'rectangle' | 'circle' | 'rounded' // 图片占位形状，默认 rectangle
   cropRect?: { x: number; y: number; width: number; height: number } // 上次裁切选区（重新裁切时记忆）
+  originalWidth?: number // 原图自然宽度（用于自由拉伸原比例吸附）
+  originalHeight?: number // 原图自然高度
   rotation?: number // 图片旋转角度（度），默认 0
   flipH?: boolean // 水平镜像
   flipV?: boolean // 垂直镜像

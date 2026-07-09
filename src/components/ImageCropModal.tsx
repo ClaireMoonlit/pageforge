@@ -357,135 +357,113 @@ export function ImageCropModal() {
       const ar = drag.aspectRatio
       const isCorner = corner === 'nw' || corner === 'ne' || corner === 'sw' || corner === 'se'
 
-      if (isCorner && ar > 0) {
-		        // 第一性原理：正方形检测必须在投影之前，用无约束尺寸（不锁宽高比）计算。
-		        // 投影法始终维持原始 ar，若 ar≠1（如 1920×1080, ar=1.78），
-		        // 投影结果永远不接近正方形 → 吸附永不触发。
-		        let uncW: number, uncH: number
-		        if (corner === 'nw') {
-		          uncW = drag.orig.width - dx
-		          uncH = drag.orig.height - dy
-		        } else if (corner === 'ne') {
-		          uncW = drag.orig.width + dx
-		          uncH = drag.orig.height - dy
-		        } else if (corner === 'sw') {
-		          uncW = drag.orig.width - dx
-		          uncH = drag.orig.height + dy
-		        } else { // se
-		          uncW = drag.orig.width + dx
-		          uncH = drag.orig.height + dy
-		        }
+      if (isCorner) {
+	        // 第一性原理：corner 与 edge 行为一致（允许自由拉伸），仅在自然尺寸接近正方形时吸附。
+	        // 之前的"始终用 ar 投影"导致 corner 锁定了原始比例，用户无法自由拉伸。
+	        // 改造：和 edge handle 一样，先按鼠标 delta 计算自然尺寸，再做正方形检测和磁吸修正。
+	        const minSize = 30
+	        let natW = drag.orig.width
+	        let natH = drag.orig.height
+	        let natX = drag.orig.x
+	        let natY = drag.orig.y
 
-		        // 正方形检测（相对差异 + 滞后阈值）
-			        // 第一性原理：当 ar=1 时投影天然保持正方形，不需要 uncW/uncH 检测。
-			        // 用 uncW/uncH 检测反而会因为鼠标轻微偏离对角线导致绿框闪烁。
-			        const isSquareAr = Math.abs(ar - 1) < 0.001
-			        let sqSnap: boolean
-			        if (isSquareAr) {
-			          sqSnap = true
-			          prevSnapRef.current.square = true
-			        } else {
-			          const uncMax = Math.max(uncW, uncH)
-			          const uncRelDiff = uncMax > 0 ? Math.abs(uncW - uncH) / uncMax : 0
-			          const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
-			          sqSnap = uncRelDiff <= sqThreshold
-			          prevSnapRef.current.square = sqSnap
-			        }
+	        if (corner === 'nw') {
+	          const newX = Math.max(0, Math.min(drag.orig.x + dx, drag.orig.x + drag.orig.width - minSize))
+	          const newY = Math.max(0, Math.min(drag.orig.y + dy, drag.orig.y + drag.orig.height - minSize))
+	          natW = drag.orig.x + drag.orig.width - newX
+	          natH = drag.orig.y + drag.orig.height - newY
+	          natX = newX
+	          natY = newY
+	        } else if (corner === 'ne') {
+	          const newY = Math.max(0, Math.min(drag.orig.y + dy, drag.orig.y + drag.orig.height - minSize))
+	          natW = Math.max(minSize, Math.min(drag.orig.width + dx, imgW - drag.orig.x))
+	          natH = drag.orig.y + drag.orig.height - newY
+	          natY = newY
+	        } else if (corner === 'sw') {
+	          const newX = Math.max(0, Math.min(drag.orig.x + dx, drag.orig.x + drag.orig.width - minSize))
+	          natW = drag.orig.x + drag.orig.width - newX
+	          natH = Math.max(minSize, Math.min(drag.orig.height + dy, imgH - drag.orig.y))
+	          natX = newX
+	        } else { // se
+	          natW = Math.max(minSize, Math.min(drag.orig.width + dx, imgW - drag.orig.x))
+	          natH = Math.max(minSize, Math.min(drag.orig.height + dy, imgH - drag.orig.y))
+	        }
 
-		        // 始终用原始 ar 投影（自然尺寸），不做 aspect ratio 切换
-		        const minT = Math.max(minSize, minSize / ar)
-		        let t: number
+	        // 正方形吸附：用自然尺寸检测（与 edge handle 一致），保留滞后阈值
+	        const natMax = Math.max(natW, natH)
+	        const natRelDiff = natMax > 0 ? Math.abs(natW - natH) / natMax : 0
+	        const sqThreshold = prevSnapRef.current.square ? SQ_SNAP_OFF : SQ_SNAP_ON
+	        const sqSnap = natRelDiff <= sqThreshold
+	        prevSnapRef.current.square = sqSnap
 
-		        if (corner === 'nw') {
-		          const anchorX = drag.orig.x + drag.orig.width
-		          const anchorY = drag.orig.y + drag.orig.height
-		          t = (ar * (anchorX - (drag.orig.x + dx)) + (anchorY - (drag.orig.y + dy))) / (ar * ar + 1)
-		          t = Math.max(minT, Math.min(t, Math.min(anchorX / ar, anchorY)))
-		          height = t
-		          width = ar * t
-		          x = anchorX - width
-		          y = anchorY - height
-		        } else if (corner === 'ne') {
-		          const anchorX = drag.orig.x
-		          const anchorY = drag.orig.y + drag.orig.height
-		          t = (ar * (drag.orig.x + drag.orig.width + dx - anchorX) + (anchorY - (drag.orig.y + dy))) / (ar * ar + 1)
-		          t = Math.max(minT, Math.min(t, Math.min(anchorY, (imgW - anchorX) / ar)))
-		          height = t
-		          width = ar * t
-		          y = anchorY - height
-		        } else if (corner === 'sw') {
-		          const anchorX = drag.orig.x + drag.orig.width
-		          const anchorY = drag.orig.y
-		          t = (ar * (anchorX - (drag.orig.x + dx)) + (drag.orig.y + drag.orig.height + dy - anchorY)) / (ar * ar + 1)
-		          t = Math.max(minT, Math.min(t, Math.min(anchorX / ar, imgH - anchorY)))
-		          height = t
-		          width = ar * t
-		          x = anchorX - width
-		        } else { // se
-		          const anchorX = drag.orig.x
-		          const anchorY = drag.orig.y
-		          t = (ar * (drag.orig.x + drag.orig.width + dx - anchorX) + (drag.orig.y + drag.orig.height + dy - anchorY)) / (ar * ar + 1)
-		          t = Math.max(minT, Math.min(t, Math.min((imgW - anchorX) / ar, imgH - anchorY)))
-		          height = t
-		          width = ar * t
-		        }
-
-		        // 正方形吸附：直接修正尺寸（仿画布 dx=-offset 的直接修正逻辑）
-		        // 第一性原理：投影法是鼠标位置的平滑函数，不存在"修正量"→无磁吸感。
-		        // 画布吸附的磁吸感来自 dx=-offset 直接修正元素位置，使其偏离鼠标预期。
-		        // 此处等效：用自然投影 (w,h) 的平均值强制正方形，修正量 = |w-h|/2。
-		        if (sqSnap) {
-		          const size = Math.round((width + height) / 2)
-		          width = size
-		          height = size
-		          // 重新锚定对角（保持锚点不变）
-		          if (corner === 'nw') {
-		            const anchorX = drag.orig.x + drag.orig.width
-		            const anchorY = drag.orig.y + drag.orig.height
-		            x = anchorX - size
-		            y = anchorY - size
-		          } else if (corner === 'ne') {
-		            const anchorY = drag.orig.y + drag.orig.height
-		            y = anchorY - size
-		          } else if (corner === 'sw') {
-		            const anchorX = drag.orig.x + drag.orig.width
-		            x = anchorX - size
-		          }
-		          // se: x, y 保持锚定在 (drag.orig.x, drag.orig.y)，无需调整
-
-		          // 钳制到图片边界
-		          x = Math.max(0, x)
-		          y = Math.max(0, y)
-		          width = Math.max(minSize, Math.min(width, imgW - x))
-		          height = Math.max(minSize, Math.min(height, imgH - y))
-		          // 尺寸钳制后重新锚定
-		          if (corner === 'nw') {
-		            const anchorX = drag.orig.x + drag.orig.width
-		            const anchorY = drag.orig.y + drag.orig.height
-		            x = Math.max(0, anchorX - width)
-		            y = Math.max(0, anchorY - height)
-		            width = anchorX - x
-		            height = anchorY - y
-		          } else if (corner === 'ne') {
-		            const anchorY = drag.orig.y + drag.orig.height
-		            y = Math.max(0, anchorY - height)
-		            height = anchorY - y
-		            width = Math.max(minSize, Math.min(width, imgW - x))
-		          } else if (corner === 'sw') {
-		            const anchorX = drag.orig.x + drag.orig.width
-		            x = Math.max(0, anchorX - width)
-		            width = anchorX - x
-		            height = Math.max(minSize, Math.min(height, imgH - y))
-		          } else { // se
-			            width = Math.max(minSize, Math.min(width, imgW - x))
-			            height = Math.max(minSize, Math.min(height, imgH - y))
-			          }
-			          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
-		        } else {
-		          setGuides([])
-		        }
-		        liveCropRef.current = { x, y, width, height }
-		        setCrop({ x, y, width, height })
+	        if (sqSnap) {
+	          // 磁吸修正：冻结未拖拽维度，让另一个维度跟随（保持 corner 对角的固定点不动）
+	          const size = (natW + natH) / 2
+	          if (corner === 'nw') {
+	            const anchorX = drag.orig.x + drag.orig.width
+	            const anchorY = drag.orig.y + drag.orig.height
+	            width = size
+	            height = size
+	            x = anchorX - size
+	            y = anchorY - size
+	          } else if (corner === 'ne') {
+	            const anchorX = drag.orig.x
+	            const anchorY = drag.orig.y + drag.orig.height
+	            width = size
+	            height = size
+	            x = anchorX
+	            y = anchorY - size
+	          } else if (corner === 'sw') {
+	            const anchorX = drag.orig.x + drag.orig.width
+	            const anchorY = drag.orig.y
+	            width = size
+	            height = size
+	            x = anchorX - size
+	            y = anchorY
+	          } else { // se
+	            width = size
+	            height = size
+	            x = drag.orig.x
+	            y = drag.orig.y
+	          }
+	          // 钳制到图片边界
+	          x = Math.max(0, x)
+	          y = Math.max(0, y)
+	          width = Math.max(minSize, Math.min(width, imgW - x))
+	          height = Math.max(minSize, Math.min(height, imgH - y))
+	          // 钳制后重新锚定对角
+	          if (corner === 'nw') {
+	            const anchorX = drag.orig.x + drag.orig.width
+	            const anchorY = drag.orig.y + drag.orig.height
+	            x = Math.max(0, anchorX - width)
+	            y = Math.max(0, anchorY - height)
+	            width = anchorX - x
+	            height = anchorY - y
+	          } else if (corner === 'ne') {
+	            const anchorY = drag.orig.y + drag.orig.height
+	            y = Math.max(0, anchorY - height)
+	            height = anchorY - y
+	            width = Math.max(minSize, Math.min(width, imgW - x))
+	          } else if (corner === 'sw') {
+	            const anchorX = drag.orig.x + drag.orig.width
+	            x = Math.max(0, anchorX - width)
+	            width = anchorX - x
+	            height = Math.max(minSize, Math.min(height, imgH - y))
+	          } else { // se
+	            width = Math.max(minSize, Math.min(width, imgW - x))
+	            height = Math.max(minSize, Math.min(height, imgH - y))
+	          }
+	          setGuides([{ axis: 'x', pos: 0, type: 'square', correction: 0 }])
+	        } else {
+	          // 自由拉伸：使用自然尺寸
+	          width = natW
+	          height = natH
+	          x = natX
+	          y = natY
+	          setGuides([])
+	        }
+        liveCropRef.current = { x, y, width, height }
+        setCrop({ x, y, width, height })
       } else {
 	        // 边缘手柄：先用鼠标 delta 计算自然尺寸，再检测正方形吸附
 	        // 第一性原理：不能拿修正后的尺寸检测吸附（width=height → relDiff=0 → 永不退出）。
@@ -495,22 +473,22 @@ export function ImageCropModal() {
 	        let natX = x
 	        let natY = y
 
-	        if (corner === 'nw' || corner === 'sw' || corner === 'w') {
+	        if ((corner as string) === 'nw' || (corner as string) === 'sw' || (corner as string) === 'w') {
 	          let newX = x + dx
 	          newX = Math.max(0, Math.min(newX, x + width - minSize))
 	          natWidth = x + width - newX
 	          natX = newX
 	        }
-	        if (corner === 'ne' || corner === 'se' || corner === 'e') {
+	        if ((corner as string) === 'ne' || (corner as string) === 'se' || (corner as string) === 'e') {
 	          natWidth = Math.max(minSize, Math.min(width + dx, imgW - x))
 	        }
-	        if (corner === 'nw' || corner === 'ne' || corner === 'n') {
+	        if ((corner as string) === 'nw' || (corner as string) === 'ne' || (corner as string) === 'n') {
 	          let newY = y + dy
 	          newY = Math.max(0, Math.min(newY, y + height - minSize))
 	          natHeight = y + height - newY
 	          natY = newY
 	        }
-	        if (corner === 'sw' || corner === 'se' || corner === 's') {
+	        if ((corner as string) === 'sw' || (corner as string) === 'se' || (corner as string) === 's') {
 	          natHeight = Math.max(minSize, Math.min(height + dy, imgH - y))
 	        }
 

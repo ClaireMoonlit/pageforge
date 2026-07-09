@@ -19,11 +19,12 @@ export function getAndClearPendingPasteId() { const id = pendingPasteId; pending
  */
 function pasteImageFromDataUrl(dataUrl: string, pos: { x: number; y: number }) {
   const id = useEditorStore.getState().addNode('image', pos.x, pos.y)
-  useEditorStore.getState().updateNodeProps(id, { src: dataUrl })
   const img = new Image()
   img.onload = () => {
     const nw = img.naturalWidth
     const nh = img.naturalHeight
+    // 第一性原理：必须保存 originalWidth/originalHeight，否则裁切后无法做原比例吸附
+    useEditorStore.getState().updateNodeProps(id, { src: dataUrl, originalWidth: nw, originalHeight: nh })
     const maxW = 600
     const w = nw > maxW ? maxW : nw
     const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
@@ -38,9 +39,12 @@ function pasteImageFromDataUrl(dataUrl: string, pos: { x: number; y: number }) {
         const finalW = Math.round(result.crop.width * ratio)
         const finalH = Math.round(result.crop.height * ratio)
         const isShaped = result.shape !== 'rectangle'
+        // 保留 originalWidth/originalHeight：原比例吸附要用原图尺寸，不能用裁切后的
         useEditorStore.getState().updateNodeProps(id, {
           src: result.croppedDataUrl,
           originalSrc: dataUrl,
+          originalWidth: nw,
+          originalHeight: nh,
           imageShape: result.shape,
           cropRect: result.crop,
         })
@@ -685,18 +689,33 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                     />
                     {line.type === 'spacing' && line.gap !== undefined && (
                       <>
-                        {/* 左侧间距：fromPos → dragStart */}
+                        {/* X 轴主参考线：覆盖整个画布高（紫色虚线） */}
+                        <line
+                          x1={line.pos}
+                          y1={0}
+                          x2={line.pos}
+                          y2={ch}
+                          stroke="#3b82f6"
+                          strokeWidth={1}
+                          strokeDasharray="4 4"
+                          opacity={0.5}
+                        />
+                        {/* 左侧间距括号：fromPos → dragStart（图二风格） */}
                         {line.fromPos !== undefined && line.dragStart !== undefined && (
-                          <>
-                            <line x1={line.fromPos} y1={4} x2={line.fromPos} y2={16} stroke={color} strokeWidth={2} />
-                            <line x1={line.fromPos} y1={10} x2={line.dragStart} y2={10} stroke={color} strokeWidth={1.5} />
+                          <g>
+                            {/* 左端圆点 */}
+                            <circle cx={line.fromPos} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
+                            <line x1={line.fromPos} y1={10} x2={line.dragStart} y2={10} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
+                            {/* 右端圆点 */}
+                            <circle cx={line.dragStart} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
+                            {/* 间距文本 */}
                             <rect
-                              x={(line.fromPos + line.dragStart) / 2 - 24}
+                              x={(line.fromPos + line.dragStart) / 2 - 28}
                               y={2}
-                              width={48}
+                              width={56}
                               height={16}
                               rx={3}
-                              fill="#f59e0b"
+                              fill="#3b82f6"
                               filter="url(#snap-label-shadow)"
                             />
                             <text
@@ -711,20 +730,21 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                             >
                               ={Math.round(line.dragStart - line.fromPos)}px
                             </text>
-                          </>
+                          </g>
                         )}
-                        {/* 右侧间距：dragEnd → toPos */}
+                        {/* 右侧间距括号：dragEnd → toPos */}
                         {line.toPos !== undefined && line.dragEnd !== undefined && (
-                          <>
-                            <line x1={line.toPos} y1={4} x2={line.toPos} y2={16} stroke={color} strokeWidth={2} />
-                            <line x1={line.dragEnd} y1={10} x2={line.toPos} y2={10} stroke={color} strokeWidth={1.5} />
+                          <g>
+                            <circle cx={line.dragEnd} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
+                            <line x1={line.dragEnd} y1={10} x2={line.toPos} y2={10} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
+                            <circle cx={line.toPos} cy={10} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
                             <rect
-                              x={(line.dragEnd + line.toPos) / 2 - 24}
+                              x={(line.dragEnd + line.toPos) / 2 - 28}
                               y={2}
-                              width={48}
+                              width={56}
                               height={16}
                               rx={3}
-                              fill="#f59e0b"
+                              fill="#3b82f6"
                               filter="url(#snap-label-shadow)"
                             />
                             <text
@@ -739,7 +759,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                             >
                               ={Math.round(line.toPos - line.dragEnd)}px
                             </text>
-                          </>
+                          </g>
                         )}
                       </>
                     )}
@@ -759,22 +779,36 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                   />
                   {line.type === 'spacing' && line.gap !== undefined && (
                     <>
-                      {/* 上方间距：fromPos → dragStart */}
+                      {/* Y 轴主参考线：覆盖整个画布宽（蓝色虚线） */}
+                      <line
+                        x1={0}
+                        y1={line.pos}
+                        x2={cw}
+                        y2={line.pos}
+                        stroke="#3b82f6"
+                        strokeWidth={1}
+                        strokeDasharray="4 4"
+                        opacity={0.5}
+                      />
+                      {/* 上方间距：fromPos → dragStart（图二风格） */}
                       {line.fromPos !== undefined && line.dragStart !== undefined && (
-                        <>
-                          <line x1={4} y1={line.fromPos} x2={16} y2={line.fromPos} stroke={color} strokeWidth={2} />
-                          <line x1={10} y1={line.fromPos} x2={10} y2={line.dragStart} stroke={color} strokeWidth={1.5} />
+                        <g>
+                          {/* 上端圆点 */}
+                          <circle cx={10} cy={line.fromPos} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
+                          <line x1={10} y1={line.fromPos} x2={10} y2={line.dragStart} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
+                          {/* 下端圆点 */}
+                          <circle cx={10} cy={line.dragStart} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
                           <rect
                             x={2}
                             y={(line.fromPos + line.dragStart) / 2 - 8}
-                            width={42}
+                            width={56}
                             height={16}
                             rx={3}
-                            fill="#f59e0b"
+                            fill="#3b82f6"
                             filter="url(#snap-label-shadow)"
                           />
                           <text
-                            x={23}
+                            x={30}
                             y={(line.fromPos + line.dragStart) / 2}
                             fill="#ffffff"
                             fontSize={11}
@@ -785,24 +819,25 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                           >
                             ={Math.round(line.dragStart - line.fromPos)}px
                           </text>
-                        </>
+                        </g>
                       )}
                       {/* 下方间距：dragEnd → toPos */}
                       {line.toPos !== undefined && line.dragEnd !== undefined && (
-                        <>
-                          <line x1={4} y1={line.toPos} x2={16} y2={line.toPos} stroke={color} strokeWidth={2} />
-                          <line x1={10} y1={line.dragEnd} x2={10} y2={line.toPos} stroke={color} strokeWidth={1.5} />
+                        <g>
+                          <circle cx={10} cy={line.dragEnd} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
+                          <line x1={10} y1={line.dragEnd} x2={10} y2={line.toPos} stroke="#3b82f6" strokeWidth={1} strokeDasharray="3 3" />
+                          <circle cx={10} cy={line.toPos} r={3} fill="none" stroke="#3b82f6" strokeWidth={1.5} />
                           <rect
                             x={2}
                             y={(line.dragEnd + line.toPos) / 2 - 8}
-                            width={42}
+                            width={56}
                             height={16}
                             rx={3}
-                            fill="#f59e0b"
+                            fill="#3b82f6"
                             filter="url(#snap-label-shadow)"
                           />
                           <text
-                            x={23}
+                            x={30}
                             y={(line.dragEnd + line.toPos) / 2}
                             fill="#ffffff"
                             fontSize={11}
@@ -813,7 +848,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
                           >
                             ={Math.round(line.toPos - line.dragEnd)}px
                           </text>
-                        </>
+                        </g>
                       )}
                     </>
                   )}

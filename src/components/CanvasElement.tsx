@@ -41,6 +41,10 @@ const MIN_SIZE = 20
 
 /** 获取图片目标比例：有裁切用裁切后比例，无裁切用原始图片自然比例 */
 function getImageTargetRatio(node: CanvasNode, el: HTMLDivElement | null): number {
+  // 优先使用 props 中保存的原图尺寸（最稳定，不依赖 DOM 时机）
+  if (node.props.originalWidth && node.props.originalHeight) {
+    return node.props.originalWidth / node.props.originalHeight
+  }
   // 优先使用裁切后比例
   if (node.props.cropRect) {
     const { width, height } = node.props.cropRect
@@ -193,7 +197,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
           const nw = img.naturalWidth
           const nh = img.naturalHeight
           // 临时显示原图，等待用户裁切
-          updateNodeProps(node.id, { src: dataUrl })
+          updateNodeProps(node.id, { src: dataUrl, originalWidth: nw, originalHeight: nh })
           const maxW = 600
           const w = nw > maxW ? maxW : nw
           const h = nw > maxW ? Math.round(maxW * nh / nw) : nh
@@ -211,9 +215,12 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
               const finalW = Math.round(result.crop.width * ratio)
               const finalH = Math.round(result.crop.height * ratio)
               const isShaped = result.shape !== 'rectangle'
+              // 保留 originalWidth/originalHeight：原比例吸附要用原图尺寸
               updateNodeProps(node.id, {
                 src: result.croppedDataUrl,
                 originalSrc: dataUrl,
+                originalWidth: nw,
+                originalHeight: nh,
                 imageShape: result.shape,
                 cropRect: result.crop,
               })
@@ -441,8 +448,8 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       newH = MIN_SIZE
     }
 
-    // 图片自由拉伸原比例吸附（仅四角手柄触发）
-    if (node.type === 'image' && s.aff.x && s.aff.y && s.aff.w !== 0 && s.aff.h !== 0) {
+    // 图片自由拉伸原比例吸附（仅四角手柄触发：aff.w 和 aff.h 都为 ±1）
+    if (node.type === 'image' && Math.abs(s.aff.w) === 1 && Math.abs(s.aff.h) === 1) {
       const targetRatio = getImageTargetRatio(node, elRef.current)
       if (targetRatio > 0) {
         const currentRatio = newW / newH
@@ -598,10 +605,12 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
           }
           const img = new Image()
           img.onload = () => {
+            const fullW = img.naturalWidth
+            const fullH = img.naturalHeight
             useEditorStore.getState().openCropModal({
               imageSrc: baseSrc,
-              imageWidth: img.naturalWidth,
-              imageHeight: img.naturalHeight,
+              imageWidth: fullW,
+              imageHeight: fullH,
               initialShape: node.props.imageShape,
               initialCrop: effectiveCrop,
               onConfirm: (result) => {
@@ -610,10 +619,16 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
                 const finalW = Math.round(result.crop.width * ratio)
                 const finalH = Math.round(result.crop.height * ratio)
                 const isShaped = result.shape !== 'rectangle'
+                // 保留 originalWidth/originalHeight：原比例吸附要用原图尺寸
+                // 如果原图已被裁切过（baseSrc === src），保留原值；否则用当前原图尺寸
+                const ow = node.props.originalWidth ?? fullW
+                const oh = node.props.originalHeight ?? fullH
                 useEditorStore.getState().updateNodeProps(node.id, {
                   src: result.croppedDataUrl,
                   imageShape: result.shape,
                   cropRect: result.crop,
+                  originalWidth: ow,
+                  originalHeight: oh,
                 })
                 useEditorStore.getState().updateNodeStyle(node.id, {
                   width: `${finalW}px`,
