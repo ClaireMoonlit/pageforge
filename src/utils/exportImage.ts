@@ -31,16 +31,13 @@ export async function exportAsPNG(
   await ensureExportReady()
 
   try {
-    const canvas = await html2canvas(element, {
-      scale,
-      backgroundColor: bg,
-      useCORS: true,
-      logging: false,
-      // foreignObjectRendering: 用 SVG foreignObject 渲染，直接复用浏览器真实布局，
-      // 解决 html2canvas 默认 fillText() 基线计算偏差导致的文字下移问题
-      foreignObjectRendering: true,
-    })
-    const blob = await new Promise<Blob>((resolve, reject) => {
+	    const canvas = await html2canvas(element, {
+	      scale,
+	      backgroundColor: bg,
+	      useCORS: true,
+	      logging: false,
+	    })
+	    const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
         if (b) resolve(b)
         else reject(new Error('导出失败：画布中包含跨域图片，无法生成 PNG。请使用本地图片或确保图片服务器允许跨域访问。'))
@@ -77,7 +74,6 @@ export async function exportAsPDF(
       backgroundColor: bg,
       useCORS: true,
       logging: false,
-      foreignObjectRendering: true,
     })
 
     let imgData: string
@@ -129,7 +125,8 @@ function triggerDownload(url: string, filename: string): void {
 
 // ——— 导出前准备：进入预览模式 + 设为 100% zoom ———
 // 预览模式隐藏选中边框和手柄，确保截图干净；
-// zoom=1 确保 html2canvas 不受 transform 影响。
+// 直接清除 DOM 元素的 transform（而非设 scale(1)），避免 html2canvas
+// 文字基线计算偏差。
 
 let savedZoom = 1
 let savedPreviewMode = false
@@ -157,11 +154,17 @@ async function ensureExportReady(): Promise<void> {
     needsUpdate = true
   }
 
-  // 仅在状态确实变化时才等待 DOM 更新
-  // selectNode(null) 也会触发 React 重渲染，但通常在 1 帧内完成
   if (needsUpdate) {
     await new Promise((r) => requestAnimationFrame(r))
     await new Promise((r) => requestAnimationFrame(r))
+  }
+
+  // 直接操作 DOM：移除 canvas 的 transform 属性。
+  // React 的 transform: scale(1) 视觉上是 no-op，但 html2canvas
+  // 仍会受其影响导致文字基线计算偏差（fillText 基线 ≠ CSS 布局）。
+  const target = getCanvasContentElement()
+  if (target) {
+    target.style.transform = ''
   }
 }
 
@@ -175,4 +178,6 @@ function restoreExportState(): void {
   if (store.previewMode !== savedPreviewMode) {
     store.togglePreviewMode()
   }
+
+  // React 重渲染会自动恢复 canvas 的 transform，无需手动操作
 }
