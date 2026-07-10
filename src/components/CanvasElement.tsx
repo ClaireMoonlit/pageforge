@@ -58,7 +58,7 @@ function getImageTargetRatio(node: CanvasNode, el: HTMLDivElement | null): numbe
   return 0
 }
 
-export const CanvasElement = memo(function CanvasElement({ node, isRoot = false }: { node: CanvasNode; isRoot?: boolean }) {
+export const CanvasElement = memo(function CanvasElement({ node, isRoot = false, parentDisplay = '' }: { node: CanvasNode; isRoot?: boolean; parentDisplay?: string }) {
   const selectNode = useEditorStore((s) => s.selectNode)
   const toggleSelection = useEditorStore((s) => s.toggleSelection)
   const updateNodeProps = useEditorStore((s) => s.updateNodeProps)
@@ -588,9 +588,11 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
 
   // 根节点用 absolute 定位；
   // 若节点自身 style 中有 position: absolute/fixed（由 importHtml 传入），也使用 absolute 定位，
-  // 利用 style.x/y 作为 left/top 精确布局；否则用 relative 参与父级 flex/flow。
+  // 利用 style.x/y 作为 left/top 精确布局。
+  // 关键区分：父容器是 flex/grid 时，子元素应走文档流；父容器是普通容器时，子元素用 absolute 定位。
   const declaredPosition = (node.style.position as string) || ''
-  const isAbsPos = isRoot || declaredPosition === 'absolute' || declaredPosition === 'fixed'
+  const parentIsFlex = parentDisplay.includes('flex') || parentDisplay.includes('grid')
+  const isAbsPos = isRoot || declaredPosition === 'absolute' || declaredPosition === 'fixed' || (!parentIsFlex)
 
   const style: CSSProperties = isAbsPos
     ? {
@@ -601,9 +603,10 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
       }
     : {
         ...baseStyle,
-        position: 'absolute',
-        left: resize ? resize.x : (node.style.x ?? 0),
-        top: resize ? resize.y : (node.style.y ?? 0),
+        // 非绝对定位的子元素：保持 baseStyle 中已由 nodeToCss 输出的 position（通常是 'relative'），
+        // 不要覆盖为 'absolute'，否则所有子节点会堆在父容器左上角 (left:0, top:0)，
+        // 父容器无法被子节点撑高、flex 布局完全失效，导入模板排版全乱。
+        // 不再额外设置 left/top，让元素按文档流自然排布。
         // resize 期间跳过 fit-content，让 baseStyle 中的 resize 宽高生效
         ...(resize ? {} : (node.style.width === undefined || node.style.width === '' ? { width: 'fit-content', maxWidth: '100%' } : {})),
       }
@@ -762,6 +765,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false 
             <CanvasElement
               key={c.id}
               node={c}
+              parentDisplay={String(node.style.display ?? '')}
             />
           ))
         ) : (

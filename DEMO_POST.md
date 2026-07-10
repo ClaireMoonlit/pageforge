@@ -51,6 +51,18 @@
 ![image|690x411](upload://82gMJaCkCIUn8QebgPzAjAWAeQo.jpeg)
 *▲ 导出 PDF 文档的效果展示*
 
+![product-06-crop-modal.png|690x411]
+*▲ 图片裁切模态框：矩形/圆形/圆角三种形状，8 向手柄，正方形磁吸（绿框）*
+
+![product-07-template-panel.png|690x411]
+*▲ 模板面板：预设模板 + 开源模板 + 粘贴 HTML 三个标签页，18 套模板一键加载*
+
+![product-08-layer-tree-align.png|690x411]
+*▲ 图层树（嵌套树形展示 + 显示/隐藏/上下移/删除）+ 多选时自动弹出的对齐工具栏*
+
+![product-09-interaction-config.png|690x411]
+*▲ 交互配置面板：链接、点击动作、悬停效果、入场动画，导出后由零依赖运行时驱动*
+
 ---
 
 ### 2. Demo 创作思路

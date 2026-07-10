@@ -15,40 +15,39 @@ interface ExportOptions {
 /**
  * 第一性原理导出方案：
  *
- * 三层约束：
  * 1. foreignObjectRendering: true → 文本由浏览器原生渲染，不下移
- * 2. 手动 clone + position:fixed + top/left:0 → SVG viewport 从原点开始，不裁切
- * 3. 保留 position:absolute/fixed 作为包含块 → 子元素宽度计算不变
+ * 2. 手动 clone + wrapper 定位到 (0,0) → SVG viewport 从原点开始，不裁切
+ * 3. clone 保留 position: absolute → 子元素宽度计算与原始画布一致
  *
- * 为什么不用 onclone 回调：
- * html2canvas 在 onclone 之前就已用原始元素的坐标计算 SVG viewport，
- * 回调中修改 top/left 无法纠正已算好的 viewport → 导致"只显示右半"。
- * 必须先手动 clone 并定位到 (0,0)，再传入 html2canvas。
+ * 为什么用 wrapper 而非直接改 clone 为 fixed：
+ * position: fixed 的包含块是 viewport，与原始元素 position: absolute 的
+ * 包含块不同，导致子元素 fit-content/max-width 计算偏差。
+ * wrapper(position:fixed) → clone(position:absolute) 既保证 viewport 原点，
+ * 又保持与原始画布相同的定位上下文。
  */
-function prepareExportClone(): HTMLElement | null {
+function prepareExportClone(): { clone: HTMLElement; wrapper: HTMLElement } | null {
   const original = getCanvasContentElement()
   if (!original) return null
 
-  const clone = original.cloneNode(true) as HTMLElement
+  const wrapper = document.createElement('div')
+  wrapper.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:-1'
 
-  // 清零坐标偏移，transform 也清掉（zoom=1 时 scale(1) 是恒等但干扰 viewport 计算）
+  const clone = original.cloneNode(true) as HTMLElement
+  // 保留 position: absolute（原始值），仅清零坐标和 transform
   clone.style.top = '0'
   clone.style.left = '0'
   clone.style.transform = ''
   clone.style.transformOrigin = ''
 
-  // 改为 fixed 定位到视口原点，确保 html2canvas 从 (0,0) 开始渲染
-  clone.style.position = 'fixed'
-  clone.style.zIndex = '-1'
-  clone.style.pointerEvents = 'none'
+  wrapper.appendChild(clone)
+  document.body.appendChild(wrapper)
 
-  document.body.appendChild(clone)
-  return clone
+  return { clone, wrapper }
 }
 
-function removeExportClone(clone: HTMLElement | null): void {
-  if (clone?.parentNode) {
-    clone.parentNode.removeChild(clone)
+function removeExportClone(result: { clone: HTMLElement; wrapper: HTMLElement } | null): void {
+  if (result?.wrapper?.parentNode) {
+    result.wrapper.parentNode.removeChild(result.wrapper)
   }
 }
 
@@ -66,11 +65,11 @@ export async function exportAsPNG(
 
   await ensureExportReady()
 
-  const clone = prepareExportClone()
-  if (!clone) return
+  const result = prepareExportClone()
+  if (!result) return
 
   try {
-    const canvas = await html2canvas(clone, {
+    const canvas = await html2canvas(result.clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
@@ -87,7 +86,7 @@ export async function exportAsPNG(
     triggerDownload(url, filename)
     setTimeout(() => URL.revokeObjectURL(url), 3000)
   } finally {
-    removeExportClone(clone)
+    removeExportClone(result)
     restoreExportState()
   }
 }
@@ -106,11 +105,11 @@ export async function exportAsPDF(
 
   await ensureExportReady()
 
-  const clone = prepareExportClone()
-  if (!clone) return
+  const result = prepareExportClone()
+  if (!result) return
 
   try {
-    const canvas = await html2canvas(clone, {
+    const canvas = await html2canvas(result.clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
@@ -148,7 +147,7 @@ export async function exportAsPDF(
 
     pdf.save(filename)
   } finally {
-    removeExportClone(clone)
+    removeExportClone(result)
     restoreExportState()
   }
 }
@@ -163,32 +162,19 @@ function triggerDownload(url: string, filename: string): void {
   document.body.removeChild(a)
 }
 
-// ——— 导出前准备：进入预览模式 + 设为 100% zoom ———
+// ——— 导出前准备：进入预览模式（不改变 zoom，clone 已剥离 transform）———
 
-let savedZoom = 1
 let savedPreviewMode = false
 
 async function ensureExportReady(): Promise<void> {
   const store = useEditorStore.getState()
 
-  savedZoom = store.zoom
   savedPreviewMode = store.previewMode
 
   store.selectNode(null)
 
-  let needsUpdate = false
-
   if (!savedPreviewMode) {
     store.togglePreviewMode()
-    needsUpdate = true
-  }
-
-  if (savedZoom !== 1) {
-    store.setZoom(1)
-    needsUpdate = true
-  }
-
-  if (needsUpdate) {
     await new Promise((r) => requestAnimationFrame(r))
     await new Promise((r) => requestAnimationFrame(r))
   }
@@ -196,10 +182,6 @@ async function ensureExportReady(): Promise<void> {
 
 function restoreExportState(): void {
   const store = useEditorStore.getState()
-
-  if (savedZoom !== 1) {
-    store.setZoom(savedZoom)
-  }
 
   if (store.previewMode !== savedPreviewMode) {
     store.togglePreviewMode()

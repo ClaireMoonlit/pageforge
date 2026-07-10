@@ -881,6 +881,7 @@ function buildElement(
   inheritedVars: Record<string, string> = {},
   parentChildStyles: Record<string, string> = {},
   inheritedStyle: Record<string, string> = {},
+  parentDisplay: string = '',
 ): { el: Element; type: string; style: Record<string, string>; pad: ReturnType<typeof parsePadding>; props: Record<string, unknown>; effectiveW: number; node: CanvasNode; localVars: Record<string, string>; childStyles: Record<string, string>; inheritedStyle: Record<string, string> } {
   // PageForge 导出格式：data-pf-type 属性直接指定类型，跳过 inferType 推断
   const pfType = el.getAttribute('data-pf-type')
@@ -928,6 +929,23 @@ function buildElement(
   const prevAncestors = (parentChildStyles['__all_ancestor_classes__'] || '').split(' ').filter(Boolean)
   const childStyles = getParentChildStyles(el, cssMap, prevAncestors)
 
+  // 特殊处理：navbar-nav（Bootstrap 导航菜单 ul/ol）
+  // @media (min-width:992px){.navbar-expand-lg .navbar-nav{flex-direction:row}}
+  // 这条规则被 extractRules 整体跳过（@media 规则不递归提取），
+  // 导致 navbar 永远显示为移动端 column 模式。PageForge 画布是桌面端，
+  // 这里强制水平布局 + 居中对齐，避免 nav-item 一行一个。
+  if ((tag === 'ul' || tag === 'ol') && /\bnavbar-nav\b/.test(elClass)) {
+    style.display = 'flex'
+    style.flexDirection = 'row'
+    // 居中：navbar-nav 上常带 ms-auto（margin-left:auto），会导致 ul 被推到右侧
+    // 在绝对定位布局中这不起作用，应改用 justify-content + align-items
+    if (!style.alignItems) style.alignItems = 'center'
+    if (!style.justifyContent) style.justifyContent = 'flex-end'
+    if (!style.gap) style.gap = '8px'
+    // 去掉可能的 padding-left:0 / list-style:none 干扰（ul 默认 padding-left:40px + list-style:disc）
+    if (!style.paddingLeft) style.paddingLeft = '0'
+    if (!style.listStyle || style.listStyle === 'disc') style.listStyle = 'none'
+  }
   // 特殊处理：timeline-image（圆形头像图片容器）默认居中显示
   if (tag === 'div' && /\btimeline-image\b/.test(elClass)) {
     // 容器需要固定尺寸（170x170）以便绝对居中
@@ -1162,15 +1180,25 @@ function buildElement(
   const isPfExport = !!pfType
 
   // 计算宽度
+  // 关键：父容器是 flex/inline-flex/grid 时，子元素默认 width:auto（让 flex/grid 自行计算尺寸）。
+  // 否则在 Bootstrap navbar 这种场景，所有子元素被强制成 width:parentW（1200px），
+  // flex 容器会被撑爆成单列、排版全乱。
+  const parentIsFlex = parentDisplay.includes('flex') || parentDisplay.includes('grid')
   const widthComputed = isPfExport
     ? (style.width
         ? { width: resolveWidth(style.width, parentW) + 'px' }
         : (type === 'text'
           ? { width: Math.max(80, parentW) + 'px' }
           : {}))
-    : ((style.width || (style.display !== 'inline-block' && style.display !== 'inline-flex'))
-      ? { width: effectiveW + 'px' }
-      : { width: 'auto' as any })
+    : (parentIsFlex
+        // 父是 flex/grid：保持 width 不强制，让 flex 容器自行计算子元素尺寸
+        // （当元素有显式 width 时仍保留，否则用 auto 由 flex 决定）
+        ? (style.width
+            ? { width: resolveWidth(style.width, parentW) + 'px' }
+            : { width: 'auto' as any })
+        : ((style.width || (style.display !== 'inline-block' && style.display !== 'inline-flex'))
+            ? { width: effectiveW + 'px' }
+            : { width: 'auto' as any }))
 
   if (type === 'text' && isPfExport) {
     console.log('[PF-IMPORT-WIDTH]', {
@@ -1242,6 +1270,7 @@ function populateChildren(
   const childX = parentPad.left
 
   const display = parentStyle.display || ''
+  const parentIsFlex = display.includes('flex') || display.includes('grid')
   const flexDir = (parentStyle.flexDirection as string) || 'row'
   const flexWrap = (parentStyle.flexWrap as string) || 'nowrap'
   const parentPos = (parentStyle.position as string) || ''
@@ -1374,8 +1403,17 @@ function populateChildren(
         built.node.style.x = rowX
       }
       built.node.style.y = rowY
-      // 对于 inline-block/inline-flex 元素，保持 width:auto 不覆盖
-      if (built.node.style.width === 'auto' && (built.node.style.display === 'inline-block' || built.node.style.display === 'inline-flex')) {
+      // 父容器是 flex 时，子元素保持 width:auto（让 flex 自行计算尺寸，避免被强制成 parentW 导致排版错乱）
+      // 父容器是 block 流时，仍用 cW 作为子元素宽度
+      if (isRow && (built.node.style.width === undefined || built.node.style.width === 'auto')) {
+        // flex 容器中保持 auto；block 容器中显式设为 cW（保证子元素占满行宽）
+        if (parentIsFlex) {
+          // 保持 'auto' 或 undefined，让 flex 决定
+        } else {
+          built.node.style.width = cW + 'px'
+        }
+      } else if (built.node.style.width === 'auto' && (built.node.style.display === 'inline-block' || built.node.style.display === 'inline-flex')) {
+        // 对于 inline-block/inline-flex 元素，保持 width:auto 不覆盖
         // 保持 'auto'
       } else {
         built.node.style.width = cW + 'px'
@@ -1397,7 +1435,7 @@ function populateChildren(
     // 注意：built.node.style.position 已被 canvas 系统覆盖为 'absolute'，
     // 必须用 built.style.position（CSS 原始值）来判断
     const builtChildren = validChildren.map(child => {
-      const built = buildElement(child, childW, cssMap, false, inheritedVars, parentChildStyles, inheritedStyle)
+      const built = buildElement(child, childW, cssMap, false, inheritedVars, parentChildStyles, inheritedStyle, display)
       const cssPos = (built.style.position as string) || ''
       const isCssAbs = cssPos === 'absolute' || cssPos === 'fixed'
       const isPfExport = child.hasAttribute('data-pf-type')

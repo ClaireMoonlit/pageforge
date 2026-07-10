@@ -34,8 +34,12 @@ export function TemplatePanel() {
    * - 累加子节点的 y（相对父）+ 父 y，得到绝对 y
    * - 如果节点有显式 height/lineHeight，用它；否则只看子节点最大底部
    * - 用于解决"container 节点 height=undefined，但子节点溢出"的情况
+   * - 跳过 display: none 节点（如 Bootstrap modals），它们在画布中不占空间但
+   *   可能保留着大 y 值，会被错误地当作可见内容撑高画布
    */
   const calcNodeBottom = (n: CanvasNode, parentY: number = 0): number => {
+    // display: none 节点不参与布局计算（递归跳过整个子树）
+    if (String(n.style?.display ?? '').toLowerCase() === 'none') return 0
     const absY = parentY + (Number(n.style?.y) || 0)
     const ownH = parseFloat(String(n.style?.height ?? '0')) || 0
     const ownMinH = parseFloat(String(n.style?.minHeight ?? '0')) || 0
@@ -177,6 +181,51 @@ export function TemplatePanel() {
     [loadTemplate],
   )
 
+  /**
+   * 递归遍历节点，检查是否存在任何 backgroundImage 样式。
+   * 用于检测 JSON 缓存是否"完整"——早期导出的 JSON 完全丢失了
+   * backgroundImage，导致直接加载时图片全没。
+   */
+  const hasAnyBackgroundImage = (nodes: CanvasNode[]): boolean => {
+    for (const n of nodes) {
+      if (n.style?.backgroundImage && n.style.backgroundImage !== 'none') return true
+      if (n.children && hasAnyBackgroundImage(n.children)) return true
+    }
+    return false
+  }
+
+  /**
+   * 共享 fallback：从 htmlPath 加载 HTML 并重新解析（用最新 importHtml 逻辑）。
+   * 之所以抽出来：applyImported 检测到 JSON 缓存损坏时也要用它，
+   * 而 applyReimport 又要在 handleReimportFromHtml 时调它——避免重复代码。
+   */
+  const importFromHtml = useCallback(
+    async (meta: ImportedTemplateMeta): Promise<boolean> => {
+      if (!meta.htmlPath) return false
+      try {
+        const res = await fetch(meta.htmlPath)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const html = await res.text()
+        const baseUrl = meta.htmlPath.substring(0, meta.htmlPath.lastIndexOf('/') + 1)
+        const parsed = htmlToNodes(html, baseUrl)
+        if (parsed.length === 0) throw new Error('解析结果为空')
+        const extracted = extractCanvasConfig(html)
+        const finalCanvas: CanvasConfig = {
+          ...meta.canvas,
+          backgroundColor: extracted.backgroundColor,
+          width: extracted.width,
+          height: computeCanvasHeight(parsed, extracted.height),
+        }
+        loadTemplate(parsed, finalCanvas)
+        return true
+      } catch (e) {
+        setError('重新生成失败：' + (e instanceof Error ? e.message : '未知错误'))
+        return false
+      }
+    },
+    [loadTemplate],
+  )
+
   /** 实际执行开源模板加载（handleImported 确认后调用） */
   const applyImported = useCallback(
     async (meta: ImportedTemplateMeta) => {
@@ -184,12 +233,53 @@ export function TemplatePanel() {
       setError('')
       try {
         const res = await fetch(meta.jsonPath)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        // JSON 缓存缺失（404）时，直接回退到 HTML 重新生成。
+        // 历史：早期 JSON 缓存是可选的（通过 "重新生成" 按钮生成），如果用户没生成过
+        // 缓存文件，JSON 路径会 404，这里必须 fallback 到 HTML，否则会显示 "加载失败"。
+        if (!res.ok) {
+          if (meta.htmlPath) {
+            console.warn(`[TemplatePanel] ${meta.id} JSON 缓存不存在 (HTTP ${res.status})，回退到 HTML 重新生成`)
+            const ok = await importFromHtml(meta)
+            if (ok) setOpen(false)
+            return
+          }
+          throw new Error(`HTTP ${res.status}`)
+        }
         const data = await res.json()
         const ns = data.nodes as CanvasNode[]
         const storedCanvas = (data.canvas || meta.canvas) as CanvasConfig
         if (!ns || ns.length === 0) {
           setError('模板数据为空。')
+          return
+        }
+        // 检查 JSON 缓存是否"完整"：早期导出的 JSON 丢失了 backgroundImage 等
+        // 关键样式，直接加载会导致图片全没。检测方法：递归遍历所有节点，
+        // 如果完全没有任何 backgroundImage 且有 htmlPath，则 fallback 到重新生成。
+        const jsonHasBgImage = hasAnyBackgroundImage(ns)
+        if (!jsonHasBgImage && meta.htmlPath) {
+          console.warn(`[TemplatePanel] ${meta.id} JSON 缓存缺少 backgroundImage，自动回退到 HTML 重新生成`)
+          const ok = await importFromHtml(meta)
+          if (ok) setOpen(false)
+          return
+        }
+        // 检查 JSON 缓存是否"过时"：缺少新版 importHtml 加入的 position:relative 标记。
+        // 旧版 JSON 中非根节点被强制成 position:absolute，导致 flex 布局完全失效、
+        // 父容器无法被相对子节点撑高，排版全乱。
+        // 检测：任一非根容器节点的 style.position 不是 'relative' 且不是 absolute/fixed，
+        // 说明是旧版 JSON，强制回退到 HTML 重新生成。
+        const isStaleCache = (nodes: CanvasNode[]): boolean => {
+          for (const n of nodes) {
+            const pos = n.style?.position as string | undefined
+            // 根节点（id 包含 _1 等顶层）通常是 absolute；非根容器应该是 relative
+            if (!pos) return true
+            if (n.children && isStaleCache(n.children)) return true
+          }
+          return false
+        }
+        if (isStaleCache(ns) && meta.htmlPath) {
+          console.warn(`[TemplatePanel] ${meta.id} JSON 缓存过时（缺少 position 字段），自动回退到 HTML 重新生成`)
+          const ok = await importFromHtml(meta)
+          if (ok) setOpen(false)
           return
         }
         // 不直接用 JSON 缓存的 height（早期导出的可能少了子节点溢出部分），
@@ -208,39 +298,22 @@ export function TemplatePanel() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loadTemplate],
+    [loadTemplate, importFromHtml],
   )
 
   /** 实际执行从内联 HTML 重新生成（handleReimportFromHtml 确认后调用） */
   const applyReimport = useCallback(
     async (meta: ImportedTemplateMeta) => {
-      if (!meta.htmlPath) return
       setLoadingId(meta.id)
       setError('')
       try {
-        const res = await fetch(meta.htmlPath)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const html = await res.text()
-        const baseUrl = meta.htmlPath.substring(0, meta.htmlPath.lastIndexOf('/') + 1)
-        const parsed = htmlToNodes(html, baseUrl)
-        if (parsed.length === 0) throw new Error('解析结果为空')
-        // 优先从 HTML 中还原画布配置（精确）
-        const extracted = extractCanvasConfig(html)
-        const finalCanvas: CanvasConfig = {
-          ...meta.canvas,
-          backgroundColor: extracted.backgroundColor,
-          width: extracted.width,
-          height: computeCanvasHeight(parsed, extracted.height),
-        }
-        loadTemplate(parsed, finalCanvas)
-        setOpen(false)
-      } catch (e) {
-        setError('重新生成失败：' + (e instanceof Error ? e.message : '未知错误'))
+        const ok = await importFromHtml(meta)
+        if (ok) setOpen(false)
       } finally {
         setLoadingId(null)
       }
     },
-    [loadTemplate],
+    [importFromHtml],
   )
 
   /** 确认弹窗 → 确认替换（依赖 applyPreset / applyImported / applyReimport，故声明在它们之后） */

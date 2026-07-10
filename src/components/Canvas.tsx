@@ -359,8 +359,14 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 
 	    // 延迟一帧等待 DOM 完成首次布局
 	    const raf = requestAnimationFrame(() => {
-	      const rootEls = innerRef.current?.children
-	      if (!rootEls || rootEls.length === 0) return
+	      const inner = innerRef.current
+	      if (!inner) return
+	      // 只测量实际的根节点（带 data-node-id 属性的元素），
+	      // 排除 SVG 对齐参考线覆盖层等 height:100% 的辅助元素，否则会与画布高度形成循环依赖。
+	      const rootEls = Array.from(inner.children).filter(
+	        (el) => (el as HTMLElement).hasAttribute('data-node-id'),
+	      )
+	      if (rootEls.length === 0) return
 	      // 分类根节点：
 	      // - A 类（自动堆叠）：x===0 && y===0，是模板导入时按顺序纵向排列的节点
 	      // - B 类（显式放置）：x!==0（如两栏布局的右栏）或 y!==0（用户拖拽放置的节点），
@@ -393,7 +399,17 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 	        y += heights[i] + GAP
 	        autoPlacedCount += 1
 	      }
-	      const maxBottom = y
+	      // 计算画布所需高度：必须考虑所有节点（不仅是 A 类）的实际底部。
+	      // B 类节点（如模板导入时 y!=0 的 section）可能放在很高的位置，
+	      // 仅累加 A 类高度会把 maxBottom 算小，导致画布被错误覆盖回 800px。
+	      // 同时跳过 display: none 节点（如 Bootstrap modals），它们在画布中不占空间。
+	      let maxBottom = 0
+	      for (let i = 0; i < nodes.length; i++) {
+	        // display: none 节点不参与布局
+	        if (String(nodes[i].style?.display ?? '').toLowerCase() === 'none') continue
+	        const bottom = newYs[i] + heights[i]
+	        if (bottom > maxBottom) maxBottom = bottom
+	      }
 	      // 用 (heights + y 计划值) 作为「测量指纹」，避免 React maximum update depth
 	      const measurementKey = newYs.map((yi, i) => `${i}:${yi}:${heights[i].toFixed(1)}`).join('|')
 	      if (measurementKey === lastMeasuredKeyRef.current) {
@@ -433,15 +449,16 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 		      // - autoPlacedCount > 0：有需要自动堆叠的节点
 		      // - !hasBClassRoot：没有 x≠0 的并列布局节点（即纯纵向堆叠场景）
 		      // 存在 B 类根节点时（如两栏布局），画布高度由模板/用户指定，不应被自动覆盖。
+		      // 只在"实际渲染高度超出当前画布"时才调高（避免把 loadTemplate 算好的较大高度错误缩小）。
 		      const hasBClassRoot = nodes.some((n) => (n.style?.x ?? 0) !== 0)
 		      if (autoPlacedCount > 0 && !hasBClassRoot) {
-	        const curH = parseInt(canvas.height) || 0
-	        const desiredH = Math.max(800, Math.ceil(maxBottom + 24))
-	        if (Math.abs(desiredH - curH) > 1) {
-	          updateCanvas({ height: `${desiredH}px` })
-	        }
-	      }
-	    })
+        const curH = parseInt(canvas.height) || 0
+        const desiredH = Math.max(800, Math.ceil(maxBottom + 24))
+        if (desiredH > curH + 1) {
+          updateCanvas({ height: `${desiredH}px` })
+        }
+      }
+          })
 	    return () => cancelAnimationFrame(raf)
 	  // eslint-disable-next-line react-hooks/exhaustive-deps
 	  }, [nodes.length])
@@ -460,7 +477,8 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
       }}
     >
       {/* 缩放/工具控件：固定在画布视口底部居中。
-          用 position:fixed 保证不被父级 flex 布局影响，始终贴底居中。 */}
+          用 position:fixed 保证不被父级 flex 布局影响，始终贴底居中。
+          zIndex: 40 低于导入弹窗 z-[100]，确保弹窗在上层。 */}
       <div
         className="flex justify-center pointer-events-none"
         style={{
@@ -468,7 +486,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           left: 0,
           right: 0,
           bottom: 12,
-          zIndex: 50,
+          zIndex: 40,
         }}
       >
         <div className="inline-flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-1.5 py-1 pointer-events-auto">
