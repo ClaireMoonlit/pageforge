@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -101,6 +101,8 @@ interface EditorState {
   rulerCursorVisible: boolean
   /** 图片裁切弹窗状态 */
   cropModal: CropModalState
+  /** 是否有弹窗打开（导入/裁切等），用于缩放工具栏变灰 */
+  modalOpen: boolean
 
   addNode: (type: ComponentType, x: number, y: number, parentId?: string) => string
   removeNode: (id: string) => void
@@ -162,6 +164,8 @@ interface EditorState {
   openCropModal: (payload: CropModalPayload) => void
   /** 关闭图片裁切弹窗 */
   closeCropModal: () => void
+  /** 设置弹窗打开状态（导入弹窗等） */
+  setModalOpen: (open: boolean) => void
 }
 
 /** 图片裁切弹窗：原图信息 + 确认回调 */
@@ -255,6 +259,7 @@ export const useEditorStore = create<EditorState>()(
         onConfirm: null,
         cropKey: 0,
       },
+      modalOpen: false,
 
       addNode: (type, x, y, parentId) => {
         const def = findComponentDef(type)
@@ -682,12 +687,19 @@ export const useEditorStore = create<EditorState>()(
             onConfirm: payload.onConfirm,
             cropKey: state.cropModal.cropKey + 1,
           }
+          state.modalOpen = true
         }),
 
       closeCropModal: () =>
         set((state) => {
           state.cropModal.open = false
+          state.modalOpen = false
           // 保留 imageSrc 等数据 1 帧用于退出动画
+        }),
+
+      setModalOpen: (open) =>
+        set((state) => {
+          state.modalOpen = open
         }),
 
       clearCanvas: () =>

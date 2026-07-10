@@ -28,6 +28,12 @@ export function TemplatePanel() {
   const loadTemplate = useEditorStore((s) => s.loadTemplate)
   const addNodes = useEditorStore((s) => s.addNodes)
   const nodes = useEditorStore((s) => s.nodes)
+  const setModalOpen = useEditorStore((s) => s.setModalOpen)
+
+  // 弹窗打开/关闭时同步到 store，让缩放工具栏变灰
+  useEffect(() => {
+    setModalOpen(open || pendingImport !== null)
+  }, [open, pendingImport, setModalOpen])
 
   /**
    * 递归计算节点的"实际底部"（用于画布高度适配）

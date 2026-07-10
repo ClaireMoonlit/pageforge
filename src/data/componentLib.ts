@@ -21,7 +21,7 @@ export const componentLib: ComponentDef[] = [
       alignItems: 'center',
       justifyContent: 'center',
       lineHeight: '1.3',
-      wordBreak: 'break-word',
+      overflowWrap: 'break-word', wordBreak: 'normal',
     },
   },
   {

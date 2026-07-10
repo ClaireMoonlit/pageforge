@@ -159,6 +159,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const rulerCursorVisible = useEditorStore((s) => s.rulerCursorVisible)
   const toggleRulerCursor = useEditorStore((s) => s.toggleRulerCursor)
   const addNode = useEditorStore((s) => s.addNode)
+  const modalOpen = useEditorStore((s) => s.modalOpen)
 
   const innerRef = useRef<HTMLDivElement | null>(null)
   const lastMousePosRef = useRef({ x: 400, y: 300 }) // 画布坐标，默认中心附近
@@ -487,9 +488,11 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           right: 0,
           bottom: 12,
           zIndex: 40,
+          opacity: modalOpen ? 0.4 : 1,
+          transition: 'opacity 0.2s',
         }}
       >
-        <div className="inline-flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-1.5 py-1 pointer-events-auto">
+        <div className={`inline-flex items-center gap-1 bg-white rounded-lg shadow-md border border-gray-200 px-1.5 py-1 ${modalOpen ? 'pointer-events-none' : 'pointer-events-auto'}`}>
           <button
             className="w-7 h-7 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded text-lg font-bold"
             onClick={() => setZoom(zoom - 0.1)}

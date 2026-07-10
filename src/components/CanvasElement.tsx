@@ -739,7 +739,7 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false,
             style={{
               outline: 'none',
               whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              overflowWrap: 'break-word', wordBreak: 'normal',
               ...(node.type === 'card' ? { fontWeight: 600, fontSize: node.props.titleFontSize || '18px', color: node.props.titleColor || 'inherit', marginBottom: 8 } : {}),
             }}
             onBlur={commitEdit}

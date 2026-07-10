@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-10（§5.22 导出性能优化：scale 1.5× + blob URL + RAF 跳过）
-> 当前版本：v0.2.0
+> 最后更新：2026-07-11（§5.23 导出缩放闪烁修复 + 文本框宽度修复 + overflow-wrap 覆盖 + 缩放工具栏弹窗变灰）
+> 当前版本：v0.2.1
 
 ---
 
@@ -707,6 +707,65 @@ interface CanvasNode {
 - `src/components/CanvasElement.tsx`: 双击上传 + 隐藏文件输入
 - `src/components/Toolbar.tsx`: 导出下拉菜单（Portal）
 - `src/components/Canvas.tsx`: 添加 `data-pf-export-target` 属性
+
+---
+
+### 5.19 导出时画布缩放闪烁修复（2026-07-11）
+
+**现象**：点击导出 PNG 时，画布先放大再缩回（肉眼可见的缩放闪烁），退出预览时闪烁消失。
+
+**根因**：`ensureExportReady()` 中强制 `setZoom(1)` 让画布回到 100% 缩放，导出后 `restoreExportState()` 恢复原 zoom。zoom 从 50% → 100% → 50% 的切换导致肉眼可见的缩放变化。
+
+**修复**（[src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts)）：
+- 移除 `ensureExportReady()` 中所有与 zoom 相关的代码（`savedZoom`、`setZoom(1)`）
+- 移除 `restoreExportState()` 中的 zoom 恢复逻辑
+- 仅保留预览模式切换（`togglePreviewMode`），因为克隆已剥离 transform，不需要改 zoom
+
+### 5.20 导出时文本框横向长度偏小（2026-07-11）
+
+**现象**：导出 PNG 中文本框宽度比原始画布窄，导致原本一行文字变成两行（如 "builder/forge" 的 "e" 另起一行）。
+
+**根因**：三因素叠加。
+
+1. **定位上下文不一致**（最核心）：原始画布 `[data-pf-export-target]` 是 `position: absolute`，子元素宽度由父容器决定。克隆直接设为 `position: fixed` 后，其包含块变为 viewport，子元素 `fit-content`/`max-width` 计算偏差。
+
+2. **非标准 CSS 属性**：`wordBreak: 'break-word'` 是已废弃的非标准属性，在 SVG foreignObject 中行为与浏览器不一致，导致异常断行。
+
+3. **字体/布局时机**：克隆添加到 DOM 后，浏览器可能未完成布局或字体未加载，html2canvas 渲染时文本宽度计算错误。
+
+**修复**（三处联动）：
+
+1. **`exportImage.ts`**：重构 `prepareExportClone()`，引入两层结构：
+   - `wrapper(position: fixed, 显式 width/height)` 包裹 `clone(position: relative)`
+   - wrapper 显式宽高设为 `original.offsetWidth × original.offsetHeight`（防止 position:fixed 容器坍缩为 0×0）
+   - clone 设为 `position: relative`，在 wrapper 内正常参与文档流，同时为子元素 `position: absolute` 提供包含块
+   - 导出前添加 `await document.fonts.ready` + `requestAnimationFrame` 等待字体加载和布局完成
+
+2. **`NodeRenderer.tsx`、`CanvasElement.tsx`、`componentLib.ts`**：全局替换 `wordBreak: 'break-word'` 为标准属性 `overflowWrap: 'break-word', wordBreak: 'normal'`
+
+3. **`types/index.ts`**：`NodeStyle` 接口新增 `overflowWrap?: string` 类型定义
+
+### 5.21 导出时 overflow-wrap 致亚像素断词（2026-07-11）
+
+**现象**：5.20 修复后，所有文本元素 CSS 宽度与原始一致，但 "builder/forge" 最后一个字符 "e" 仍换行。
+
+**根因**：html2canvas foreignObject 渲染存在亚像素舍入（如文本实际宽度 130.7px 舍入到 130px），导致容器比文本窄 1px。`overflow-wrap: break-word` 检测到溢出后将最后一个字符断开。
+
+**修复**（[src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts)）：
+- 在克隆元素中注入 `<style>` 标签：`* { overflow-wrap: normal !important; word-break: normal !important; }`
+- `!important` 覆盖所有内联 `overflow-wrap: break-word`，阻止因亚像素舍入导致的异常字符级断词
+- 对导出安全：克隆与原始尺寸一致，正常单词边界换行不受影响
+
+### 5.22 缩放工具栏在弹窗上层（2026-07-11）
+
+**现象**：打开导入/裁切弹窗时，缩放工具栏仍浮在弹窗上层，z-index 无法通过常规堆叠上下文解决。
+
+**根因**：Canvas 组件外层存在 `overflow: auto` + `position: relative`，创建了独立堆叠上下文，导致内部 `position: fixed` 的工具栏 z-index 无法与外部弹窗（RenderPortal 到 body）比较。
+
+**修复**（三处联动）：
+1. **`editorStore.ts`**：新增 `modalOpen: boolean` 状态 + `setModalOpen(open)` 方法，在 `openCropModal`/`closeCropModal` 中同步更新
+2. **`TemplatePanel.tsx`**：弹窗打开/关闭时通过 `useEffect` 调用 `setModalOpen(open || pendingImport !== null)`
+3. **`Canvas.tsx`**：缩放工具栏容器根据 `modalOpen` 设置 `opacity: 0.4` + `pointer-events: none`，实现变灰禁用效果
 
 ---
 

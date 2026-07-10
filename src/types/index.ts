@@ -91,6 +91,7 @@ export interface NodeStyle {
   borderRight?: string
   boxShadow?: string
   wordBreak?: string
+  overflowWrap?: string
   textTransform?: string
   whiteSpace?: string
   zIndex?: string

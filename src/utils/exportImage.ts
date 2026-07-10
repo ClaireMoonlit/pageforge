@@ -30,17 +30,87 @@ function prepareExportClone(): { clone: HTMLElement; wrapper: HTMLElement } | nu
   if (!original) return null
 
   const wrapper = document.createElement('div')
-  wrapper.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:-1'
+  // 关键：必须给 wrapper 设置显式宽高，否则 position:fixed 的 wrapper 会坍缩为 0×0
+  // （position:absolute 的子元素脱离文档流，不参与 shrink-to-fit 计算）
+  // 导致 clone 的包含块为 0×0，right 计算为 -1200px，html2canvas 渲染异常
+  wrapper.style.cssText = `position:fixed;top:0;left:0;width:${original.offsetWidth}px;height:${original.offsetHeight}px;pointer-events:none;z-index:-1`
 
   const clone = original.cloneNode(true) as HTMLElement
-  // 保留 position: absolute（原始值），仅清零坐标和 transform
+  // 关键：clone 必须设为 position: relative（而非保留原始的 absolute）
+  // position: relative 在 wrapper 内正常参与文档流，width 由 wrapper 决定
+  // 同时仍为子元素的 position: absolute 提供包含块
+  clone.style.position = 'relative'
   clone.style.top = '0'
   clone.style.left = '0'
   clone.style.transform = ''
   clone.style.transformOrigin = ''
 
+  // 关键：移除 clone 中所有 overflow-wrap: break-word
+  // html2canvas foreignObject 渲染存在亚像素舍入（如 130.7px → 130px），
+  // 导致容器比文本窄 1px，overflow-wrap: break-word 会将最后一个字符断开。
+  // 用 !important 样式覆盖，阻止因舍入导致的异常断词。
+  // 这对导出是安全的：克隆与原始尺寸一致，正常单词边界换行不受影响。
+  const fixStyle = document.createElement('style')
+  fixStyle.textContent = '* { overflow-wrap: normal !important; word-break: normal !important; }'
+  clone.insertBefore(fixStyle, clone.firstChild)
+
   wrapper.appendChild(clone)
   document.body.appendChild(wrapper)
+
+  // ====== 第一性原理诊断：对比原始元素与克隆元素的计算样式 ======
+  const WIDTH_PROPS = ['width', 'maxWidth', 'minWidth', 'boxSizing', 'position', 'display', 'left', 'right', 'overflow', 'whiteSpace', 'wordBreak'] as const
+
+  console.group('🔍 [exportImage] 第一性原理宽度诊断')
+
+  // 1. 对比画布根元素
+  const origRoot = getComputedStyle(original)
+  const cloneRoot = getComputedStyle(clone)
+  console.log('📐 画布根元素 (data-pf-export-target):')
+  for (const prop of WIDTH_PROPS) {
+    const ov = origRoot.getPropertyValue(prop)
+    const cv = cloneRoot.getPropertyValue(prop)
+    const match = ov === cv ? '✅' : '❌'
+    console.log(`  ${match} ${prop}: original="${ov}"  clone="${cv}"`)
+  }
+
+  // 2. 对比所有文本元素 (p, h1-h6 等)
+  const origTexts = original.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div')
+  const cloneTexts = clone.querySelectorAll('p, h1, h2, h3, h4, h5, h6, span, div')
+
+  let mismatchCount = 0
+  const minCount = Math.min(origTexts.length, cloneTexts.length)
+  for (let i = 0; i < minCount; i++) {
+    const oe = origTexts[i] as HTMLElement
+    const ce = cloneTexts[i] as HTMLElement
+    const ocs = getComputedStyle(oe)
+    const ccs = getComputedStyle(ce)
+    const ow = ocs.width
+    const cw = ccs.width
+    if (ow !== cw) {
+      mismatchCount++
+      const tag = oe.tagName.toLowerCase()
+      const text = (oe.textContent || '').slice(0, 40)
+      console.log(
+        `❌ 文本 #${i} <${tag}> "${text}"`,
+        `\n    original: width=${ow} maxWidth=${ocs.maxWidth} boxSizing=${ocs.boxSizing} display=${ocs.display} position=${ocs.position}`,
+        `\n    clone:    width=${cw} maxWidth=${ccs.maxWidth} boxSizing=${ccs.boxSizing} display=${ccs.display} position=${ccs.position}`,
+        `\n    original parent width=${(oe.parentElement ? getComputedStyle(oe.parentElement).width : 'N/A')}`,
+        `\n    clone parent width=${(ce.parentElement ? getComputedStyle(ce.parentElement).width : 'N/A')}`,
+      )
+    }
+  }
+
+  if (mismatchCount === 0) {
+    console.log('✅ 所有文本元素宽度一致（共 ' + minCount + ' 个）')
+  } else {
+    console.warn(`⚠️ ${mismatchCount}/${minCount} 个文本元素宽度不一致`)
+  }
+
+  // 3. 检查 wrapper 的尺寸（position:fixed 的包含块）
+  const wrapperCS = getComputedStyle(wrapper)
+  console.log('📦 wrapper (position:fixed):', `width=${wrapperCS.width} height=${wrapperCS.height}`)
+
+  console.groupEnd()
 
   return { clone, wrapper }
 }
@@ -67,6 +137,10 @@ export async function exportAsPNG(
 
   const result = prepareExportClone()
   if (!result) return
+
+  // 确保字体加载完成 + 浏览器完成布局，避免因字体未就绪导致文本宽度偏差
+  await document.fonts.ready
+  await new Promise((r) => requestAnimationFrame(r))
 
   try {
     const canvas = await html2canvas(result.clone, {
@@ -107,6 +181,10 @@ export async function exportAsPDF(
 
   const result = prepareExportClone()
   if (!result) return
+
+  // 确保字体加载完成 + 浏览器完成布局，避免因字体未就绪导致文本宽度偏差
+  await document.fonts.ready
+  await new Promise((r) => requestAnimationFrame(r))
 
   try {
     const canvas = await html2canvas(result.clone, {
