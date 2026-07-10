@@ -15,26 +15,41 @@ interface ExportOptions {
 /**
  * 第一性原理导出方案：
  *
- * 问题：html2canvas 的 fillText() 基线计算对 position:absolute + top/left
- * 偏移的元素存在 2-5px 向下偏移，且 transform:scale(zoom) 干扰渲染。
+ * 三层约束：
+ * 1. foreignObjectRendering: true → 文本由浏览器原生渲染，不下移
+ * 2. 手动 clone + position:fixed + top/left:0 → SVG viewport 从原点开始，不裁切
+ * 3. 保留 position:absolute/fixed 作为包含块 → 子元素宽度计算不变
  *
- * 方案：foreignObjectRendering: true 将 HTML 嵌入 SVG <foreignObject>，
- * 由浏览器原生渲染引擎处理，文字位置与浏览器显示完全一致。
- *
- * 在 onclone 回调中剥离父容器的 position/transform，确保 SVG viewport
- * 从原点开始计算（之前"只显示右半"的根因是 viewport 被 position:absolute
- * 偏移导致错位）。
+ * 为什么不用 onclone 回调：
+ * html2canvas 在 onclone 之前就已用原始元素的坐标计算 SVG viewport，
+ * 回调中修改 top/left 无法纠正已算好的 viewport → 导致"只显示右半"。
+ * 必须先手动 clone 并定位到 (0,0)，再传入 html2canvas。
  */
-function stripCanvasForExport(clonedDoc: Document): void {
-  const el = clonedDoc.querySelector('[data-pf-export-target]') as HTMLElement | null
-  if (!el) return
-  // 保留 position: absolute（子元素 absolute 定位需要它作为包含块），
-  // 仅清零 top/left 确保 SVG foreignObject 的 viewport 从原点开始。
-  // 之前改成 position:relative 导致子元素宽度计算异常（fit-content 参照物变了）。
-  el.style.top = '0'
-  el.style.left = '0'
-  el.style.transform = ''
-  el.style.transformOrigin = ''
+function prepareExportClone(): HTMLElement | null {
+  const original = getCanvasContentElement()
+  if (!original) return null
+
+  const clone = original.cloneNode(true) as HTMLElement
+
+  // 清零坐标偏移，transform 也清掉（zoom=1 时 scale(1) 是恒等但干扰 viewport 计算）
+  clone.style.top = '0'
+  clone.style.left = '0'
+  clone.style.transform = ''
+  clone.style.transformOrigin = ''
+
+  // 改为 fixed 定位到视口原点，确保 html2canvas 从 (0,0) 开始渲染
+  clone.style.position = 'fixed'
+  clone.style.zIndex = '-1'
+  clone.style.pointerEvents = 'none'
+
+  document.body.appendChild(clone)
+  return clone
+}
+
+function removeExportClone(clone: HTMLElement | null): void {
+  if (clone?.parentNode) {
+    clone.parentNode.removeChild(clone)
+  }
 }
 
 /**
@@ -51,14 +66,16 @@ export async function exportAsPNG(
 
   await ensureExportReady()
 
+  const clone = prepareExportClone()
+  if (!clone) return
+
   try {
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
       foreignObjectRendering: true,
-      onclone: stripCanvasForExport,
     })
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((b) => {
@@ -70,6 +87,7 @@ export async function exportAsPNG(
     triggerDownload(url, filename)
     setTimeout(() => URL.revokeObjectURL(url), 3000)
   } finally {
+    removeExportClone(clone)
     restoreExportState()
   }
 }
@@ -88,14 +106,16 @@ export async function exportAsPDF(
 
   await ensureExportReady()
 
+  const clone = prepareExportClone()
+  if (!clone) return
+
   try {
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(clone, {
       scale,
       backgroundColor: bg,
       useCORS: true,
       logging: false,
       foreignObjectRendering: true,
-      onclone: stripCanvasForExport,
     })
 
     let imgData: string
@@ -128,6 +148,7 @@ export async function exportAsPDF(
 
     pdf.save(filename)
   } finally {
+    removeExportClone(clone)
     restoreExportState()
   }
 }
@@ -143,8 +164,6 @@ function triggerDownload(url: string, filename: string): void {
 }
 
 // ——— 导出前准备：进入预览模式 + 设为 100% zoom ———
-// 预览模式隐藏选中边框和手柄，确保截图干净；
-// 文字位置由 foreignObjectRendering + onclone 保证与浏览器渲染一致。
 
 let savedZoom = 1
 let savedPreviewMode = false
@@ -155,7 +174,6 @@ async function ensureExportReady(): Promise<void> {
   savedZoom = store.zoom
   savedPreviewMode = store.previewMode
 
-  // 清除选中状态（避免选中边框被导出）
   store.selectNode(null)
 
   let needsUpdate = false

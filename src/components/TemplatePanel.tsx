@@ -30,25 +30,47 @@ export function TemplatePanel() {
   const nodes = useEditorStore((s) => s.nodes)
 
   /**
+   * 递归计算节点的"实际底部"（用于画布高度适配）
+   * - 累加子节点的 y（相对父）+ 父 y，得到绝对 y
+   * - 如果节点有显式 height/lineHeight，用它；否则只看子节点最大底部
+   * - 用于解决"container 节点 height=undefined，但子节点溢出"的情况
+   */
+  const calcNodeBottom = (n: CanvasNode, parentY: number = 0): number => {
+    const absY = parentY + (Number(n.style?.y) || 0)
+    const ownH = parseFloat(String(n.style?.height ?? '0')) || 0
+    const ownMinH = parseFloat(String(n.style?.minHeight ?? '0')) || 0
+    // 自身底部 = y + max(height, minHeight)
+    let bottom = absY + Math.max(ownH, ownMinH)
+    // 子节点最大底部
+    for (const c of n.children || []) {
+      const cb = calcNodeBottom(c, absY)
+      if (cb > bottom) bottom = cb
+    }
+    return bottom
+  }
+
+  /**
    * 根据解析结果估算所需的画布高度。
-   * - 若提供了 extractedHeight（从原 HTML 中提取），优先使用它；
-   * - 否则取所有根节点底部最大值再加 40px 留白；
-   * - 最小不低于 400px（避免画布过小）。
+   * - 递归算所有节点的底部（不仅根节点），避免 container 节点 height=undefined
+   *   但子节点溢出的情况（典型：模板的最后一个 section 内的子元素）
+   * - extractedHeight（来自 pf-canvas 标记）作为下限参考，但实际内容更大时取实际值
+   * - 最小不低于 400px（避免画布过小）
    */
   const computeCanvasHeight = (parsed: CanvasNode[], extractedHeight?: string): string => {
-    if (extractedHeight) {
-      const h = parseInt(String(extractedHeight).replace(/px$/i, ''), 10)
-      if (h > 0) return `${h}px`
-    }
+    // 1. 递归算实际内容底部
     let maxBottom = 0
     for (const n of parsed) {
-      const y = n.style?.y ?? 0
-      const minH = parseInt(String(n.style?.minHeight ?? '0'), 10) || 0
-      const h = parseInt(String(n.style?.height ?? '0'), 10) || 0
-      const bottom = y + Math.max(minH, h)
-      if (bottom > maxBottom) maxBottom = bottom
+      const b = calcNodeBottom(n)
+      if (b > maxBottom) maxBottom = b
     }
-    return `${Math.max(400, maxBottom + 40)}px`
+    // 2. 解析 extractedHeight 作为下限
+    let extractedH = 0
+    if (extractedHeight) {
+      const v = parseInt(String(extractedHeight).replace(/px$/i, ''), 10)
+      if (Number.isFinite(v) && v > 0) extractedH = v
+    }
+    // 3. 取 max(实际内容, extractedHeight, 400) + 40px 留白
+    return `${Math.max(400, Math.ceil(maxBottom) + 40, extractedH)}px`
   }
 
   /** 判断 HTML 是否为完整页面（含 pf-root / <html> / <body> 标记） */
@@ -165,12 +187,19 @@ export function TemplatePanel() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         const ns = data.nodes as CanvasNode[]
-        const canvas = (data.canvas || meta.canvas) as CanvasConfig
+        const storedCanvas = (data.canvas || meta.canvas) as CanvasConfig
         if (!ns || ns.length === 0) {
           setError('模板数据为空。')
           return
         }
-        loadTemplate(ns, canvas)
+        // 不直接用 JSON 缓存的 height（早期导出的可能少了子节点溢出部分），
+        // 重新递归计算实际内容底部，确保画布足够大
+        const canvasH = computeCanvasHeight(ns, storedCanvas.height)
+        const finalCanvas: CanvasConfig = {
+          ...storedCanvas,
+          height: canvasH,
+        }
+        loadTemplate(ns, finalCanvas)
         setOpen(false)
       } catch (e) {
         setError('加载失败：' + (e instanceof Error ? e.message : '未知错误'))
@@ -178,6 +207,7 @@ export function TemplatePanel() {
         setLoadingId(null)
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [loadTemplate],
   )
 
