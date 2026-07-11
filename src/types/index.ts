@@ -48,6 +48,8 @@ export interface NodeStyle {
   marginRight?: string
   marginBottom?: string
   marginLeft?: string
+  marginInlineStart?: string
+  marginInlineEnd?: string
   // 文字
   fontSize?: string
   fontWeight?: string
