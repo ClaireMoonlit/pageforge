@@ -603,10 +603,12 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false,
       }
     : {
         ...baseStyle,
-        // 非绝对定位的子元素：保持 baseStyle 中已由 nodeToCss 输出的 position（通常是 'relative'），
-        // 不要覆盖为 'absolute'，否则所有子节点会堆在父容器左上角 (left:0, top:0)，
-        // 父容器无法被子节点撑高、flex 布局完全失效，导入模板排版全乱。
-        // 不再额外设置 left/top，让元素按文档流自然排布。
+        // 非绝对定位的子元素：必须显式设置 position: relative 以建立定位上下文，
+        // 否则元素默认为 static，内部的 position: absolute 子元素会回溯到上层定位祖先
+        // （如整个画布根节点），导致叶子元素堆在画布左上角 (left:0, top:0)。
+        // 典型 bug：导入 Bootstrap navbar 时，<a class="nav-link"> 叶子元素被定位到画布 (0,0)
+        // 而不是 <li class="nav-item"> 的位置，导致菜单项堆叠在画布左上角。
+        position: 'relative',
         // resize 期间跳过 fit-content，让 baseStyle 中的 resize 宽高生效
         ...(resize ? {} : (node.style.width === undefined || node.style.width === '' ? { width: 'fit-content', maxWidth: '100%' } : {})),
       }
@@ -768,9 +770,12 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false,
               parentDisplay={String(node.style.display ?? '')}
             />
           ))
-        ) : (
-          <div style={{ color: '#9ca3af', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 60 }}>容器（拖入子元素）</div>
-        )
+        ) : (() => {
+          // 视觉元素（带背景色的空容器，如 Bootstrap .divider-custom-line）不显示占位文字
+          const isVisualShape = !!(node.style.backgroundColor || node.style.background)
+          if (isVisualShape) return null
+          return <div style={{ color: '#9ca3af', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 60 }}>容器（拖入子元素）</div>
+        })()
       ) : (
         renderNodeContent(node)
       )}

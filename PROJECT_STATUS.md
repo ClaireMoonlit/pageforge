@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-11（§5.23 导出缩放闪烁修复 + 文本框宽度修复 + overflow-wrap 覆盖 + 缩放工具栏弹窗变灰）
-> 当前版本：v0.2.1
+> 最后更新：2026-07-11（§5.23 开源模板导入排版错乱修复：导航栏/选项卡/Portal/JSON 缓存失效）
+> 当前版本：v0.2.2
 
 ---
 
@@ -766,6 +766,50 @@ interface CanvasNode {
 1. **`editorStore.ts`**：新增 `modalOpen: boolean` 状态 + `setModalOpen(open)` 方法，在 `openCropModal`/`closeCropModal` 中同步更新
 2. **`TemplatePanel.tsx`**：弹窗打开/关闭时通过 `useEffect` 调用 `setModalOpen(open || pendingImport !== null)`
 3. **`Canvas.tsx`**：缩放工具栏容器根据 `modalOpen` 设置 `opacity: 0.4` + `pointer-events: none`，实现变灰禁用效果
+
+---
+
+### 5.23 开源模板导入排版错乱修复（2026-07-11）
+
+**现象**：导入 Agency / New Age / Freelancer 等 StartBootstrap 开源模板时，导航栏菜单项被推到画布外、文字截断、菜单项高度不对齐、模板卡片点击无反应、选项卡选中时文字变黑。
+
+**根因**（多个独立 bug 复合）：
+1. **行内元素被强制继承父容器宽度**：原 `widthComputed` 逻辑未区分行内元素（`a`/`span`/`button`），导致 `a.navbar-brand` 被强制 1200px 撑爆布局
+2. **flex 父容器 `display` 属性未传递**：`populateChildren` 调用 `buildElement` 时未传 `display` 参数，子元素无法识别父容器是否为 flex
+3. **`navbar-nav` 被 `@media` 规则影响**：原 CSS `@media(min-width:992px){.navbar-nav{flex-direction:row}}` 在桌面端画布里始终满足，但 `extractRules` 不递归提取 @media 内部规则，导致 navbar-nav 永远显示为移动端 column 模式
+4. **`navbar-collapse` 被 `display:none` 隐藏**：`.collapse:not(.show){display:none}` 让整个导航菜单子树被 `populateChildren` 跳过
+5. **`li.nav-item` 高度被错误估算**：`estimateHeightRecursive` 用 padding 简写 "0.5rem 0"（来自 py-3）= 40px，但 a.nav-link 实际高度 56px（1rem 上+1rem 下+24px 文本），三个菜单项垂直对齐错乱
+6. **`justifyContent: flex-end` 把菜单推到画布外**：在绝对定位布局中，flex-end 会忽略子元素 x 坐标，把所有 nav-items 推到 ul 自身最右端
+7. **模板卡片点击无反应**：确认弹窗嵌套在 `.canvas-inner` 内，受父级 `overflow:hidden` + `transform` 影响定位到屏幕外
+8. **选项卡文字选中时变黑**：`tailwind.config.js` 未定义 `brand-400` 颜色，`text-brand-400` 渲染为黑色
+9. **JSON 缓存失效时无法回退**：删除缓存文件后，Vite SPA fallback 返回 HTML 内容，`fetch().json()` 解析失败
+
+**修复**（`src/utils/importHtml.ts` + `src/components/TemplatePanel.tsx`）：
+1. **新增 `INLINE_LIKE_TAGS` 集合** + `isInlineLikeTag` 函数：在非 flex 父容器中，行内/行内块元素（`a`/`span`/`button`/`img` 等）强制 `width: 'auto'`，避免被强制继承父容器宽度
+2. **`populateChildren` 传递 `display` 参数**：让子元素知道父容器是否为 flex 布局，正确设置 `parentIsFlex` 状态
+3. **`navbar-nav` 特殊处理**（line 988-1006）：
+   - 强制 `display: flex; flexDirection: row`（覆盖 @media 缺失）
+   - 强制 `alignItems: center`（垂直居中）
+   - 强制 `gap: 32px`（匹配原模板 `.nav-link` padding 16px + `.nav-item` margin 4px = 约 40px 间距的一半，但更紧凑）
+   - 强制 `paddingLeft: 0; listStyle: none`（去掉 ul 默认干扰）
+   - ⚠️ **不要** 设置 `justifyContent: flex-end`（否则 flex 布局会忽略子元素 x 坐标，把菜单推到 ul 自身最右端，画布外）
+4. **`navbar-collapse` 特殊处理**（line 1013-1020）：强制 `display: flex`，并删除 `display:none` 残留，避免子菜单子树被跳过
+5. **`li.nav-item` 特殊处理**（line 1027-1030）：强制 `minHeight: 56px; height: 56px`，匹配 a.nav-link 实际内容高度，三个菜单项基线对齐
+6. **模板面板选项卡文字颜色**（`TemplatePanel.tsx`）：将选中状态从 `text-brand-400` 改为 `text-white`，边框改为 `border-brand-500`，并移除 `-mb-[1px]` 避免下划线切割文字
+7. **React Portal**：将模板面板和确认弹窗通过 `createPortal` 渲染到 `document.body`，脱离 `.canvas-inner` 布局上下文
+8. **JSON 缓存有效性检查**：通过 `content-type` 头检测非 JSON 响应（SPA fallback HTML），自动回退到 HTML 重新生成
+
+**效果**（已验证 Agency 模板）：
+- ✅ 导航栏 "Start Bootstrap" 左侧 + SERVICES/PORTFOLIO/ABOUT/TEAM/CONTACT 右侧正确排列，间距一致 32px
+- ✅ Hero 区 "Welcome To Our Studio!" + "IT'S NICE TO MEET YOU" 居中显示
+- ✅ SERVICES 三列（E-Commerce/Responsive Design/Web Security）正常
+- ✅ PORTFOLIO 6 张图 2×3 网格正常
+- ✅ ABOUT 时间线左右交替（2009-2011/March 2011/December 2015/July 2020/Be Part Of Our Story）
+- ✅ TEAM 三个成员（Parveen Anand/Diana Petersen/Larry Parker）
+- ✅ 品牌 logo（Microsoft/Google/facebook/IBM）
+- ✅ CONTACT US 表单 + SEND MESSAGE 按钮
+- ✅ 底部 footer（Copyright + Privacy Policy/Terms of Use + 社交图标）
+- 已知小限制：Font Awesome 图标（Twitter/Facebook/LinkedIn 圆圈）无法解析，显示为占位黑色圆圈
 
 ---
 

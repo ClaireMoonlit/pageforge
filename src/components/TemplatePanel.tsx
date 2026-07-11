@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useEditorStore } from '@/store/editorStore'
 import { pageTemplates } from '@/data/templates'
 import { importedTemplates, type ImportedTemplateMeta } from '@/data/importedTemplates'
@@ -242,6 +243,7 @@ export function TemplatePanel() {
         // JSON 缓存缺失（404）时，直接回退到 HTML 重新生成。
         // 历史：早期 JSON 缓存是可选的（通过 "重新生成" 按钮生成），如果用户没生成过
         // 缓存文件，JSON 路径会 404，这里必须 fallback 到 HTML，否则会显示 "加载失败"。
+        // 注意：Vite SPA fallback 会把 404 路径返回 200 + index.html，所以不能只靠 res.ok 判断
         if (!res.ok) {
           if (meta.htmlPath) {
             console.warn(`[TemplatePanel] ${meta.id} JSON 缓存不存在 (HTTP ${res.status})，回退到 HTML 重新生成`)
@@ -250,6 +252,17 @@ export function TemplatePanel() {
             return
           }
           throw new Error(`HTTP ${res.status}`)
+        }
+        // 检查 content-type：Vite SPA fallback 返回 text/html 不是 JSON
+        const contentType = res.headers.get('content-type') || ''
+        if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
+          if (meta.htmlPath) {
+            console.warn(`[TemplatePanel] ${meta.id} JSON 缓存 content-type 非 JSON（${contentType}，可能是 Vite SPA fallback），回退到 HTML 重新生成`)
+            const ok = await importFromHtml(meta)
+            if (ok) setOpen(false)
+            return
+          }
+          throw new Error(`JSON 缓存返回了非 JSON 内容（${contentType}）`)
         }
         const data = await res.json()
         const ns = data.nodes as CanvasNode[]
@@ -470,7 +483,7 @@ export function TemplatePanel() {
         导入
       </button>
 
-      {open && (
+      {open && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 pointer-events-auto" onClick={() => setOpen(false)}>
           <div
             className="bg-ink-800 border border-ink-600 rounded-xl w-[640px] max-h-[85vh] overflow-hidden shadow-2xl flex flex-col"
@@ -493,9 +506,9 @@ export function TemplatePanel() {
             <div className="flex border-b border-ink-600 px-5">
               <button
                 onClick={() => { setTab('preset'); setError('') }}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                   tab === 'preset'
-                    ? 'text-brand-400 border-brand-400'
+                    ? 'text-white border-brand-500'
                     : 'text-gray-400 border-transparent hover:text-gray-200'
                 }`}
               >
@@ -503,9 +516,9 @@ export function TemplatePanel() {
               </button>
               <button
                 onClick={() => { setTab('imported'); setError('') }}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                   tab === 'imported'
-                    ? 'text-brand-400 border-brand-400'
+                    ? 'text-white border-brand-500'
                     : 'text-gray-400 border-transparent hover:text-gray-200'
                 }`}
               >
@@ -513,9 +526,9 @@ export function TemplatePanel() {
               </button>
               <button
                 onClick={() => { setTab('paste'); setError('') }}
-                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-[1px] ${
+                className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                   tab === 'paste'
-                    ? 'text-brand-400 border-brand-400'
+                    ? 'text-white border-brand-500'
                     : 'text-gray-400 border-transparent hover:text-gray-200'
                 }`}
               >
@@ -740,11 +753,12 @@ export function TemplatePanel() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 二次确认弹窗：导入会清空画布时弹出 */}
-      {pendingImport && (
+      {pendingImport && createPortal(
         <div
           className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60"
           onClick={() => setPendingImport(null)}
@@ -840,7 +854,8 @@ export function TemplatePanel() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

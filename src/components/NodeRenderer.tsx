@@ -147,7 +147,14 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
           </div>
         </div>
       )
-    case 'container':
+    case 'container': {
+      // 关键修复：空 div 容器如果带 backgroundColor（作为视觉元素使用，如 Bootstrap
+      // .divider-custom-line 是带 bg-color 的细线），不应该显示「容器（拖入子元素）」占位文字，
+      // 否则会覆盖掉原本的视觉样式。直接返回空内容（外层 div 仍会渲染 style 中的背景色）。
+      const isVisualShape = !!(node.style.backgroundColor || node.style.background)
+      if (isVisualShape) {
+        return null
+      }
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -157,6 +164,7 @@ export function renderNodeContent(node: CanvasNode): ReactNode {
           容器（拖入子元素）
         </div>
       )
+    }
     case 'divider':
       return null // 纯样式分割线，无内容
     case 'icon': {
@@ -407,6 +415,11 @@ export function NodeRenderer({ node }: { node: CanvasNode }) {
 export function renderPreviewTree(node: CanvasNode): ReactNode {
   if (node.type === 'container') {
     if (!node.children.length) {
+      // 视觉元素（带背景色的空容器）不显示占位文字
+      const isVisualShape = !!(node.style.backgroundColor || node.style.background)
+      if (isVisualShape) {
+        return null
+      }
       return <div style={{ color: '#9ca3af', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', minHeight: 60 }}>容器（拖入子元素）</div>
     }
     // 与 CanvasElement 一致：子元素使用 position: absolute + left/top 定位

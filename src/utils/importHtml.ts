@@ -128,6 +128,21 @@ function parseDim(val: string | undefined): number {
   return isNaN(n) ? 0 : n
 }
 
+/** HTML 默认 inline / inline-block 标签（width 由内容撑开，不强制为父容器宽度）
+ *  - inline 元素：a/span/em/strong/b/i/code 等
+ *  - inline-block 元素：button/input/select/textarea/img/label 等
+ *  这些元素即使在 block column flow 中也应 width:auto，否则会被强制成 100% 父宽
+ *  （典型 bug：Bootstrap navbar 的 .navbar-brand a 被强制 1200px 撑爆布局） */
+const INLINE_LIKE_TAGS = new Set([
+  'a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'button', 'cite', 'code', 'dfn', 'em',
+  'i', 'img', 'input', 'kbd', 'label', 'mark', 'q', 's', 'samp', 'select',
+  'small', 'span', 'strong', 'sub', 'sup', 'textarea', 'time', 'u', 'var', 'wbr',
+])
+/** 判断标签是否应该 width:auto（行内/行内块元素，不强制为父容器宽度） */
+function isInlineLikeTag(tag: string): boolean {
+  return INLINE_LIKE_TAGS.has(tag)
+}
+
 /** 将 width 字符串（支持 px / %）转为像素值 */
 function resolveWidth(widthStr: string | undefined, parentW: number): number {
   if (!widthStr || widthStr === 'auto') return parentW
@@ -139,37 +154,71 @@ function resolveWidth(widthStr: string | undefined, parentW: number): number {
 /**
  * 提取 CSS 文本中所有的规则块（正确处理嵌套大括号，如 @media 内部规则）
  * 返回 [{ selector: '...', body: '...' }, ...]
+ *
+ * 关于 @media 块的处理策略：
+ * - @media (max-width: ...) 是「移动端响应式」块，画布是固定宽度桌面端设计面，
+ *   应用了里面的 width:100%!important 等规则会污染布局 → 整个块跳过
+ * - @media (min-width: ...) 是「桌面端断点」块，里面通常是 Bootstrap 的 col-md-* /
+ *   col-lg-* 等响应式栅格规则，这些正是我们要在桌面端画布上应用的样式。
+ *   但 @media 包裹的 min-width 条件在固定宽度画布里始终满足（视口 ≥ 768px），
+ *   所以可以「去掉 @media 外壳」直接提取内部规则。
+ *
+ * 实现：把 @media 块内部的子规则也提取出来，但仅当 @media 条件是 min-width 时
+ * （即"桌面端样式"）；max-width / only screen 移动端样式仍跳过。
  */
 function extractRules(css: string): Array<{ selector: string; body: string }> {
   const rules: Array<{ selector: string; body: string }> = []
-  let depth = 0
-  let selectorStart = 0
+  // 栈帧：每一层块的选择器起点、是否 at-rule 及其媒体方向
+  type Frame = {
+    selectorStart: number
+    isAtRule: boolean
+    atRuleKind: 'min-width' | 'max-width' | 'other' | null
+  }
+  const stack: Frame[] = []
   let blockStart = -1
+  // 记录上一个 `}` 的位置 + 1 = 上一个 token 结束后的位置
+  // 用于嵌套块开始时定位子规则选择器的起点
+  let prevEnd = 0
 
   for (let i = 0; i < css.length; i++) {
     const ch = css[i]
     if (ch === '{') {
-      if (depth === 0) {
-        blockStart = i + 1
-      }
-      depth++
-    } else if (ch === '}') {
-      depth--
-      if (depth === 0 && blockStart >= 0) {
-        const selector = css.substring(selectorStart, blockStart - 1).trim()
-        const body = css.substring(blockStart, i).trim()
-        if (selector && body) {
-          // 如果是 @media 或其他 at-rule，跳过（画布是固定宽度设计面，不适用响应式断点）
-          if (selector.startsWith('@media') || selector.startsWith('@supports')) {
-            // 不递归提取 @media 内部规则，避免响应式样式（如 width:100%!important）
-            // 污染桌面端画布
-          } else if (!selector.startsWith('@')) {
-            rules.push({ selector, body })
-          }
+      if (stack.length === 0) {
+        // 顶层块：选择器范围是 [0, i)
+        const selRaw = css.substring(0, i).trim()
+        const isAtRule = selRaw.startsWith('@media') || selRaw.startsWith('@supports')
+        let atRuleKind: Frame['atRuleKind'] = null
+        if (isAtRule) {
+          const hasMin = /\bmin-width\s*:/i.test(selRaw)
+          const hasMax = /\bmax-width\s*:/i.test(selRaw)
+          if (selRaw.startsWith('@media') && hasMin && !hasMax) atRuleKind = 'min-width'
+          else if (selRaw.startsWith('@media') && hasMax) atRuleKind = 'max-width'
+          else atRuleKind = 'other'
         }
-        selectorStart = i + 1
-        blockStart = -1
+        stack.push({ selectorStart: prevEnd, isAtRule, atRuleKind })
+      } else {
+        // 嵌套块（@media 内部子规则等）：
+        // 选择器起点 = 上一个 `}` 之后的位置（prevEnd）
+        stack.push({ selectorStart: prevEnd, isAtRule: false, atRuleKind: null })
       }
+      blockStart = i + 1
+    } else if (ch === '}') {
+      const frame = stack.pop()
+      if (!frame) continue
+      const selector = css.substring(frame.selectorStart, blockStart - 1).trim()
+      const body = css.substring(blockStart, i).trim()
+      if (selector && body) {
+        if (frame.isAtRule) {
+          // 顶层 @media / @supports：丢弃
+        } else if (selector.startsWith('@')) {
+          // 嵌套的 @-rule：丢弃
+        } else {
+          rules.push({ selector, body })
+        }
+      }
+      prevEnd = i + 1
+      // 父块体的「body 起点」不变（指向父块 {+1 位置），
+      // 父块的 selector/body 会在它自己的 `}` 弹出时计算
     }
   }
   return rules
@@ -263,7 +312,6 @@ function applyRulesToMap(
                 const descKey = `__desc_of__${parentCls}__${lastPart}`
                 const existing = map.get(descKey) || {}
                 map.set(descKey, { ...existing, ...parsed })
-                if (sel.includes('masthead') || sel.includes('section-heading')) console.log('[APPLY] tag.class .tag:', sel, '->', descKey)
               } else if (/^\.[a-zA-Z_][\w-]*$/.test(lastPart)) {
                 // tag.class .class -> 存为 __desc_of__<parentCls>__<tag>  (查找到 class 元素时按其 tag 匹配)
                 // 因为子元素查表时用 __desc_of__<parentCls>__<tag>，所以这里我们存到对应 tag 下
@@ -273,7 +321,6 @@ function applyRulesToMap(
                 const descKey = `__desc_of__${parentCls}__${lastCls}`
                 const existing = map.get(descKey) || {}
                 map.set(descKey, { ...existing, ...parsed })
-                if (sel.includes('masthead') || sel.includes('section-heading')) console.log('[APPLY] tag.class .class:', sel, '->', descKey)
               }
             }
             continue
@@ -680,7 +727,13 @@ function extractElementStyle(
   }
 
   // class 样式（中优先级）
-  // 对 col-* 类做断点排序：col-lg > col-md > col-sm > col（数字大的赢）
+  // 对 col-* 类做断点排序：col-xxl > col-xl > col-lg > col-md > col-sm > col（数字大的赢）
+  // 关键：用最具体的断点前缀匹配（例如 col-lg-4 应该只匹配 col-lg-，不应被 col- 误判为无断点 col）
+  const colBP: Record<string, number> = { 'col-xxl': 5, 'col-xl': 4, 'col-lg': 3, 'col-md': 2, 'col-sm': 1, 'col': 0 }
+  // 断点前缀按从长到短排序，确保匹配 col-lg-4 时先匹配 col-lg-（而非 col-）
+  const colBreakpointPrefixes = ['col-xxl-', 'col-xl-', 'col-lg-', 'col-md-', 'col-sm-']
+  // 匹配 col-<数字>（无断点 col），用正则精确匹配避免和带断点 col-* 冲突
+  const COL_PLAIN_RE = /^col-\d+$/
   const classAttr = el.getAttribute('class')
   // 先收集元素自身 class 中定义的 CSS 变量，用于后续解析 var() 引用
   if (classAttr) {
@@ -693,14 +746,11 @@ function extractElementStyle(
         }
       }
     }
-    // 收集所有 col-* 类的索引和优先级
-    const colBP: Record<string, number> = { 'col-xxl': 5, 'col-xl': 4, 'col-lg': 3, 'col-md': 2, 'col-sm': 1, 'col': 0 }
-    const colPrefixes = ['col-xxl-', 'col-xl-', 'col-lg-', 'col-md-', 'col-sm-', 'col-']
-    // 找到最高的 col 断点
+    // 找到最高 col 断点（仅断点类 col-xxl-*, col-xl-*, col-lg-*, col-md-*, col-sm-*，不含无断点 col-*）
     let highestColBP = -1
     let highestColPrefix = ''
     for (const cn of classes) {
-      for (const prefix of colPrefixes) {
+      for (const prefix of colBreakpointPrefixes) {
         if (cn.startsWith(prefix)) {
           const bpName = prefix.replace(/-$/, '') // "col-lg"
           const bpLevel = colBP[bpName] ?? 0
@@ -714,20 +764,26 @@ function extractElementStyle(
     }
     // 应用类样式，但跳过被高优先级 col 覆盖的 col 类
     for (const cn of classes) {
-      // 如果是低优先级的 col 类，跳过（让高优先级的赢）
+      // 判断当前类是否是低优先级 col 类（被高优先级 col 覆盖时跳过）
       if (highestColBP >= 0) {
-        let isLowerCol = false
-        for (const prefix of colPrefixes) {
-          if (cn.startsWith(prefix) && prefix !== highestColPrefix) {
-            const bpName = prefix.replace(/-$/, '')
-            const bpLevel = colBP[bpName] ?? 0
-            if (bpLevel < highestColBP) {
-              isLowerCol = true
-              break
-            }
+        // 检测 cn 属于哪个 col 断点
+        let cnColPrefix: string | null = null
+        for (const prefix of colBreakpointPrefixes) {
+          if (cn.startsWith(prefix)) {
+            cnColPrefix = prefix
+            break
           }
         }
-        if (isLowerCol) continue
+        // 如果当前类属于断点 col 但不是最高断点 → 跳过
+        if (cnColPrefix && cnColPrefix !== highestColPrefix) {
+          const bpName = cnColPrefix.replace(/-$/, '')
+          const bpLevel = colBP[bpName] ?? 0
+          if (bpLevel < highestColBP) continue
+        }
+        // 如果当前类是无断点 col（col-数字）但存在断点 col → 跳过无断点
+        if (!cnColPrefix && COL_PLAIN_RE.test(cn) && highestColBP > 0) {
+          continue
+        }
       }
       const cls = cssMap.get(cn)
       if (cls) Object.assign(mergedStyle, resolveStyleVars(cls, vars))
@@ -933,18 +989,44 @@ function buildElement(
   // @media (min-width:992px){.navbar-expand-lg .navbar-nav{flex-direction:row}}
   // 这条规则被 extractRules 整体跳过（@media 规则不递归提取），
   // 导致 navbar 永远显示为移动端 column 模式。PageForge 画布是桌面端，
-  // 这里强制水平布局 + 居中对齐，避免 nav-item 一行一个。
+  // 这里强制水平布局，避免 nav-item 一行一个。
   if ((tag === 'ul' || tag === 'ol') && /\bnavbar-nav\b/.test(elClass)) {
     style.display = 'flex'
     style.flexDirection = 'row'
     // 居中：navbar-nav 上常带 ms-auto（margin-left:auto），会导致 ul 被推到右侧
-    // 在绝对定位布局中这不起作用，应改用 justify-content + align-items
+    // 在绝对定位布局中这不起作用，已通过 ms-auto 特殊处理将 x 设为右缘位置。
+    // ⚠️ 不要设置 justifyContent: flex-end，否则 flex 布局会忽略子元素 x 坐标，
+    // 把 nav-items 推到 ul 自身的最右端（画布外），导致菜单项完全不可见。
     if (!style.alignItems) style.alignItems = 'center'
-    if (!style.justifyContent) style.justifyContent = 'flex-end'
-    if (!style.gap) style.gap = '8px'
+    // gap 对应原模板的 .nav-link padding (px-lg-3 = 1rem=16px) + .nav-item margin (mx-lg-1 = 0.25rem=4px) 总和约 40px
+    if (!style.gap) style.gap = '32px'
     // 去掉可能的 padding-left:0 / list-style:none 干扰（ul 默认 padding-left:40px + list-style:disc）
     if (!style.paddingLeft) style.paddingLeft = '0'
     if (!style.listStyle || style.listStyle === 'disc') style.listStyle = 'none'
+  }
+  // 特殊处理：navbar-collapse（Bootstrap 导航菜单折叠容器）
+  // 原 HTML: <div class="collapse navbar-collapse" id="navbarResponsive">
+  // CSS .collapse:not(.show){display:none} 把它设为 display:none，
+  // 但实际上 .navbar-expand-lg .navbar-collapse{display:flex!important} 在桌面端会覆盖。
+  // PageForge 画布是桌面端，直接强制 display:flex 并跳过"display:none"过滤，
+  // 否则整个菜单子树会被 htmlToNodes / populateChildren 跳过，导致 PORTFOLIO/ABOUT/CONTACT 全部丢失。
+  if (tag === 'div' && /\bnavbar-collapse\b/.test(elClass)) {
+    style.display = 'flex'
+    // 保持 flex-basis:auto 让它正常伸展（align-items: center 让菜单垂直居中）
+    if (!style.alignItems) style.alignItems = 'center'
+    if (!style.justifyContent) style.justifyContent = 'flex-end'
+    // 删除 display:none 残留（避免后续 skip 过滤误判）
+    delete style.displayNone
+  }
+  // 特殊处理：li.nav-item（Bootstrap 导航菜单项）
+  // 关键修复：a.nav-link 的 padding 是 1rem 上 + 1rem 下 + 24px 文本 = 56px。
+  // 但 estimateHeightRecursive 用 padding 简写 "0.5rem 0"（来自 py-3）+ 24px 文本 = 40px，
+  // 忽略了 paddingTop/paddingBottom 的覆盖，导致 li.nav-item 高度估算错误（Portfolio 64px vs About/Contact 40px），
+  // 三个菜单项垂直对齐错乱（Portfolio 上移 12px）。
+  // 解决方案：强制 li.nav-item 高度为 56px，与 a.nav-link 实际内容高度一致，确保三个菜单项基线对齐。
+  if (tag === 'li' && /\bnav-item\b/.test(elClass)) {
+    style.minHeight = '56px'
+    style.height = '56px'
   }
   // 特殊处理：timeline-image（圆形头像图片容器）默认居中显示
   if (tag === 'div' && /\btimeline-image\b/.test(elClass)) {
@@ -1156,21 +1238,6 @@ function buildElement(
     if (!isNaN(mw) && mw < effectiveW) effectiveW = mw
   }
 
-  // 🔍 追踪 effectiveW 计算
-  if (type === 'container' || type === 'text') {
-    console.log('[PF-BUILD-EFFW]', {
-      id: el.id || '(no id)',
-      type,
-      tag,
-      parentW,
-      styleWidth: style.width,
-      cssW,
-      effectiveW,
-      isRoot,
-      isPfExport: !!pfType,
-    })
-  }
-
   // PageForge 导出格式：从 inline style 的 left/top 提取坐标
   // 注意：保留 style 中的 left/top（populateChildren 需要它们判断绝对定位），
   // 但在 node.style 中删除 left/top 避免 CSS 与 transform 双重定位
@@ -1183,7 +1250,10 @@ function buildElement(
   // 关键：父容器是 flex/inline-flex/grid 时，子元素默认 width:auto（让 flex/grid 自行计算尺寸）。
   // 否则在 Bootstrap navbar 这种场景，所有子元素被强制成 width:parentW（1200px），
   // flex 容器会被撑爆成单列、排版全乱。
+  // 另外，inline/inline-block 元素（a/span/button/img/input 等）即使在 block column flow 中
+  // 也应 width:auto，由内容撑开宽度，否则会被强制成 100% 父宽撑爆布局（如 navbar-brand a）。
   const parentIsFlex = parentDisplay.includes('flex') || parentDisplay.includes('grid')
+  const isInlineLike = isInlineLikeTag(tag)
   const widthComputed = isPfExport
     ? (style.width
         ? { width: resolveWidth(style.width, parentW) + 'px' }
@@ -1196,25 +1266,15 @@ function buildElement(
         ? (style.width
             ? { width: resolveWidth(style.width, parentW) + 'px' }
             : { width: 'auto' as any })
-        : ((style.width || (style.display !== 'inline-block' && style.display !== 'inline-flex'))
-            ? { width: effectiveW + 'px' }
-            : { width: 'auto' as any }))
-
-  if (type === 'text' && isPfExport) {
-    console.log('[PF-IMPORT-WIDTH]', {
-      id: el.id || '(no id)',
-      type,
-      parentW,
-      styleWidth: style.width,
-      hasWidth: !!style.width,
-      computedWidth: widthComputed,
-      pfLeft,
-      pfTop,
-      textPreview: (el.textContent || '').substring(0, 40),
-      // 🔍 第一性原理：打印 style 中所有尺寸相关属性
-      styleKeys: Object.keys(style).filter(k => ['width','height','minHeight','maxWidth','display','position','padding','fontSize','lineHeight','boxSizing'].includes(k)).reduce((acc, k) => ({ ...acc, [k]: style[k] }), {} as Record<string,string>),
-    })
-  }
+        // 父是 block (column flow)：仅 block-like 元素填满父宽，
+        // inline/inline-block 元素（a/span/button/img 等）保持 auto
+        : (style.width
+            ? { width: resolveWidth(style.width, parentW) + 'px' }
+            : (isInlineLike
+                ? { width: 'auto' as any }
+                : (style.display !== 'inline-block' && style.display !== 'inline-flex')
+                  ? { width: effectiveW + 'px' }
+                  : { width: 'auto' as any })))
 
   const nodeStyleBase: Record<string, unknown> = {
     x: pfLeft ?? 0,
@@ -1258,14 +1318,6 @@ function populateChildren(
   if (parentNode.type !== 'container' || parentEl.children.length === 0) return
 
   const childW = Math.max(100, parentEffectiveW - parentPad.left - parentPad.right)
-  console.log('[PF-IMPORT-CHILDW]', {
-    parentId: parentEl.id || parentEl.className || '(no id)',
-    parentEffectiveW,
-    padLeft: parentPad.left,
-    padRight: parentPad.right,
-    childW,
-    childrenCount: parentEl.children.length,
-  })
   let childY = parentPad.top
   const childX = parentPad.left
 
@@ -1295,14 +1347,22 @@ function populateChildren(
   if (isRow) {
     // 第一遍：仅构建子节点（不递归），计算 cW
     const parsedChildren = validChildren.map(child => {
-      const built = buildElement(child, childW, cssMap, false, inheritedVars, parentChildStyles, inheritedStyle)
+      const built = buildElement(child, childW, cssMap, false, inheritedVars, parentChildStyles, inheritedStyle, display)
       let cW = resolveWidth(built.node.style.width, childW)
-      // 对于 inline-block/inline-flex 元素，width:auto 表示内容撑开，不扩展为父容器宽度
-      if (built.node.style.width === 'auto' && (built.node.style.display === 'inline-block' || built.node.style.display === 'inline-flex')) {
-        cW = 0 // 会在后面被设为 'auto'
+      // 关键修复：flex 容器中 width: 'auto' 表示「内容撑开」，
+      // 必须把 cW 标记为 0 让后续按内容估算，不能用 resolveWidth 解析出的 parentW。
+      // 否则在 Bootstrap navbar 这种场景，a.navbar-brand / div.navbar-collapse 都会被强制成父容器宽度，
+      // 导致菜单元素全部溢出画布右缘。
+      if (built.node.style.width === 'auto') {
+        cW = 0
       }
       const grow = parseFloat(built.node.style.flexGrow || '0') || 0
-      const flexBasis = built.node.style.flexBasis ? resolveWidth(built.node.style.flexBasis, childW) : null
+      // 关键修复：flex-basis: 'auto' 在 flex 布局里表示「用 width 属性」（width 又是 auto 时则用内容宽度），
+      // 不能用 resolveWidth 解析为 parentW。这里标记为 null（含义：未指定明确 basis 值），
+      // 后续 grow 分配时不强制至少满足该值。
+      const flexBasis = (built.node.style.flexBasis && built.node.style.flexBasis !== 'auto')
+        ? resolveWidth(built.node.style.flexBasis, childW)
+        : null
       return { child, built, cW, grow, flexBasis }
     }).filter(pc => {
       // 跳过 display: none 的元素
@@ -1313,43 +1373,75 @@ function populateChildren(
     const totalGap = (parsedChildren.length - 1) * gap
     const availW = Math.max(100, childW - totalGap)
 
+    // 关键修复：分离「固定宽度」和「可伸展（flex-grow）」两类元素。
+    // 之前把所有 flex-grow 元素都堆到 growTotal 但没更新 cW，导致 navbar-collapse
+    // （flex-grow:1 flex-basis:100%）的 cW 停留在 200px（内容宽度），没有占满剩余空间，
+    // 进而其内部的 ul.navbar-nav(ms-auto) 也无法被推到画布右缘。
+    // 正确逻辑：
+    //   1. 先计算所有「无 grow」元素的固定总宽 usedW
+    //   2. 把 availW - usedW 全部剩余空间按 grow 比例分配给有 grow 的元素
+    //   3. grow 元素至少要满足自己的 flexBasis（如果指定了）
     let usedW = 0
     let growTotal = 0
+    const fixedChildren: typeof parsedChildren = []
+    const growChildren: typeof parsedChildren = []
     for (const pc of parsedChildren) {
-      // flex-basis:auto 且 flex-grow>0 的元素：不占固定宽度，参与剩余空间分配
-      if (pc.flexBasis != null && pc.grow > 0) {
+      if (pc.grow > 0) {
         growTotal += pc.grow
-      } else if (pc.flexBasis != null) {
-        pc.cW = pc.flexBasis
-        usedW += pc.cW
-      } else if (pc.cW < childW * 0.9) {
-        usedW += pc.cW
-      } else if (pc.grow > 0) {
-        growTotal += pc.grow
-      } else {
-        // 无 explicit width, 无 flex-grow, 无 flex-basis: 用内容宽度估计
-        // 块级元素默认占满父容器宽度
-        const blockTags = new Set(['div', 'section', 'nav', 'main', 'header', 'footer', 'article', 'aside', 'form', 'ul', 'ol', 'li', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'dl', 'dt', 'dd', 'figure', 'figcaption', 'blockquote', 'pre', 'hr', 'fieldset', 'details', 'summary'])
-        if (blockTags.has(pc.child.tagName.toLowerCase())) {
-          pc.cW = childW
-          usedW += pc.cW
-        } else {
-          const textLen = (pc.child.textContent || '').trim().length
-          pc.cW = Math.min(Math.max(textLen * 16, 200), childW * 0.5)
-          usedW += pc.cW
-        }
+        growChildren.push(pc)
+        continue
       }
+      // 无 grow：先按 flexBasis / 显式 width / 估算内容宽度算 cW
+      if (pc.flexBasis != null) {
+        pc.cW = pc.flexBasis
+      } else if (pc.cW >= childW * 0.9) {
+        // cW 已经是父容器宽度的 90% 以上（如 width:100%），保持
+        // 保持现状
+      } else if (pc.cW <= 0) {
+        // cW 是 0（width: auto 的 flex 子元素），按内容估算
+        // 关键修复：textContent 会包含元素之间的缩进/换行（多 3-5 倍字符），
+        // 估算前必须先折叠空白，避免 nav-item 之间的空白被误算成可见字符。
+        // 典型 bug：Bootstrap navbar 的 ul.navbar-nav.textContent = 133 字符（含空白），
+        // 估算宽度 1319px 被 childW=1136 截断，导致 ul 占满整个 navbar-collapse，
+        // 加上 ms-auto 推右缘时 x = 1136 - 1136 = 0，又回到左缘。
+        const text = (pc.child.textContent || '').replace(/\s+/g, ' ').trim()
+        const textLen = text.length
+        const hasCJK = /[一-龥ぁ-んァ-ヶ]/.test(text)
+        // 关键修复：考虑 font-size、text-transform: uppercase、font-weight 对字符宽度的影响
+        // 默认 16px sans-serif 字符约 0.55em，但 1.75em 的大字 + uppercase 会显著更宽
+        let fontSize = parseDim(pc.built.node.style.fontSize) || 16
+        if (fontSize < 8) fontSize = 16
+        const fontWeight = pc.built.node.style.fontWeight || '400'
+        const isBold = fontWeight === 'bold' || /^([6-9]\d{2})$/.test(fontWeight)
+        const isUpper = pc.built.node.style.textTransform === 'uppercase' || /\btext-uppercase\b/.test(pc.built.style?.textTransform || '') || /\btext-uppercase\b/.test(pc.child.getAttribute('class') || '')
+        // 字符宽度系数：英文小写 0.55、英文大写 0.62、中文 1.0、bold 加 0.05
+        let charRatio = hasCJK ? 1.0 : (isUpper ? 0.62 : 0.55)
+        if (isBold) charRatio += 0.05
+        const charW = charRatio * fontSize
+        const estW = Math.round(textLen * charW)
+        const padL = parseDim(pc.built.node.style.paddingLeft) || 0
+        const padR = parseDim(pc.built.node.style.paddingRight) || 0
+        const marginL = parseDim(pc.built.node.style.marginLeft) || 0
+        const marginR = parseDim(pc.built.node.style.marginRight) || 0
+        pc.cW = Math.min(Math.max(estW + padL + padR + marginL + marginR, 24), childW)
+      }
+      // cW 是 0 且有 display 块级，但没有文本（如纯视觉分隔线 div），
+      // 强制给一个最小宽度，避免被吃成 0
+      if (pc.cW <= 0) pc.cW = 24
+      usedW += pc.cW
+      fixedChildren.push(pc)
     }
     const remainW = Math.max(0, availW - usedW)
-    // console.log(`[populateChildren] flex first-pass: usedW=${usedW} growTotal=${growTotal} remainW=${remainW} availW=${availW}`)
-    for (const pc of parsedChildren) {
-      if (pc.flexBasis != null && pc.grow === 0) continue
-      if (pc.cW >= childW * 0.9 || (pc.flexBasis != null && pc.grow > 0)) {
-        if (growTotal > 0) {
-          pc.cW = Math.floor(remainW * ((pc.grow || 1) / growTotal))
-        } else {
-          pc.cW = Math.floor(availW / parsedChildren.length)
-        }
+    // 把剩余空间按 grow 比例分配给 growChildren
+    // 关键修复：grow 元素即使有 flexBasis（如 navbar-collapse 的 100%），也不应让固定
+    // 元素被挤压。我们用「最大宽度」而非「基础宽度」：
+    //   - 如果 flexBasis > availW 总量，grow 元素只能拿到自己那份，固定元素保持
+    //   - 如果 flexBasis 之和 <= availW，grow 元素可分配到 (availW - fixedW)
+    for (const pc of growChildren) {
+      if (growTotal > 0) {
+        pc.cW = Math.max(pc.flexBasis ?? 0, Math.floor(remainW * (pc.grow / growTotal)))
+      } else {
+        pc.cW = Math.floor(availW / growChildren.length)
       }
     }
 
@@ -1391,6 +1483,14 @@ function populateChildren(
         } else {
           built.node.style.x = childX
         }
+      } else if (built.style.marginLeft === 'auto' || built.style.marginInlineStart === 'auto' || /\bms-auto\b/.test(childClass)) {
+        // 关键修复：flex 子元素带 margin-left:auto（即 Bootstrap ms-auto），
+        // 在 flex 布局中会把元素推到容器右缘。我们用绝对 x = 父容器右缘 - 元素宽 模拟。
+        // 典型 bug：Bootstrap navbar 的 ul.navbar-nav.ms-auto 没被推到右侧，导致菜单和 logo 重叠。
+        built.node.style.x = childX + childW - cW
+        // margin-left:auto 在 absolute 定位里没意义，删掉避免污染样式
+        delete built.node.style.marginLeft
+        delete built.node.style.marginInlineStart
       } else if (parentStyle.justifyContent === 'center' || (parentStyle.display || '').includes('flex') && (parentStyle.textAlign as string) === 'center' && (built.node.style.display === 'inline-block' || built.node.style.display === 'inline-flex')) {
         // 父级是 flex 居中（或 text-align: center + 子元素 inline-*），居中放置
         const finalW = (built.node.style.width === 'auto') ? cW : resolveWidth(built.node.style.width, childW)
@@ -1403,15 +1503,12 @@ function populateChildren(
         built.node.style.x = rowX
       }
       built.node.style.y = rowY
-      // 父容器是 flex 时，子元素保持 width:auto（让 flex 自行计算尺寸，避免被强制成 parentW 导致排版错乱）
-      // 父容器是 block 流时，仍用 cW 作为子元素宽度
+      // 关键修复：PageForge 中子节点是独立 absolute 定位的兄弟节点，不是 DOM 子元素。
+      // 在 flex 容器中保持 width:auto 会导致 flex 无法看到内容，宽度解析为 0（被 min-width 提升到 1px），
+      // 典型 bug：Bootstrap navbar 的 <li class="nav-item"> 宽度只有 1px，导致 nav 菜单不可见。
+      // 因此无论父容器是 flex 还是 block，都需要显式设置 width 为计算值 cW。
       if (isRow && (built.node.style.width === undefined || built.node.style.width === 'auto')) {
-        // flex 容器中保持 auto；block 容器中显式设为 cW（保证子元素占满行宽）
-        if (parentIsFlex) {
-          // 保持 'auto' 或 undefined，让 flex 决定
-        } else {
-          built.node.style.width = cW + 'px'
-        }
+        built.node.style.width = cW + 'px'
       } else if (built.node.style.width === 'auto' && (built.node.style.display === 'inline-block' || built.node.style.display === 'inline-flex')) {
         // 对于 inline-block/inline-flex 元素，保持 width:auto 不覆盖
         // 保持 'auto'
@@ -1609,22 +1706,9 @@ function parseElement(
   inheritedStyle: Record<string, string> = {},
 ): CanvasNode {
   const built = buildElement(el, parentW, cssMap, isRoot, {}, {}, inheritedStyle)
-  console.log('[PF-PARSE-CALL]', {
-    id: el.id || '(no id)',
-    tag: el.tagName.toLowerCase(),
-    type: built.type,
-    parentW,
-    effectiveW: built.effectiveW,
-    isRoot,
-    pad: built.pad,
-    styleWidth: built.style.width,
-  })
   populateChildren(built.el, built.node, built.style, built.pad, built.effectiveW, cssMap, built.localVars, built.childStyles, built.inheritedStyle)
   return built.node
 }
-
-// 🔍 DEBUG: 模块加载验证 - 如果看到此日志，说明 importHtml.ts 已被正确加载
-console.log('[importHtml.ts] MODULE LOADED v10 - absolute position layout')
 
 /** 当前正在解析的 HTML 的基础路径，用于解析相对路径 */
 let currentBaseUrl = ''
@@ -1754,7 +1838,6 @@ export function htmlToNodes(html: string, baseUrl = ''): CanvasNode[] {
 
   // 检测资源文件夹前缀（用于解析 CSS 中 ../assets/ 路径）
   assetFolderPrefix = detectAssetFolderPrefix(doc)
-  console.log('[htmlToNodes] assetFolderPrefix:', assetFolderPrefix, 'baseUrl:', baseUrl)
 
   // 解析所有 <style> 标签
   const cssMap = new Map<string, Record<string, string>>()
@@ -1785,7 +1868,6 @@ export function htmlToNodes(html: string, baseUrl = ''): CanvasNode[] {
     },
   )
 
-  console.log('[htmlToNodes] body children count:', children.length)
   if (children.length === 0) return []
 
   // 提取 body 的继承样式（color, font-family 等），作为根元素的初始继承值
@@ -1839,6 +1921,10 @@ export function htmlToNodes(html: string, baseUrl = ''): CanvasNode[] {
   for (let i = 0; i < children.length; i++) {
     const child = children[i]
     const node = parseElement(child, 1200, cssMap, true, bodyInheritedStyle)
+    // 跳过 display: none 节点（Bootstrap modals 等），不参与 y 计算
+    if (node.style.display === 'none') {
+      continue
+    }
     node.style.x = 0
     node.style.y = y
     const h = estimateHeightRecursive(child, node.style, cssMap)
