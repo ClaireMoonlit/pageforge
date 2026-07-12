@@ -626,7 +626,8 @@ export const CanvasElement = memo(function CanvasElement({ node, isRoot = false,
         // 预览模式：禁用选中/拖拽
         if (previewMode) return
         e.stopPropagation()
-        if (e.shiftKey) {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault()
           toggleSelection(node.id)
         } else {
           // 如果不在多选集合中，正常单选
