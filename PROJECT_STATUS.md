@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-11（§5.23 开源模板导入排版错乱修复：导航栏/选项卡/Portal/JSON 缓存失效）
-> 当前版本：v0.2.2
+> 最后更新：2026-07-12（§5.24 导入模式选择弹窗：智能推荐 + 用户可切换，阶段 1 实施）
+> 当前版本：v0.2.3
 
 ---
 
@@ -809,7 +809,65 @@ interface CanvasNode {
 - ✅ 品牌 logo（Microsoft/Google/facebook/IBM）
 - ✅ CONTACT US 表单 + SEND MESSAGE 按钮
 - ✅ 底部 footer（Copyright + Privacy Policy/Terms of Use + 社交图标）
-- 已知小限制：Font Awesome 图标（Twitter/Facebook/LinkedIn 圆圈）无法解析，显示为占位黑色圆圈
+- ✓ 已知小限制：Font Awesome 图标（Twitter/Facebook/LinkedIn 圆月）无法解析，显示为占位黑色圆点
+
+---
+
+### 5.24 导入模式选择弹窗：智能推荐 + 用户可切换（2026-07-12）
+
+**背景**：
+- 5.23 修了开源模板的解析问题，但**根因仍在**——`htmlToNodes` 把 flex/grid 强行拆成绝对定位节点
+- 复杂模板（Agency 9 层嵌套、Freelancer 7 层）永远对不齐，单纯改解析器治标不治本
+- 用户反复问"为什么不能像参考项目那样精修"，意识到需要架构升级
+
+**方案**：
+- 两条导入路径并存，让用户自己选：
+  - **自由画布**：保留现有 `htmlToNodes` 路径，自由度高、但复杂布局错位
+  - **精修模式**：iframe + DOM 标注，100% 还原原页面，受原结构约束
+- 智能检测 HTML 复杂度，给出推荐 + 置信度
+- 用户可以一键采用推荐，也可以手动切换
+
+**实施内容**（阶段 1，本次提交）：
+
+1. **新增 [`src/utils/htmlComplexity.ts`](file:///d:/My%20Projects/PageForge/src/utils/htmlComplexity.ts)**（~190 行）
+   - 12 个复杂度信号检测（flex/grid 数、嵌套深度、@media、伪元素、transform/animation、calc/vh/vw/clamp、表格、绝对定位数、现代选择器、style 标签数、元素总数）
+   - 每个信号独立打分，自由画布 vs 精修模式累计对比
+   - 返回 `recommendation`（'freeform' | 'refine'）+ `confidence`（0~1）+ `reasons`（人话说明）
+   - 阈值偏向"宁可错杀"：宁可把简单页面也推荐精修，也不要让复杂页面走自由画布而错位
+
+2. **新增 [`src/components/ImportModeDialog.tsx`](file:///d:/My%20Projects/PageForge/src/components/ImportModeDialog.tsx)**（~210 行）
+   - 模式选择弹窗：智能检测结果（置信度 + 命中原因）+ 两个模式选项（自由画布 / 精修）
+   - 推荐模式标"智能推荐"标签，按钮文字根据置信度动态变化：
+     - 高置信度（≥0.7）："使用推荐（XX）"
+     - 低置信度（<0.7）："使用「XX」开始编辑"
+   - 阶段 1：精修模式标"敬请期待"且禁用（防止用户选错）
+   - 弹窗用 `createPortal` 渲染到 `document.body`，z-index 120
+
+3. **修改 [`src/components/TemplatePanel.tsx`](file:///d:/My%20Projects/PageForge/src/components/TemplatePanel.tsx)**
+   - 新增 `modePrompt` state，所有 HTML 导入路径（粘贴/上传/开源模板/重新生成）都先触发模式选择弹窗
+   - `performImport(html, mode?, importMode?)` 新增 `importMode` 参数（阶段 1 仅记录日志）
+   - `window.__pfImportMode` 在 confirmReplace 链路透传，确保"作为片段追加"也用对的模式
+   - `setModalOpen` 同步 `modePrompt !== null`（缩放工具栏变灰）
+
+**智能检测验证**（手工测试）：
+
+| HTML 类型 | 推荐 | 置信度 | 命中原因 |
+|----------|------|------|----------|
+| 简单 `<div><h1>...</h1></div>` | 自由画布 | 100% | 元素少、布局简单 |
+| 含 flex × 4 + 嵌套 + @media | 精修 | 100% | 4 处 flex/grid + 嵌套 + 响应式 |
+| Bootstrap navbar | 精修 | 100% | 多层 flex 嵌套 + display 切换 |
+
+**架构价值**：
+- 阶段 1 仅为弹窗 + 智能推荐，**精修模式暂未实施**（iframe 路径留待后续）
+- 但用户已经能看到"我们识别出你的页面是复杂的，建议精修"的提示
+- 阶段 2-3 实施 iframe 路径时，只需把 `performImport` 的 `effectiveMode === 'refine'` 分支改为 `loadIframeSrcdoc(html)`，其他代码不动
+- 同时完整保留了你 5.17 系列精修出来的所有功能（9 套预设模板、自由画布、PNG/PDF 导出、节点精修等）
+
+**教训**：
+- **架构层面"自由"和"保真"是冲突的**：自由画布 = 绝对定位 = 失真；精修 = 真实 DOM = 受结构约束
+- 解决冲突的最佳方式是**让用户自己选**——把决策权交还给用户，而不是替用户决定
+- 智能推荐降低决策成本，但不能完全替代用户判断（所以保留手动切换）
+- 阶段 1 优先做"用户能感知的能力"（弹窗 + 智能检测），比"实际能用的功能"（iframe）更重要——先把 UI 闭环，引擎实现可以分阶段
 
 ---
 

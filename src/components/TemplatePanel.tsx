@@ -4,6 +4,8 @@ import { useEditorStore } from '@/store/editorStore'
 import { pageTemplates } from '@/data/templates'
 import { importedTemplates, type ImportedTemplateMeta } from '@/data/importedTemplates'
 import { htmlToNodes, extractCanvasConfig } from '@/utils/importHtml'
+import { ImportModeDialog } from '@/components/ImportModeDialog'
+import { detectHtmlComplexity, type ImportMode } from '@/utils/htmlComplexity'
 import type { CanvasNode, CanvasConfig } from '@/types'
 
 export function TemplatePanel() {
@@ -23,6 +25,12 @@ export function TemplatePanel() {
     meta?: ImportedTemplateMeta
     parsedCount?: number
   } | null>(null)
+  /**
+   * 模式选择弹窗：所有 HTML 导入路径（粘贴/上传/开源模板）都先过这里。
+   * html 已通过 detectHtmlComplexity 评估，给出推荐模式 + 置信度。
+   * 用户可以一键采用推荐，也可以手动切换到另一种（阶段 1 仅 freeform 可用）。
+   */
+  const [modePrompt, setModePrompt] = useState<{ html: string; pendingForReplace?: boolean } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   /** 粘贴 textarea 引用：用于根据内容动态调整高度（自适应 + 最大高度限制） */
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null)
@@ -33,8 +41,8 @@ export function TemplatePanel() {
 
   // 弹窗打开/关闭时同步到 store，让缩放工具栏变灰
   useEffect(() => {
-    setModalOpen(open || pendingImport !== null)
-  }, [open, pendingImport, setModalOpen])
+    setModalOpen(open || pendingImport !== null || modePrompt !== null)
+  }, [open, pendingImport, modePrompt, setModalOpen])
 
   /**
    * 递归计算节点的"实际底部"（用于画布高度适配）
@@ -98,15 +106,24 @@ export function TemplatePanel() {
    * @param html 待导入的 HTML
    * @param mode 强制模式：'replace' = 完整页面（清空），'append' = 组件片段（追加）
    *             传 undefined 时根据 detectCompletePage 自动判断
+   * @param importMode 用户选的编辑模式（阶段 1 仅记录日志，后续阶段会按模式分流）
    */
   const performImport = useCallback(
-    (html: string, mode?: 'replace' | 'append') => {
+    (html: string, mode?: 'replace' | 'append', importMode?: ImportMode) => {
       try {
         setError('')
+        // 阶段 1：精修模式尚未实施，无论用户选什么都走 freeform
+        const effectiveMode: ImportMode = importMode === 'refine' ? 'refine' : 'freeform'
         const parsed = htmlToNodes(html)
         if (parsed.length === 0) {
           setError('未能解析到有效元素，请检查 HTML 内容。')
           return false
+        }
+        // 日志：精修模式（用户选了但暂未实施）→ 提示后续阶段处理
+        if (effectiveMode === 'refine') {
+          console.info(
+            '[TemplatePanel] 用户选择精修模式（阶段 1 暂以自由画布导入，后续阶段会改为 iframe 渲染）',
+          )
         }
         const isCompletePage = mode === 'replace' ? true : mode === 'append' ? false : detectCompletePage(html)
 
@@ -150,12 +167,39 @@ export function TemplatePanel() {
   )
 
   /**
-   * 入口：先解析 HTML，若检测到完整页面且画布非空，则弹出确认；否则直接导入。
-   * @returns true 表示导入流程已成功启动（含弹确认框的情况）；
+   * 入口：先弹模式选择弹窗，让用户确认"自由画布 vs 精修"模式。
+   * 模式确定后再走原有的"画布非空+完整页面 → 二次确认"逻辑。
+   * @returns true 表示导入流程已成功启动；
    *          false 表示导入失败（如解析错误或空内容）
    */
   const handleImport = useCallback(
     (html: string): boolean => {
+      if (!html || !html.trim()) {
+        setError('请提供有效的 HTML 内容。')
+        return false
+      }
+      // 触发模式选择弹窗
+      setModePrompt({ html })
+      return true
+    },
+    [],
+  )
+
+  /**
+   * 模式选择确认后调用：根据用户选的模式执行导入。
+   * 阶段 1：无论选哪种都走 freeform 路径，但精修模式会打日志供后续阶段参考。
+   */
+  const handleModeConfirm = useCallback(
+    (mode: ImportMode) => {
+      if (!modePrompt) return
+      const html = modePrompt.html
+      // 关闭模式选择弹窗
+      setModePrompt(null)
+      // 暴露给调试 / 用户查看
+      console.info(
+        `[TemplatePanel] 导入模式：${mode} | 复杂度评分：`,
+        detectHtmlComplexity(html),
+      )
       const isCompletePage = detectCompletePage(html)
       // 仅在"完整页面"且"画布非空"时弹确认
       if (isCompletePage && nodes.length > 0) {
@@ -167,14 +211,18 @@ export function TemplatePanel() {
         }
         if (parsedCount === 0) {
           setError('未能解析到有效元素，请检查 HTML 内容。')
-          return false
+          return
         }
+        // 完整页面要传 importMode 透传
         setPendingImport({ source: 'html', html, parsedCount })
-        return true
+        // 暂存模式供 confirmReplace 使用
+        ;(window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode = mode
+        return
       }
-      return performImport(html)
+      // 非完整页面 / 画布为空：直接导入
+      performImport(html, undefined, mode)
     },
-    [nodes.length, performImport],
+    [modePrompt, nodes.length, performImport],
   )
 
   /** 实际执行预设模板加载（handlePreset 确认后调用） */
@@ -338,8 +386,10 @@ export function TemplatePanel() {
   /** 确认弹窗 → 确认替换（依赖 applyPreset / applyImported / applyReimport，故声明在它们之后） */
   const confirmReplace = useCallback(() => {
     if (!pendingImport) return
+    // 取暂存的导入模式（来自 handleModeConfirm）
+    const importMode = (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
     if (pendingImport.source === 'html' && pendingImport.html) {
-      performImport(pendingImport.html, 'replace')
+      performImport(pendingImport.html, 'replace', importMode)
     } else if (pendingImport.source === 'preset' && pendingImport.presetIndex !== undefined) {
       applyPreset(pendingImport.presetIndex)
     } else if (pendingImport.source === 'imported' && pendingImport.meta) {
@@ -348,6 +398,8 @@ export function TemplatePanel() {
       applyReimport(pendingImport.meta)
     }
     setPendingImport(null)
+    // 清理暂存
+    delete (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
   }, [pendingImport, performImport, applyPreset, applyImported, applyReimport])
 
   const handlePreset = useCallback(
@@ -836,8 +888,12 @@ export function TemplatePanel() {
               {pendingImport.source === 'html' && (
                 <button
                   onClick={() => {
-                    if (pendingImport.html && performImport(pendingImport.html, 'append')) {
-                      setPendingImport(null)
+                    if (pendingImport.html) {
+                      const importMode = (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
+                      if (performImport(pendingImport.html, 'append', importMode)) {
+                        setPendingImport(null)
+                        delete (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
+                      }
                     }
                   }}
                   className="px-4 py-2 rounded-lg text-sm text-gray-200 hover:bg-ink-700 border border-ink-600 transition-colors"
@@ -856,6 +912,15 @@ export function TemplatePanel() {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* 模式选择弹窗：所有 HTML 导入路径都先过这里 */}
+      {modePrompt && (
+        <ImportModeDialog
+          html={modePrompt.html}
+          onCancel={() => setModePrompt(null)}
+          onConfirm={handleModeConfirm}
+        />
       )}
     </>
   )
