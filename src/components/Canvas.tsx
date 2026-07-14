@@ -5,6 +5,7 @@ import { useEditorStore, getClipboard, getLastInternalCopyTime, getLastExternalC
 import { CanvasElement } from './CanvasElement'
 import { Ruler } from './Ruler'
 import { AlignInfoOverlay } from './AlignInfoOverlay'
+import { RefineCanvas } from './RefineCanvas'
 import type { SnapLine } from '@/utils/snapping'
 import { readFileAsDataUrl } from '@/utils/fileUpload'
 
@@ -160,6 +161,8 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const toggleRulerCursor = useEditorStore((s) => s.toggleRulerCursor)
   const addNode = useEditorStore((s) => s.addNode)
   const modalOpen = useEditorStore((s) => s.modalOpen)
+  /** 精修模式会话：非 null 时画布切换为 iframe 渲染 */
+  const refineSession = useEditorStore((s) => s.refineSession)
 
   const innerRef = useRef<HTMLDivElement | null>(null)
   const lastMousePosRef = useRef({ x: 400, y: 300 }) // 画布坐标，默认中心附近
@@ -663,7 +666,9 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
             cursor: isPanning ? 'grabbing' : panMode ? 'grab' : undefined,
           }}
         >
-          {nodes.length === 0 ? (
+          {refineSession ? (
+            <RefineCanvas iframeId="pf-refine-iframe" />
+          ) : nodes.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center text-gray-400 select-none">
               从左侧拖入组件开始创作
             </div>

@@ -29,6 +29,9 @@ export function Toolbar() {
   const duplicateNode = useEditorStore((s) => s.duplicateNode)
   const previewMode = useEditorStore((s) => s.previewMode)
   const togglePreviewMode = useEditorStore((s) => s.togglePreviewMode)
+  /** 精修模式会话：非 null 时工具栏禁用自由画布相关操作（撤销/重做/删除/格式刷等） */
+  const refineSession = useEditorStore((s) => s.refineSession)
+  const exitRefine = useEditorStore((s) => s.exitRefine)
   const nodeCount = nodes.length
 
   const [exporting, setExporting] = useState<string | null>(null)
@@ -134,15 +137,46 @@ export function Toolbar() {
         <span className="text-gray-100 font-semibold">造页工坊</span>
         <span className="text-gray-500 text-xs hidden sm:inline">PageForge</span>
       </div>
-      <button onClick={() => undo()} disabled={previewMode || !canUndo} className={btnCls} title="撤销 (Ctrl+Z)">
+      {/* 精修模式横幅：精修模式下禁用自由画布相关操作，提示用户当前模式 */}
+      {refineSession && (
+        <div
+          data-testid="refine-mode-banner"
+          className="flex items-center gap-2 px-3 py-1 bg-purple-900/40 border border-purple-700/50 rounded-md"
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-purple-300"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <span className="text-purple-200 text-xs font-medium">精修模式</span>
+          <span className="text-purple-400 text-xs hidden md:inline">·  点击页面元素即可在右侧编辑</span>
+          <button
+            onClick={exitRefine}
+            className="ml-1 px-2 py-0.5 rounded text-xs text-purple-200 hover:text-white hover:bg-purple-700/50 transition-colors"
+            title="退出精修模式"
+          >
+            退出
+          </button>
+        </div>
+      )}
+      <button onClick={() => undo()} disabled={previewMode || !!refineSession || !canUndo} className={btnCls} title="撤销 (Ctrl+Z)">
         <span className="inline-flex items-center gap-1.5"><IconUndo size={16} /> 撤销</span>
       </button>
-      <button onClick={() => redo()} disabled={previewMode || !canRedo} className={btnCls} title="重做 (Ctrl+Shift+Z)">
+      <button onClick={() => redo()} disabled={previewMode || !!refineSession || !canRedo} className={btnCls} title="重做 (Ctrl+Shift+Z)">
         <span className="inline-flex items-center gap-1.5"><IconRedo size={16} /> 重做</span>
       </button>
       <button
         onClick={() => selectedId && removeNode(selectedId)}
-        disabled={previewMode || !selectedId}
+        disabled={previewMode || !!refineSession || !selectedId}
         className={btnCls}
         title="删除 (Delete)"
       >
@@ -150,7 +184,7 @@ export function Toolbar() {
       </button>
       <button
         onClick={handleFormatBrush}
-        disabled={previewMode || (!selectedId && !formatBrushStyle)}
+        disabled={previewMode || !!refineSession || (!selectedId && !formatBrushStyle)}
         className={formatBrushStyle && !previewMode ? primaryBtnCls : btnCls}
         title="格式刷：先选中源元素点击激活，再点击目标元素应用样式"
       >
@@ -159,7 +193,7 @@ export function Toolbar() {
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
       <button
         onClick={() => selectedId && copyNode(selectedId)}
-        disabled={previewMode || !selectedId}
+        disabled={previewMode || !!refineSession || !selectedId}
         className={btnCls}
         title="复制 (Ctrl+C)"
       >
@@ -172,7 +206,7 @@ export function Toolbar() {
           const ch = parseInt(canvas.height) || 800
           await unifiedAsyncPaste({ x: Math.round(cw / 2), y: Math.round(ch / 2) })
         }}
-        disabled={previewMode}
+        disabled={previewMode || !!refineSession}
         className={btnCls}
         title="粘贴 (Ctrl+V)"
       >
@@ -180,21 +214,23 @@ export function Toolbar() {
       </button>
       <button
         onClick={() => selectedId && duplicateNode(selectedId)}
-        disabled={previewMode || !selectedId}
+        disabled={previewMode || !!refineSession || !selectedId}
         className={btnCls}
         title="重复 (Ctrl+D)"
       >
         <span className="inline-flex items-center gap-1.5"><IconDuplicate size={16} /> 重复</span>
       </button>
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
-      <button onClick={clearCanvas} disabled={previewMode} className={btnCls}>清空</button>
-      <AlignToolbar />
+      <button onClick={clearCanvas} disabled={previewMode || !!refineSession} className={btnCls}>清空</button>
+      {!refineSession && <AlignToolbar />}
       {!previewMode && <TemplatePanel key={nodes.length} />}
       <div className="ml-auto flex items-center gap-3">
-        <span className="text-gray-500 text-xs">{nodeCount} 个元素</span>
+        <span className="text-gray-500 text-xs">
+          {refineSession ? '精修模式（iframe 渲染）' : `${nodeCount} 个元素`}
+        </span>
         <button
           onClick={togglePreviewMode}
-          disabled={exporting !== null}
+          disabled={!!refineSession || exporting !== null}
           className={previewMode && exporting === null ? primaryBtnCls : btnCls}
           title={previewMode ? '退出预览' : '预览交互（点击/悬停/动画/链接）'}
         >
@@ -206,9 +242,9 @@ export function Toolbar() {
         <button
           ref={exportBtnRef}
           onClick={() => setShowExportMenu((v) => !v)}
-          disabled={nodeCount === 0 || exporting !== null || previewMode}
+          disabled={!!refineSession || nodeCount === 0 || exporting !== null || previewMode}
           className={primaryBtnCls}
-          title="导出"
+          title={refineSession ? '精修模式下使用「复制 HTML」按钮导出' : '导出'}
         >
           <span className="inline-flex items-center gap-1.5">
             {exporting ? (

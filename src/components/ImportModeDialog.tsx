@@ -37,8 +37,8 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
     const r = detectHtmlComplexity(html)
     setResult(r)
     setSelected(r.recommendation)
-    // 阶段 1：精修模式尚未实施，作为"敬请期待"显示，但不允许选择
-    setRefineAvailable(false)
+    // 精修模式已实施（基于 iframe + DOM 标注），允许用户选择
+    setRefineAvailable(true)
   }, [html])
 
   // Escape 关闭
@@ -145,7 +145,7 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
             isSelected={selected === 'refine'}
             onSelect={() => !refineAvailable || setSelected('refine')}
             disabled={!refineAvailable}
-            disabledHint="精修模式将在后续版本推出（基于 iframe + DOM 标注，100% 还原原页面）"
+            disabledHint={!refineAvailable ? '精修模式将在后续版本推出（基于 iframe + DOM 标注，100% 还原原页面）' : undefined}
           />
         </div>
 

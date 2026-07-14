@@ -7,6 +7,8 @@ import { useEditorStore } from '@/store/editorStore'
 export function ComponentPanel() {
   const collapsed = useEditorStore((s) => s.leftPanelCollapsed)
   const toggle = useEditorStore((s) => s.toggleLeftPanel)
+  /** 精修模式下组件库不可拖拽（精修模式操作的是 iframe，不是自由画布节点） */
+  const refineSession = useEditorStore((s) => s.refineSession)
 
   // 折叠态：仅显示一个窄条 + 展开按钮（始终可点，避免找不到入口）
   // 展开按钮：右箭头 (>>) → 表示"把面板展开到右侧"
@@ -35,7 +37,11 @@ export function ComponentPanel() {
 
   // 展开态：左箭头 (<<) → 表示"把面板收起（折叠到左侧）"
   return (
-    <div className="w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200">
+    <div
+      className={`w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200 ${
+        refineSession ? 'opacity-50 pointer-events-none' : ''
+      }`}
+    >
       <div className="p-3 text-xs text-gray-400 uppercase tracking-wider flex items-center justify-between">
         <span>组件库</span>
         <button
@@ -49,9 +55,14 @@ export function ComponentPanel() {
           </svg>
         </button>
       </div>
+      {refineSession && (
+        <div className="px-3 py-2 text-[11px] text-purple-300 leading-relaxed">
+          精修模式下组件库已禁用，请先退出精修模式
+        </div>
+      )}
       <div className="px-2 pb-3 space-y-1.5">
         {componentLib.map((def) => (
-          <DraggableComponent key={def.type} def={def} />
+          <DraggableComponent key={def.type} def={def} disabled={!!refineSession} />
         ))}
       </div>
 
@@ -66,19 +77,28 @@ export function ComponentPanel() {
   )
 }
 
-function DraggableComponent({ def }: { def: typeof componentLib[number] }) {
+function DraggableComponent({
+  def,
+  disabled,
+}: {
+  def: typeof componentLib[number]
+  disabled?: boolean
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `lib_${def.type}`,
     data: { source: 'library', type: def.type },
+    disabled,
   })
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-2.5 px-3 py-2 rounded-md bg-ink-700 hover:bg-ink-600 cursor-grab active:cursor-grabbing text-gray-200 text-sm transition-colors select-none ${
-        isDragging ? 'opacity-0' : ''
-      }`}
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-md bg-ink-700 text-gray-200 text-sm transition-colors select-none ${
+        disabled
+          ? 'opacity-50 cursor-not-allowed'
+          : 'hover:bg-ink-600 cursor-grab active:cursor-grabbing'
+      } ${isDragging ? 'opacity-0' : ''}`}
     >
       <span className="w-5 flex items-center justify-center text-brand-200">
         <Icon type={def.icon.type} value={def.icon.value} size={16} />

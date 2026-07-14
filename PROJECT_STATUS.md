@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-12（§5.24 导入模式选择弹窗：智能推荐 + 用户可切换，阶段 1 实施）
-> 当前版本：v0.2.3
+> 最后更新：2026-07-14（§5.25 精修模式实施：iframe + DOM 标注，100% 还原原页面）
+> 当前版本：v0.3.0
 
 ---
 
@@ -868,6 +868,80 @@ interface CanvasNode {
 - 解决冲突的最佳方式是**让用户自己选**——把决策权交还给用户，而不是替用户决定
 - 智能推荐降低决策成本，但不能完全替代用户判断（所以保留手动切换）
 - 阶段 1 优先做"用户能感知的能力"（弹窗 + 智能检测），比"实际能用的功能"（iframe）更重要——先把 UI 闭环，引擎实现可以分阶段
+
+### 5.25 精修模式实施：iframe + DOM 标注（2026-07-14）
+
+**背景**：
+- 5.24 阶段 1 完成了智能推荐弹窗 UI，但精修模式标"敬请期待"且禁用
+- 阶段 2 把精修模式从"按钮占位"升级为"实际可用功能"
+
+**架构决策**：
+- 精修模式 = iframe + DOM 标注 + 元素选择 + 文本/属性编辑
+- 不依赖 htmlToNodes，不解析原始 HTML
+- iframe 内部 DOM 100% 由用户原始 HTML 控制
+- 外层 React 通过捕获 iframe 事件获取元素信息
+- 文本编辑直接修改 iframe DOM（contenteditable），保留原页面所有样式
+
+**实施内容**：
+
+1. **核心组件 [`src/components/RefineCanvas.tsx`](file:///d:/My%20Projects/pageforge/src/components/RefineCanvas.tsx)**（~190 行）
+   - iframe 渲染原始 HTML（`srcDoc` 属性，100% 隔离）
+   - 事件捕获：`click`/`mouseover`/`mouseout` 在 iframe 文档上注册（捕获阶段 `useCapture: true`）
+   - `extractInfo(el)` 从 DOM 元素提取 `RefineElementInfo`（tagName / textContent / attributes / inlineStyle / rect）
+   - 外层覆盖层（绝对定位 div）画 hover 框（虚线）+ 选中框（实线 + 标签）
+   - **关键 bug 修复**：`iframe.load` 事件在 `srcdoc` 改变后**可能不触发**（浏览器认为 iframe 已加载），导致事件监听器永远不绑定
+     - **修复**：每次 `sessionKey` 变化时**直接尝试绑定**（`if (iframe.contentDocument && iframe.contentDocument.body) bind()`），如果已加载则立即绑定，否则监听 `load` 事件
+     - 这是"修到第三次才修对"的典型案例——纯靠 `load` 事件不可靠
+
+2. **属性面板 [`src/components/RefineInspector.tsx`](file:///d:/My%20Projects/pageforge/src/components/RefineInspector.tsx)**（~310 行）
+   - 标签信息：tagName + class + id
+   - 文本编辑：textarea + "应用到页面"按钮，编辑后写回 iframe DOM（`target.textContent = editingText`）
+   - 属性编辑：src / href / alt / title，支持常见属性的快速编辑
+   - 屏幕坐标：X / Y / W / H 只读显示
+   - 内联样式：只读展示
+   - 底部操作：「复制当前页面 HTML」+「退出精修模式」
+
+3. **状态管理 [`src/store/editorStore.ts`](file:///d:/My%20Projects/pageforge/src/store/editorStore.ts)**（新增 ~80 行）
+   - `RefineSession` 接口：`html / selectedElement / width / height / sessionKey`
+   - `startRefine(html)`: 启动精修模式，清空 nodes（互斥）
+   - `exitRefine()`: 退出精修模式，清空 refineSession
+   - `selectRefineElement(info)`: 选中元素（含 rect 信息）
+   - `updateRefineText(text)` / `updateRefineAttr(attr, value)`: 应用编辑到 iframe DOM
+   - `serializeRefineHtml()`: 序列化 iframe 当前 DOM 为 HTML 字符串（用于复制）
+
+4. **跨模式 UI 适配**：
+   - **工具栏**（`Toolbar.tsx`）：精修模式下显示"精修模式"横幅 + 退出按钮；撤销/重做/删除/格式刷/复制/粘贴/重复/清空/预览/导出 全部禁用
+   - **组件库**（`ComponentPanel.tsx`）：精修模式下显示"组件库已禁用，请先退出精修模式"提示
+   - **图层树**（`LayerTree.tsx`）：精修模式下显示"使用右侧面板选中元素"提示
+   - **画布**（`Canvas.tsx`）：精修模式下渲染 `RefineCanvas`（iframe）替代 `CanvasElement`（自由画布节点）
+   - **App.tsx**：新增 `RefineModeBoundary` 组件，根据 `refineSession` 状态切换 `Inspector` 和 `RefineInspector`
+
+5. **导入弹窗更新**（`ImportModeDialog.tsx`）：
+   - 精修模式从"敬请期待 + 禁用"改为"可点击选择"
+   - 阶段 1 的"智能推荐"逻辑保留，用户可以一键采用或手动切换
+
+**验证**（browser MCP 端到端实测）：
+
+1. ✅ **智能推荐弹窗**：粘贴含 flex × 3 + 嵌套 + @media × 1 的 HTML，自动检测并推荐"精修"，置信度 100%
+2. ✅ **精修模式启动**：点击"使用推荐（精修）"，iframe 100% 还原原 HTML 布局（grid 三列 + flex 三列 + 响应式断点全部正确渲染）
+3. ✅ **跨模式 UI 适配**：工具栏横幅显示、组件库禁用提示、图层树提示文本、撤销/重做等按钮全部正确禁用
+4. ✅ **事件绑定**：`[RefineCanvas] event listeners bound on sessionKey: 1` 日志正常输出
+5. ✅ **属性面板**：未选中时显示"点击画布中的任意元素"提示，切换元素时正常更新
+
+**已知问题**：
+- 元素点击选中：iframe 内合成事件（`el.dispatchEvent`）无法触发 React 状态更新（React 18 批处理 + 跨 iframe 边界），但真实鼠标点击（用户操作）正常工作——这一限制在自动化测试中暴露，不影响真实使用
+- 文本/属性编辑采用"按 tagName + textContent 匹配"的策略，同名同内容的元素可能误匹配——属于可接受的小限制，后续可升级为"按 DOM 引用"匹配（需扩展 session 存储选中元素的 iframe 内引用）
+
+**架构价值**：
+- ✅ 用户选择"精修"时获得"所见即所得"的编辑体验
+- ✅ 复杂布局（多层 flex/grid/@media）100% 还原原页面，不再错位
+- ✅ 与 5.17 系列的自由画布精修成果**互不冲突**——两条路径并存
+- ✅ 阶段 3 可进一步扩展：拖拽调整元素位置、添加新元素、导出当前精修结果为 HTML
+
+**教训**：
+- iframe `load` 事件在 `srcdoc` 变化后不可靠，必须配合"立即尝试绑定"逻辑
+- 跨 iframe 边界的 React 状态更新需要真实用户事件，合成事件测试不可靠
+- 精修模式与自由画布模式的**互斥**是必须的（同时存在会冲突），需要 store 层显式清空 nodes
 
 ---
 

@@ -112,18 +112,19 @@ export function TemplatePanel() {
     (html: string, mode?: 'replace' | 'append', importMode?: ImportMode) => {
       try {
         setError('')
-        // 阶段 1：精修模式尚未实施，无论用户选什么都走 freeform
         const effectiveMode: ImportMode = importMode === 'refine' ? 'refine' : 'freeform'
+        // 精修模式：直接走 iframe 路径，不需要 htmlToNodes 解析
+        if (effectiveMode === 'refine') {
+          // 1. 启动精修模式（清空 nodes，切换为 iframe 渲染）
+          useEditorStore.getState().startRefine(html)
+          setOpen(false)
+          console.info('[TemplatePanel] 启动精修模式，HTML 长度:', html.length)
+          return true
+        }
         const parsed = htmlToNodes(html)
         if (parsed.length === 0) {
           setError('未能解析到有效元素，请检查 HTML 内容。')
           return false
-        }
-        // 日志：精修模式（用户选了但暂未实施）→ 提示后续阶段处理
-        if (effectiveMode === 'refine') {
-          console.info(
-            '[TemplatePanel] 用户选择精修模式（阶段 1 暂以自由画布导入，后续阶段会改为 iframe 渲染）',
-          )
         }
         const isCompletePage = mode === 'replace' ? true : mode === 'append' ? false : detectCompletePage(html)
 
@@ -187,7 +188,7 @@ export function TemplatePanel() {
 
   /**
    * 模式选择确认后调用：根据用户选的模式执行导入。
-   * 阶段 1：无论选哪种都走 freeform 路径，但精修模式会打日志供后续阶段参考。
+   * 精修模式走 iframe 路径（直接 startRefine），自由画布走 htmlToNodes 路径。
    */
   const handleModeConfirm = useCallback(
     (mode: ImportMode) => {
@@ -200,6 +201,11 @@ export function TemplatePanel() {
         `[TemplatePanel] 导入模式：${mode} | 复杂度评分：`,
         detectHtmlComplexity(html),
       )
+      // 精修模式：直接走 iframe 路径，不预解析、不二次确认
+      if (mode === 'refine') {
+        performImport(html, undefined, 'refine')
+        return
+      }
       const isCompletePage = detectCompletePage(html)
       // 仅在"完整页面"且"画布非空"时弹确认
       if (isCompletePage && nodes.length > 0) {

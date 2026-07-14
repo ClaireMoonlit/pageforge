@@ -250,7 +250,7 @@ export const IMPORT_MODE_LABEL: Record<ImportMode, string> = {
  */
 export const IMPORT_MODE_DESC: Record<ImportMode, string> = {
   freeform: '像从零做一样自由拖拽、resize、加新组件。简单页面首选。',
-  refine: '100% 还原原页面，文字/颜色/图片随时改。复杂布局首选。',
+  refine: '在 iframe 中 100% 还原原页面，点击元素可直接编辑文字/图片/链接。复杂布局首选。',
 }
 
 /**

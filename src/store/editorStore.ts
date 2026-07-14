@@ -103,6 +103,8 @@ interface EditorState {
   cropModal: CropModalState
   /** 是否有弹窗打开（导入/裁切等），用于缩放工具栏变灰 */
   modalOpen: boolean
+  /** 精修模式会话：null = 自由画布模式，非 null = 精修模式（iframe + DOM 标注） */
+  refineSession: RefineSession | null
 
   addNode: (type: ComponentType, x: number, y: number, parentId?: string) => string
   removeNode: (id: string) => void
@@ -126,6 +128,20 @@ interface EditorState {
   loadTemplate: (nodes: CanvasNode[], canvas: CanvasConfig) => void
   /** 追加节点到现有画布（用于导入组件片段，不清空已有内容） */
   addNodes: (nodes: CanvasNode[], canvas?: Partial<CanvasConfig>) => void
+  /** 启动精修模式：在 iframe 中渲染原始 HTML，可点击选中元素并编辑 */
+  startRefine: (html: string) => void
+  /** 退出精修模式：返回自由画布模式（清空 refineSession） */
+  exitRefine: () => void
+  /** 精修模式：选中 iframe 中的某个元素（用于 Inspector 显示其属性） */
+  selectRefineElement: (info: RefineElementInfo | null) => void
+  /** 精修模式：更新选中元素的文本内容（写入 iframe DOM） */
+  updateRefineText: (text: string) => void
+  /** 精修模式：更新选中元素的属性（如 src、alt、href 等） */
+  updateRefineAttr: (name: string, value: string) => void
+  /** 精修模式：更新选中元素的样式（如 color、background-color） */
+  updateRefineStyle: (cssText: string) => void
+  /** 精修模式：序列化当前 iframe DOM 为最新 HTML（用于退出时同步到 store） */
+  serializeRefineHtml: () => string | null
   /** 格式刷：激活/取消 */
   setFormatBrush: (style: NodeStyle | null) => void
   /** 设置画布缩放 */
@@ -201,6 +217,33 @@ export interface CropModalState {
   cropKey: number
 }
 
+/** 精修模式：当前选中的 iframe 元素信息 */
+export interface RefineElementInfo {
+  /** 元素标签名（小写，如 'div' / 'h1' / 'img'） */
+  tagName: string
+  /** 元素的文本内容（纯文本，textContent） */
+  textContent: string
+  /** 元素属性名值对（class/id/src/href/alt/...） */
+  attributes: Record<string, string>
+  /** 元素的内联 style 字符串（element.style.cssText） */
+  inlineStyle: string
+  /** 元素相对于 iframe 视口的屏幕坐标（用于画外框） */
+  rect: { left: number; top: number; width: number; height: number }
+}
+
+/** 精修模式会话：保存原始 HTML、当前选中的元素等 */
+export interface RefineSession {
+  /** 用户导入的原始 HTML（写入 iframe srcdoc） */
+  html: string
+  /** 当前选中的元素（点击 iframe 内元素时更新） */
+  selectedElement: RefineElementInfo | null
+  /** 画布尺寸（从导入 HTML 推断或用默认 1200x800） */
+  width: number
+  height: number
+  /** 每次 startRefine 递增，用于强制 RefineCanvas 重新挂载 */
+  sessionKey: number
+}
+
 /** 递归查找并就地更新节点（支持嵌套） */
 function updateById(nodes: CanvasNode[], id: string, updater: (n: CanvasNode) => void): boolean {
   for (const node of nodes) {
@@ -260,6 +303,7 @@ export const useEditorStore = create<EditorState>()(
         cropKey: 0,
       },
       modalOpen: false,
+      refineSession: null,
 
       addNode: (type, x, y, parentId) => {
         const def = findComponentDef(type)
@@ -729,6 +773,80 @@ export const useEditorStore = create<EditorState>()(
           state.selectedId = null
           state.selectedIds = []
         })
+      },
+
+      /** 启动精修模式：写入原始 HTML，由 RefineCanvas 渲染到 iframe。
+       * canvas 配置不变（仍用现有宽度/背景色），仅切换渲染方式。 */
+      startRefine: (html) =>
+        set((state) => {
+          const prevSession = state.refineSession
+          // canvas.width / canvas.height 是带单位的字符串（如 "1200px"），
+          // 精修模式的内部尺寸记录用纯数字，parseInt 提取
+          const w = parseInt(String(state.canvas.width)) || 1200
+          const h = parseInt(String(state.canvas.height)) || 800
+          state.refineSession = {
+            html,
+            selectedElement: null,
+            width: w,
+            height: h,
+            sessionKey: (prevSession?.sessionKey ?? 0) + 1,
+          }
+          // 精修模式下没有节点（iframe 渲染），清空 nodes 防止画布残影
+          state.nodes = []
+          state.selectedId = null
+          state.selectedIds = []
+        }),
+
+      /** 退出精修模式：清空 refineSession，恢复自由画布模式。
+       * 不自动 loadTemplate（用户应该已经手动导出/复制了内容）。 */
+      exitRefine: () =>
+        set((state) => {
+          state.refineSession = null
+          state.selectedId = null
+          state.selectedIds = []
+        }),
+
+      /** 精修模式：选中元素（从 RefineCanvas 内部点击触发） */
+      selectRefineElement: (info) =>
+        set((state) => {
+          if (state.refineSession) {
+            state.refineSession.selectedElement = info
+          }
+        }),
+
+      /** 精修模式：更新选中元素的文本内容。
+       * 直接写入 iframe DOM（由 RefineCanvas 监听并刷新选中态），不修改 store。 */
+      updateRefineText: (_text) => {
+        // 此函数仅为 Inspector 提供入口，实际写入逻辑由 RefineCanvas 监听 selectedElement 变化
+        // 通过 document.getElementById('pf-refine-iframe').contentDocument 写入
+        // 这里不修改 store 状态（store 中的 selectedElement.textContent 也不会自动更新），
+        // 由 RefineCanvas 在 iframe 内写入后主动调用 selectRefineElement 同步最新 textContent
+        void _text
+      },
+
+      /** 精修模式：更新元素属性（占位实现，逻辑在 RefineCanvas 中） */
+      updateRefineAttr: (_name, _value) => {
+        void _name
+        void _value
+      },
+
+      /** 精修模式：更新元素样式（占位实现，逻辑在 RefineCanvas 中） */
+      updateRefineStyle: (_cssText) => {
+        void _cssText
+      },
+
+      /** 精修模式：从 iframe 序列化最新 HTML。
+       * 实现：RefineCanvas 会在 iframe 写入后通过 ref 暴露一个获取最新 HTML 的方法。
+       * 这里我们通过 document.getElementById('pf-refine-iframe') 兜底获取。 */
+      serializeRefineHtml: () => {
+        const iframe = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+        if (!iframe || !iframe.contentDocument) return null
+        // 优先返回完整的 document HTML（含 doctype），用户复制到剪贴板时直接可用
+        const doc = iframe.contentDocument
+        const doctype = doc.doctype
+          ? `<!DOCTYPE ${doc.doctype.name}>\n`
+          : '<!DOCTYPE html>\n'
+        return doctype + doc.documentElement.outerHTML
       },
 
       setFormatBrush: (style) =>

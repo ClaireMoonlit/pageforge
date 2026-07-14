@@ -63,6 +63,7 @@ export function LayerTree() {
   const toggleVisible = useEditorStore((s) => s.toggleVisible)
   const removeNode = useEditorStore((s) => s.removeNode)
   const previewMode = useEditorStore((s) => s.previewMode)
+  const refineSession = useEditorStore((s) => s.refineSession)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   // 拖拽状态
@@ -164,7 +165,7 @@ export function LayerTree() {
   if (nodes.length === 0) {
     return (
       <div className="px-3 py-4 text-xs text-gray-600 leading-relaxed">
-        画布上还没有元素，从上方组件库拖入即可。
+        {refineSession ? '精修模式下使用右侧面板选中元素' : '画布上还没有元素，从上方组件库拖入即可。'}
       </div>
     )
   }

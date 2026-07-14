@@ -16,6 +16,7 @@ import { Toolbar } from '@/components/Toolbar'
 import { ComponentPanel } from '@/components/ComponentPanel'
 import { Canvas } from '@/components/Canvas'
 import { Inspector } from '@/components/Inspector'
+import { RefineInspector } from '@/components/RefineInspector'
 import { ImageCropModal } from '@/components/ImageCropModal'
 import { setPendingPasteId, getAndClearPendingPasteId } from '@/components/Canvas'
 import { nodeToCss, renderPreviewTree } from '@/components/NodeRenderer'
@@ -84,6 +85,13 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
     }
     return this.props.children
   }
+}
+
+/** 精修模式下用 RefineInspector 替代 Inspector，避免显示"未选中元素"误导用户 */
+function RefineModeBoundary() {
+  const refineSession = useEditorStore((s) => s.refineSession)
+  if (refineSession) return <RefineInspector />
+  return <Inspector />
 }
 
 export default function App() {
@@ -596,7 +604,7 @@ export default function App() {
           <ErrorBoundary>
             <Canvas ref={canvasRef} snapLines={snapLines} />
           </ErrorBoundary>
-          <Inspector />
+          <RefineModeBoundary />
         </div>
       </div>
       {/* 拖拽预览：库/画布都用 dnd-kit DragOverlay
