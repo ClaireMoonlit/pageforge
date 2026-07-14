@@ -17,12 +17,14 @@ export function TemplatePanel() {
   const [uploadFileName, setUploadFileName] = useState('')
   /** 待确认的导入：导入会清空画布时弹出二次确认。
    *  source: 'html' 表示来自粘贴/上传的 HTML 导入（带"作为片段追加"选项）
-   *          'preset' / 'imported' / 'reimport' 表示来自模板（只有"取消 / 确认替换"） */
+   *          'preset' 表示来自预设模板（只有"取消 / 确认替换"）
+   *          'refine' 表示精修模式下又导入新 HTML（弹"替换当前精修页面"确认）
+   *  注：开源模板（'imported'）和重新生成（'reimport'）已改走模式选择弹窗，
+   *      不再使用此处的二次确认，故类型中已删除 */
   const [pendingImport, setPendingImport] = useState<{
-    source: 'html' | 'preset' | 'imported' | 'reimport'
+    source: 'html' | 'preset' | 'refine'
     html?: string
     presetIndex?: number
-    meta?: ImportedTemplateMeta
     parsedCount?: number
   } | null>(null)
   /**
@@ -38,6 +40,8 @@ export function TemplatePanel() {
   const addNodes = useEditorStore((s) => s.addNodes)
   const nodes = useEditorStore((s) => s.nodes)
   const setModalOpen = useEditorStore((s) => s.setModalOpen)
+  /** 精修模式会话：用于在精修模式下导入时弹确认 */
+  const refineSession = useEditorStore((s) => s.refineSession)
 
   // 弹窗打开/关闭时同步到 store，让缩放工具栏变灰
   useEffect(() => {
@@ -115,10 +119,33 @@ export function TemplatePanel() {
         const effectiveMode: ImportMode = importMode === 'refine' ? 'refine' : 'freeform'
         // 精修模式：直接走 iframe 路径，不需要 htmlToNodes 解析
         if (effectiveMode === 'refine') {
-          // 1. 启动精修模式（清空 nodes，切换为 iframe 渲染）
-          useEditorStore.getState().startRefine(html)
+          // 1. 解析 baseUrl：开源模板的 htmlPath 对应目录（如 /pageforge/imported-templates/），
+          //    粘贴/上传 HTML 退回到 origin 根目录。
+          //    srcdoc 的 base 是 about:srcdoc，相对路径（背景图/favicon）会失效。
+          //
+          // ⚠ 关键：baseUrl 必须是**完整 origin + 路径**，不能只写路径。
+          //   如果只写 `/pageforge/imported-templates/`，iframe 内的相对路径
+          //   `imported-templates/assets-agency/img/...` 会被解析为
+          //   `http://host/imported-templates/...`（丢失 /pageforge/ 前缀）。
+          //   因为 <base href="/xxx"> 在 iframe 中被当作 origin 相对解析。
+          let baseUrl: string | undefined
+          const cachedMeta = (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
+          if (cachedMeta?.htmlPath) {
+            // 去掉文件名，只保留目录部分
+            const lastSlash = cachedMeta.htmlPath.lastIndexOf('/')
+            const dirPath = lastSlash >= 0 ? cachedMeta.htmlPath.slice(0, lastSlash + 1) : cachedMeta.htmlPath
+            // 拼上 origin，确保是完整 URL
+            baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${dirPath.startsWith('/') ? '' : '/'}${dirPath}` : dirPath
+          } else if (typeof window !== 'undefined') {
+            // 粘贴/上传 HTML 退回到当前 origin 根目录
+            baseUrl = window.location.origin + '/'
+          }
+          // 2. 启动精修模式（清空 nodes，切换为 iframe 渲染）
+          useEditorStore.getState().startRefine(html, baseUrl)
+          // 清理暂存的开源模板 meta（仅在精修分支用得到，freeform 分支在 handleModeConfirm 已清）
+          if (cachedMeta) delete (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
           setOpen(false)
-          console.info('[TemplatePanel] 启动精修模式，HTML 长度:', html.length)
+          console.info('[TemplatePanel] 启动精修模式，HTML 长度:', html.length, 'baseUrl:', baseUrl)
           return true
         }
         const parsed = htmlToNodes(html)
@@ -189,25 +216,45 @@ export function TemplatePanel() {
   /**
    * 模式选择确认后调用：根据用户选的模式执行导入。
    * 精修模式走 iframe 路径（直接 startRefine），自由画布走 htmlToNodes 路径。
+   *
+   * 同时支持：粘贴/上传的 HTML（直接用 modePrompt.html）
+   *          开源模板（用 window.__pfImportedHtml，由 applyImported 暂存）
    */
   const handleModeConfirm = useCallback(
     (mode: ImportMode) => {
       if (!modePrompt) return
-      const html = modePrompt.html
+      // 优先用 modePrompt.html，回退到 window 暂存的开源模板 HTML
+      const cachedImportedHtml = (window as unknown as { __pfImportedHtml?: string }).__pfImportedHtml
+      const cachedImportedMeta = (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
+      const html = modePrompt.html || cachedImportedHtml || ''
       // 关闭模式选择弹窗
       setModePrompt(null)
+      // 清理暂存的开源模板数据（无论后续走哪条路径都不会再用）
+      delete (window as unknown as { __pfImportedHtml?: string }).__pfImportedHtml
+      // 保留 __pfImportedMeta 给 performImport 的精修分支使用（算 baseUrl），
+      // 在那边用完再清
+      if (!html) {
+        delete (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
+        return
+      }
       // 暴露给调试 / 用户查看
       console.info(
         `[TemplatePanel] 导入模式：${mode} | 复杂度评分：`,
         detectHtmlComplexity(html),
       )
+      // 精修模式：若当前已在精修模式，先弹"替换当前精修页面"确认（避免误操作丢页）
+      if (mode === 'refine' && refineSession) {
+        setPendingImport({ source: 'refine', html })
+        return
+      }
       // 精修模式：直接走 iframe 路径，不预解析、不二次确认
       if (mode === 'refine') {
         performImport(html, undefined, 'refine')
         return
       }
+      // 自由画布模式
+      // 二次确认：完整页面 + 画布非空时弹"仍要替换"或"作为片段追加"确认
       const isCompletePage = detectCompletePage(html)
-      // 仅在"完整页面"且"画布非空"时弹确认
       if (isCompletePage && nodes.length > 0) {
         let parsedCount = 0
         try {
@@ -219,7 +266,6 @@ export function TemplatePanel() {
           setError('未能解析到有效元素，请检查 HTML 内容。')
           return
         }
-        // 完整页面要传 importMode 透传
         setPendingImport({ source: 'html', html, parsedCount })
         // 暂存模式供 confirmReplace 使用
         ;(window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode = mode
@@ -227,8 +273,13 @@ export function TemplatePanel() {
       }
       // 非完整页面 / 画布为空：直接导入
       performImport(html, undefined, mode)
+      // 导入成功后关闭弹窗（performImport 内部已 setOpen(false)）
+      // 对开源模板：额外显示成功提示
+      if (cachedImportedMeta) {
+        console.info(`[TemplatePanel] 开源模板 ${cachedImportedMeta.id} 导入成功（自由画布模式）`)
+      }
     },
-    [modePrompt, nodes.length, performImport],
+    [modePrompt, nodes.length, performImport, refineSession],
   )
 
   /** 实际执行预设模板加载（handlePreset 确认后调用） */
@@ -246,171 +297,97 @@ export function TemplatePanel() {
    * 递归遍历节点，检查是否存在任何 backgroundImage 样式。
    * 用于检测 JSON 缓存是否"完整"——早期导出的 JSON 完全丢失了
    * backgroundImage，导致直接加载时图片全没。
+   *
+   * 当前已改走"直接 fetch HTML 源 + 模式选择弹窗"路径，JSON 缓存不再使用，
+   * 此函数保留作为注释占位，避免未来误删。
    */
-  const hasAnyBackgroundImage = (nodes: CanvasNode[]): boolean => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _hasAnyBackgroundImage = (nodes: CanvasNode[]): boolean => {
     for (const n of nodes) {
       if (n.style?.backgroundImage && n.style.backgroundImage !== 'none') return true
-      if (n.children && hasAnyBackgroundImage(n.children)) return true
+      if (n.children && _hasAnyBackgroundImage(n.children)) return true
     }
     return false
   }
 
   /**
-   * 共享 fallback：从 htmlPath 加载 HTML 并重新解析（用最新 importHtml 逻辑）。
-   * 之所以抽出来：applyImported 检测到 JSON 缓存损坏时也要用它，
-   * 而 applyReimport 又要在 handleReimportFromHtml 时调它——避免重复代码。
+   * 实际执行开源模板加载（handleImported 确认后调用）
+   *
+   * 流程：先 fetch HTML（始终从 HTML 源走，绕过可能损坏的 JSON 缓存），
+   *       然后弹出模式选择弹窗（与粘贴/上传路径一致），用户选完模式后再执行实际加载。
+   * 这样能保证：
+   * 1. 模式选择弹窗一定会出现（用户最关心此功能）
+   * 2. 直接用最新 importHtml 逻辑解析，避免旧 JSON 缓存的各种问题
    */
-  const importFromHtml = useCallback(
-    async (meta: ImportedTemplateMeta): Promise<boolean> => {
-      if (!meta.htmlPath) return false
-      try {
-        const res = await fetch(meta.htmlPath)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const html = await res.text()
-        const baseUrl = meta.htmlPath.substring(0, meta.htmlPath.lastIndexOf('/') + 1)
-        const parsed = htmlToNodes(html, baseUrl)
-        if (parsed.length === 0) throw new Error('解析结果为空')
-        const extracted = extractCanvasConfig(html)
-        const finalCanvas: CanvasConfig = {
-          ...meta.canvas,
-          backgroundColor: extracted.backgroundColor,
-          width: extracted.width,
-          height: computeCanvasHeight(parsed, extracted.height),
-        }
-        loadTemplate(parsed, finalCanvas)
-        return true
-      } catch (e) {
-        setError('重新生成失败：' + (e instanceof Error ? e.message : '未知错误'))
-        return false
-      }
-    },
-    [loadTemplate],
-  )
-
-  /** 实际执行开源模板加载（handleImported 确认后调用） */
   const applyImported = useCallback(
     async (meta: ImportedTemplateMeta) => {
       setLoadingId(meta.id)
       setError('')
       try {
-        const res = await fetch(meta.jsonPath)
-        // JSON 缓存缺失（404）时，直接回退到 HTML 重新生成。
-        // 历史：早期 JSON 缓存是可选的（通过 "重新生成" 按钮生成），如果用户没生成过
-        // 缓存文件，JSON 路径会 404，这里必须 fallback 到 HTML，否则会显示 "加载失败"。
-        // 注意：Vite SPA fallback 会把 404 路径返回 200 + index.html，所以不能只靠 res.ok 判断
-        if (!res.ok) {
-          if (meta.htmlPath) {
-            console.warn(`[TemplatePanel] ${meta.id} JSON 缓存不存在 (HTTP ${res.status})，回退到 HTML 重新生成`)
-            const ok = await importFromHtml(meta)
-            if (ok) setOpen(false)
-            return
-          }
-          throw new Error(`HTTP ${res.status}`)
+        if (!meta.htmlPath) {
+          setError('模板未提供 HTML 路径，无法加载。')
+          return
         }
-        // 检查 content-type：Vite SPA fallback 返回 text/html 不是 JSON
+        // 直接 fetch HTML 源（最可靠，绕开可能损坏的 JSON 缓存）
+        const res = await fetch(meta.htmlPath)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        // Vite SPA fallback 会把 404 路径返回 200 + index.html，所以需要二次校验 content-type
         const contentType = res.headers.get('content-type') || ''
-        if (!contentType.includes('application/json') && !contentType.includes('text/json')) {
-          if (meta.htmlPath) {
-            console.warn(`[TemplatePanel] ${meta.id} JSON 缓存 content-type 非 JSON（${contentType}，可能是 Vite SPA fallback），回退到 HTML 重新生成`)
-            const ok = await importFromHtml(meta)
-            if (ok) setOpen(false)
-            return
-          }
-          throw new Error(`JSON 缓存返回了非 JSON 内容（${contentType}）`)
+        if (!contentType.includes('text/html')) {
+          throw new Error(`HTML 源返回了非 HTML 内容（${contentType}，可能是 Vite SPA fallback）`)
         }
-        const data = await res.json()
-        const ns = data.nodes as CanvasNode[]
-        const storedCanvas = (data.canvas || meta.canvas) as CanvasConfig
-        if (!ns || ns.length === 0) {
-          setError('模板数据为空。')
+        const html = await res.text()
+        if (!html.trim()) {
+          setError('模板 HTML 内容为空。')
           return
         }
-        // 检查 JSON 缓存是否"完整"：早期导出的 JSON 丢失了 backgroundImage 等
-        // 关键样式，直接加载会导致图片全没。检测方法：递归遍历所有节点，
-        // 如果完全没有任何 backgroundImage 且有 htmlPath，则 fallback 到重新生成。
-        const jsonHasBgImage = hasAnyBackgroundImage(ns)
-        if (!jsonHasBgImage && meta.htmlPath) {
-          console.warn(`[TemplatePanel] ${meta.id} JSON 缓存缺少 backgroundImage，自动回退到 HTML 重新生成`)
-          const ok = await importFromHtml(meta)
-          if (ok) setOpen(false)
-          return
-        }
-        // 检查 JSON 缓存是否"过时"：缺少新版 importHtml 加入的 position:relative 标记。
-        // 旧版 JSON 中非根节点被强制成 position:absolute，导致 flex 布局完全失效、
-        // 父容器无法被相对子节点撑高，排版全乱。
-        // 检测：任一非根容器节点的 style.position 不是 'relative' 且不是 absolute/fixed，
-        // 说明是旧版 JSON，强制回退到 HTML 重新生成。
-        const isStaleCache = (nodes: CanvasNode[]): boolean => {
-          for (const n of nodes) {
-            const pos = n.style?.position as string | undefined
-            // 根节点（id 包含 _1 等顶层）通常是 absolute；非根容器应该是 relative
-            if (!pos) return true
-            if (n.children && isStaleCache(n.children)) return true
-          }
-          return false
-        }
-        if (isStaleCache(ns) && meta.htmlPath) {
-          console.warn(`[TemplatePanel] ${meta.id} JSON 缓存过时（缺少 position 字段），自动回退到 HTML 重新生成`)
-          const ok = await importFromHtml(meta)
-          if (ok) setOpen(false)
-          return
-        }
-        // 不直接用 JSON 缓存的 height（早期导出的可能少了子节点溢出部分），
-        // 重新递归计算实际内容底部，确保画布足够大
-        const canvasH = computeCanvasHeight(ns, storedCanvas.height)
-        const finalCanvas: CanvasConfig = {
-          ...storedCanvas,
-          height: canvasH,
-        }
-        loadTemplate(ns, finalCanvas)
-        setOpen(false)
+        // 暂存 HTML 和 meta，等用户选完模式后再执行实际加载
+        ;(window as unknown as { __pfImportedHtml?: string }).__pfImportedHtml = html
+        ;(window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta = meta
+        // 走模式选择弹窗（与粘贴/上传路径完全一致）
+        setModePrompt({ html })
       } catch (e) {
         setError('加载失败：' + (e instanceof Error ? e.message : '未知错误'))
       } finally {
         setLoadingId(null)
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loadTemplate, importFromHtml],
+    [],
   )
 
-  /** 实际执行从内联 HTML 重新生成（handleReimportFromHtml 确认后调用） */
-  const applyReimport = useCallback(
-    async (meta: ImportedTemplateMeta) => {
-      setLoadingId(meta.id)
-      setError('')
-      try {
-        const ok = await importFromHtml(meta)
-        if (ok) setOpen(false)
-      } finally {
-        setLoadingId(null)
-      }
-    },
-    [importFromHtml],
-  )
-
-  /** 确认弹窗 → 确认替换（依赖 applyPreset / applyImported / applyReimport，故声明在它们之后） */
+  /** 确认弹窗 → 确认替换（依赖 applyPreset，故声明在它们之后）
+   *  注：开源模板和重新生成都走模式选择弹窗（applyImported → setModePrompt），
+   *      不再需要单独的二次确认。预设模板仍然走这个二次确认。 */
   const confirmReplace = useCallback(() => {
     if (!pendingImport) return
     // 取暂存的导入模式（来自 handleModeConfirm）
     const importMode = (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
-    if (pendingImport.source === 'html' && pendingImport.html) {
+    if (pendingImport.source === 'refine') {
+      // 精修模式下替换：可能是新 HTML（performImport 走 refine 分支）
+      // 也可能是预设模板（applyPreset 退出精修 + 加载预设）
+      if (pendingImport.html) {
+        performImport(pendingImport.html, 'replace', 'refine')
+      } else if (pendingImport.presetIndex !== undefined) {
+        applyPreset(pendingImport.presetIndex)
+      }
+    } else if (pendingImport.source === 'html' && pendingImport.html) {
       performImport(pendingImport.html, 'replace', importMode)
     } else if (pendingImport.source === 'preset' && pendingImport.presetIndex !== undefined) {
       applyPreset(pendingImport.presetIndex)
-    } else if (pendingImport.source === 'imported' && pendingImport.meta) {
-      applyImported(pendingImport.meta)
-    } else if (pendingImport.source === 'reimport' && pendingImport.meta) {
-      applyReimport(pendingImport.meta)
     }
     setPendingImport(null)
     // 清理暂存
     delete (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
-  }, [pendingImport, performImport, applyPreset, applyImported, applyReimport])
+  }, [pendingImport, performImport, applyPreset])
 
   const handlePreset = useCallback(
     (index: number) => {
       const t = pageTemplates[index]
+      // 精修模式下点预设模板：先弹"替换当前精修页面"确认
+      if (refineSession) {
+        setPendingImport({ source: 'refine', presetIndex: index })
+        return
+      }
       // 画布非空时弹确认
       if (nodes.length > 0) {
         setPendingImport({ source: 'preset', presetIndex: index, parsedCount: t.nodes.length })
@@ -419,19 +396,17 @@ export function TemplatePanel() {
       loadTemplate(t.nodes, t.canvas)
       setOpen(false)
     },
-    [loadTemplate, nodes.length],
+    [loadTemplate, nodes.length, refineSession],
   )
 
   const handleImported = useCallback(
     (meta: ImportedTemplateMeta) => {
-      // 画布非空时弹确认
-      if (nodes.length > 0) {
-        setPendingImport({ source: 'imported', meta })
-        return
-      }
+      // 开源模板走模式选择弹窗（与粘贴/上传完全一致），
+      // 模式选择弹窗里的"作为片段追加 / 仍要替换"会处理画布非空场景，
+      // 所以这里不再弹独立的二次确认，避免重复弹窗
       applyImported(meta)
     },
-    [applyImported, nodes.length],
+    [applyImported],
   )
 
   /** 读取上传的 HTML 文件并触发导入（支持 .html / .htm / 文本文件） */
@@ -485,16 +460,14 @@ export function TemplatePanel() {
   }, [])
 
   // 从内联 HTML 重新生成（用最新 importHtml 逻辑，覆盖旧 JSON 的内容）
+  // 现在走模式选择弹窗，与粘贴/上传/开源模板路径完全一致
   const handleReimportFromHtml = useCallback(
     (meta: ImportedTemplateMeta) => {
       if (!meta.htmlPath) return
-      if (nodes.length > 0) {
-        setPendingImport({ source: 'reimport', meta })
-        return
-      }
-      applyReimport(meta)
+      // 直接复用 applyImported（HTML 源加载 + 模式选择弹窗）
+      applyImported(meta)
     },
-    [applyReimport, nodes.length],
+    [applyImported],
   )
 
   const handlePasteImport = useCallback(() => {
@@ -615,7 +588,7 @@ export function TemplatePanel() {
                           style={{ background: t.preview }}
                         />
                         <div className="font-medium text-gray-200 text-sm">{t.name}</div>
-                        <div className="text-gray-500 text-xs mt-1 leading-relaxed">{t.description}</div>
+                        <div className="text-gray-400 text-xs mt-1 leading-relaxed">{t.description}</div>
                       </button>
                     ))}
                   </div>
@@ -655,7 +628,7 @@ export function TemplatePanel() {
                             )}
                           </div>
                           <div className="font-medium text-gray-200 text-sm">{t.name}</div>
-                          <div className="text-gray-500 text-xs mt-1 leading-relaxed">{t.description}</div>
+                          <div className="text-gray-400 text-xs mt-1 leading-relaxed">{t.description}</div>
                         </button>
                         {t.htmlPath && (
                           <button
@@ -828,12 +801,14 @@ export function TemplatePanel() {
             {/* 标题栏 */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-ink-600">
               <div className="flex items-center gap-2">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={pendingImport.source === 'refine' ? 'text-purple-300 shrink-0' : 'text-gray-400 shrink-0'}>
                   <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
                   <line x1="12" y1="9" x2="12" y2="13" />
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
-                <h3 className="text-gray-100 font-semibold text-sm tracking-wide">即将清空当前画布</h3>
+                <h3 className="text-gray-100 font-semibold text-sm tracking-wide">
+                  {pendingImport.source === 'refine' ? '退出当前精修页面？' : '即将清空当前画布'}
+                </h3>
               </div>
               <button
                 onClick={() => setPendingImport(null)}
@@ -843,7 +818,7 @@ export function TemplatePanel() {
               </button>
             </div>
 
-            {/* 内容：HTML 源 → 详细说明；模板源 → 简洁提示 */}
+            {/* 内容：HTML 源 → 详细说明；模板源 → 简洁提示；精修模式替换 → 紫色主题 */}
             {pendingImport.source === 'html' ? (
               <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-3">
                 <p>
@@ -870,15 +845,20 @@ export function TemplatePanel() {
                   如果您只想把内容追加到现有画布，请选择"作为片段追加"。
                 </p>
               </div>
+            ) : pendingImport.source === 'refine' ? (
+              <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
+                <p>
+                  当前正在精修模式，导入新内容会<span className="text-purple-300 mx-1">退出当前精修页面</span>，
+                  加载新内容到 iframe。
+                </p>
+                <p className="text-gray-400 text-xs leading-loose tracking-wide">
+                  如需保留当前精修页面的修改，建议先点画布右上角"复制"导出当前 HTML。
+                </p>
+              </div>
             ) : (
               <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
                 <p>
-                  {pendingImport.source === 'preset'
-                    ? '当前预设模板'
-                    : pendingImport.source === 'imported'
-                      ? '当前开源模板'
-                      : '重新生成的模板'}
-                  加载后，画布上的 {nodes.length} 个节点将被全部替换（可通过撤销恢复）。
+                  当前预设模板加载后，画布上的 {nodes.length} 个节点将被全部替换（可通过撤销恢复）。
                 </p>
               </div>
             )}
@@ -910,9 +890,13 @@ export function TemplatePanel() {
               )}
               <button
                 onClick={confirmReplace}
-                className="px-5 py-2 rounded-lg text-sm font-medium bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/40 transition-colors"
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pendingImport.source === 'refine'
+                    ? 'bg-purple-700/40 hover:bg-purple-700/60 text-purple-200 border border-purple-600/40'
+                    : 'bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/40'
+                }`}
               >
-                {pendingImport.source === 'html' ? '仍要替换' : '确认替换'}
+                {pendingImport.source === 'html' ? '仍要替换' : pendingImport.source === 'refine' ? '确认替换' : '确认替换'}
               </button>
             </div>
           </div>

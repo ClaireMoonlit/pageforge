@@ -77,7 +77,7 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-400 shrink-0"
+              className="text-brand-200 shrink-0"
             >
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="16" x2="12" y2="12" />
@@ -99,31 +99,31 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
         {/* 智能检测结果 */}
         <div className="px-5 py-3 border-b border-ink-700 bg-ink-900/40">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs text-gray-400">智能检测结果：</span>
+            <span className="text-xs text-gray-300">智能检测结果：</span>
             {isHighConfidence ? (
               <span
                 className={`text-xs px-2 py-0.5 rounded font-medium ${
                   result.recommendation === 'refine'
-                    ? 'bg-ink-700 text-brand-300 border border-brand-500/30'
-                    : 'bg-ink-700 text-gray-200 border border-ink-500'
+                    ? 'bg-ink-700 text-white border border-brand-500/40'
+                    : 'bg-ink-700 text-gray-100 border border-ink-500'
                 }`}
               >
                 推荐「{IMPORT_MODE_LABEL[result.recommendation]}」
               </span>
             ) : (
-              <span className="text-xs px-2 py-0.5 rounded bg-ink-700 text-gray-300 border border-ink-500">
+              <span className="text-xs px-2 py-0.5 rounded bg-ink-700 text-gray-200 border border-ink-500">
                 建议「{IMPORT_MODE_LABEL[result.recommendation]}」
               </span>
             )}
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-300">
               置信度 {Math.round(result.confidence * 100)}%
             </span>
           </div>
           {result.reasons.length > 0 && (
-            <ul className="text-xs text-gray-400 leading-loose space-y-0.5">
+            <ul className="text-xs text-gray-300 leading-loose space-y-0.5">
               {result.reasons.slice(0, 6).map((r, i) => (
                 <li key={i} className="flex items-start gap-1.5">
-                  <span className="text-gray-600 shrink-0">•</span>
+                  <span className="text-gray-400 shrink-0">•</span>
                   <span>{r}</span>
                 </li>
               ))}
@@ -235,11 +235,11 @@ function ModeOption({
           <p className="text-xs text-gray-300 leading-relaxed">
             {IMPORT_MODE_DESC[mode]}
           </p>
-          <p className="text-[11px] text-gray-500 leading-relaxed mt-1">
+          <p className="text-[11px] text-gray-400 leading-relaxed mt-1">
             ⚠ {IMPORT_MODE_WARNING[mode]}
           </p>
           {disabled && disabledHint && (
-            <p className="text-[11px] text-gray-500 leading-relaxed mt-1 italic">
+            <p className="text-[11px] text-gray-400 leading-relaxed mt-1 italic">
               {disabledHint}
             </p>
           )}

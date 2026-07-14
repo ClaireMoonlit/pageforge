@@ -27,12 +27,16 @@ function getTickInterval(zoom: number): { major: number; minor: number } {
 export function Ruler({ orientation, edge, canvasRef }: RulerProps) {
   const zoom = useEditorStore((s) => s.zoom)
   const canvas = useEditorStore((s) => s.canvas)
+  /** 精修模式会话：非 null 时标尺用导入页面的实测尺寸，而非 store 中的画布尺寸 */
+  const refineSession = useEditorStore((s) => s.refineSession)
   const rulerCursorVisible = useEditorStore((s) => s.rulerCursorVisible)
   const [cursorPos, setCursorPos] = useState(-1)
   const rulerRef = useRef<HTMLDivElement>(null)
 
-  const cw = parseInt(canvas.width) || 1200
-  const ch = parseInt(canvas.height) || 800
+  // 精修模式下，标尺长度跟随导入页面的实测尺寸，否则用 store 中的画布尺寸。
+  // 这样页面跑到画布外面时，标尺也会跟着包住整个页面。
+  const cw = (refineSession ? refineSession.width : parseInt(canvas.width)) || 1200
+  const ch = (refineSession ? refineSession.height : parseInt(canvas.height)) || 800
 
   // 跟踪鼠标在画布上的位置，在标尺上显示指示线
   useEffect(() => {
@@ -71,21 +75,27 @@ export function Ruler({ orientation, edge, canvasRef }: RulerProps) {
     overflow: 'visible',
   }
   if (orientation === 'horizontal') {
-    // 水平标尺在画布的上方或下方
+    // 水平标尺宽度 = 画布视觉宽度（cw * zoom）。
+    // 定位：上标尺 top=0，下标尺 bottom=0。
+    // wrapper 现在是视觉尺寸（cw*zoom+48 × ch*zoom+48），
+    // 不再有 transform 导致的 layout/visual 分离问题，bottom:0 直接贴在 wrapper 底部。
     Object.assign(containerStyle, {
-      left: RULER_SIZE, // 避开左上角标尺角
-      right: RULER_SIZE, // 避开右上角标尺角
+      left: RULER_SIZE,
+      width: cw * zoom,
       height: RULER_SIZE,
-      [edge === 'top' ? 'top' : 'bottom']: 0,
+      top: edge === 'top' ? 0 : undefined,
+      bottom: edge === 'bottom' ? 0 : undefined,
       [edge === 'top' ? 'borderBottom' : 'borderTop']: '1px solid #374151',
     } as React.CSSProperties)
   } else {
-    // 垂直标尺在画布的左方或右方
+    // 垂直标尺高度 = 画布视觉高度（ch * zoom）。
+    // 定位：左标尺 left=0，右标尺 right=0。
     Object.assign(containerStyle, {
-      top: RULER_SIZE, // 避开左上角标尺角
-      bottom: RULER_SIZE, // 避开左下角标尺角
+      top: RULER_SIZE,
+      height: ch * zoom,
       width: RULER_SIZE,
-      [edge === 'left' ? 'left' : 'right']: 0,
+      left: edge === 'left' ? 0 : undefined,
+      right: edge === 'right' ? 0 : undefined,
       [edge === 'left' ? 'borderRight' : 'borderLeft']: '1px solid #374151',
     } as React.CSSProperties)
   }

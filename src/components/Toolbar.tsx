@@ -141,7 +141,7 @@ export function Toolbar() {
       {refineSession && (
         <div
           data-testid="refine-mode-banner"
-          className="flex items-center gap-2 px-3 py-1 bg-purple-900/40 border border-purple-700/50 rounded-md"
+          className="flex items-center gap-2 px-3 py-1 bg-purple-950/50 border border-purple-700/40 rounded-md"
         >
           <svg
             width="14"
@@ -154,11 +154,12 @@ export function Toolbar() {
             strokeLinejoin="round"
             className="text-purple-300"
           >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            <circle cx="11" cy="11" r="8" />
+            <path d="M21 21l-4.35-4.35" />
+            <path d="M8 11h6" />
           </svg>
-          <span className="text-purple-200 text-xs font-medium">精修模式</span>
-          <span className="text-purple-400 text-xs hidden md:inline">·  点击页面元素即可在右侧编辑</span>
+          <span className="text-purple-100 text-xs font-medium">精修模式</span>
+          <span className="text-purple-400/80 text-xs hidden md:inline">·  点击画布中元素即可在右侧编辑</span>
           <button
             onClick={exitRefine}
             className="ml-1 px-2 py-0.5 rounded text-xs text-purple-200 hover:text-white hover:bg-purple-700/50 transition-colors"

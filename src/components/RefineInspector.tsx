@@ -16,44 +16,36 @@ import { useEditorStore, type RefineElementInfo } from '@/store/editorStore'
 export function RefineInspector() {
   const refineSession = useEditorStore((s) => s.refineSession)
   const selectedElement = refineSession?.selectedElement ?? null
-  const exitRefine = useEditorStore((s) => s.exitRefine)
 
   if (!refineSession) return null
 
   return (
     <div className="w-72 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
-      {/* 标题栏 */}
-      <div className="p-3 border-b border-ink-700 flex items-center justify-between bg-purple-900/20">
-        <div className="flex items-center gap-2">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-purple-400"
-          >
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-          </svg>
-          <span className="text-sm text-purple-200 font-medium">精修模式</span>
-        </div>
-        <button
-          onClick={exitRefine}
-          className="text-xs px-2 py-1 rounded text-gray-300 hover:text-white hover:bg-ink-700 transition-colors"
-          title="退出精修模式"
+      {/* 标题栏：紫色暗调，与 RefineCanvas 浮动徽章呼应 */}
+      <div className="p-3 border-b border-ink-700 flex items-center gap-2 bg-purple-950/30">
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-purple-300"
         >
-          退出
-        </button>
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+          <path d="M8 11h6" />
+        </svg>
+        <span className="text-sm text-purple-100 font-medium">精修模式</span>
+        <span className="text-xs text-purple-400/80 ml-auto">元素属性</span>
       </div>
 
       {!selectedElement ? (
-        <div className="p-5 text-center text-gray-500 text-sm leading-relaxed">
-          <div className="mb-2 text-gray-400">未选中元素</div>
-          <div className="text-xs leading-loose">
+        <div className="p-5 text-center text-gray-300 text-sm leading-relaxed">
+          <div className="mb-2 text-gray-200 font-medium">未选中元素</div>
+          <div className="text-xs leading-loose text-gray-400">
             点击画布中的任意元素
             <br />
             即可在此编辑
@@ -63,15 +55,9 @@ export function RefineInspector() {
         <RefineElementEditor element={selectedElement} />
       )}
 
-      {/* 底部：操作按钮组 */}
-      <div className="p-3 border-t border-ink-700 space-y-2">
+      {/* 底部：复制 HTML 按钮（退出按钮已挪到画布浮动徽章，避免重复） */}
+      <div className="p-3 border-t border-ink-700">
         <CopyHtmlButton />
-        <button
-          onClick={exitRefine}
-          className="w-full px-3 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-ink-700 border border-ink-600 transition-colors"
-        >
-          退出精修模式
-        </button>
       </div>
     </div>
   )
@@ -132,12 +118,12 @@ function RefineElementEditor({ element }: { element: RefineElementInfo }) {
             &lt;{element.tagName}&gt;
           </code>
           {element.attributes.id && (
-            <code className="px-1.5 py-0.5 bg-ink-700 text-blue-300 rounded font-mono text-xs">
+            <code className="px-1.5 py-0.5 bg-ink-700 text-purple-300 rounded font-mono text-xs">
               #{element.attributes.id}
             </code>
           )}
           {element.attributes.class && (
-            <code className="px-1.5 py-0.5 bg-ink-700 text-green-300 rounded font-mono text-xs truncate max-w-[140px]">
+            <code className="px-1.5 py-0.5 bg-ink-700 text-emerald-300 rounded font-mono text-xs truncate max-w-[140px]">
               .{element.attributes.class.split(' ')[0]}
             </code>
           )}
@@ -304,7 +290,7 @@ function CopyHtmlButton() {
   return (
     <button
       onClick={handleCopy}
-      className="w-full px-3 py-1.5 rounded text-xs bg-purple-700 hover:bg-purple-600 text-white transition-colors"
+      className="w-full px-3 py-1.5 rounded text-xs bg-purple-800 hover:bg-purple-700 text-purple-50 border border-purple-700/50 transition-colors"
     >
       {copied ? '✓ 已复制 HTML' : '复制当前页面 HTML'}
     </button>

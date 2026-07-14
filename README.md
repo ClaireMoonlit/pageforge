@@ -26,13 +26,14 @@
 - 🎨 **自由画布**：绝对定位自由摆放，所见即所得
 - 🧲 **智能吸附**：拖拽时自动识别对齐参考线
 - 📱 **响应式导出**：桌面保持绝对定位、平板自适应、手机全宽堆叠，三层断点自动适配
-- 🧩 **9 套模板**：一键导入 Start Bootstrap 系列模板，开箱即用
+- 🧩 **10 套模板**：一键导入 Start Bootstrap 系列模板，开箱即用
+- 🔬 **精修模式**：导入 HTML 后在 iframe 中原样渲染，点击选中元素直接编辑属性，所见即所得微调
 - ⚡ **交互支持**：零代码配置链接、点击、悬停、入场动画，导出 HTML 自带 vanilla JS 运行时
 - 👁️ **编辑器内预览**：不导出也能预览交互效果
 - 🔄 **撤销/重做**：完整的历史记录
 - 📋 **复制粘贴**：跨画布节点复制
 - 🖌️ **格式刷**：一键复制样式
-- 🏷️ **多选对齐**：Shift 多选 → 左/中/右/上/中/下对齐 + 等距分布
+- 🏷️ **多选对齐**：Ctrl/Cmd 多选 → 左/中/右/上/中/下对齐 + 等距分布
 - 📏 **标尺 + 辅助线**：画布标尺，拖拽创建辅助线
 
 ---
@@ -95,6 +96,8 @@ PageForge/
 │   │   ├── LayerTree.tsx        # 右上：层级树
 │   │   ├── AlignToolbar.tsx     # 多选对齐工具栏
 │   │   ├── Ruler.tsx            # 画布标尺
+│   │   ├── RefineCanvas.tsx     # 精修模式：iframe 渲染 + 元素选中
+│   │   ├── RefineInspector.tsx  # 精修模式：选中元素属性编辑
 │   │   └── Icon.tsx             # 智能图标组件
 │   ├── utils/
 │   │   ├── importHtml.ts        # HTML 解析（~1611 行）
@@ -102,14 +105,17 @@ PageForge/
 │   │   ├── interactionRuntime.ts # 零依赖 vanilla JS 运行时
 │   │   ├── layoutRules.ts       # 规则推断引擎
 │   │   ├── iconPaths.ts         # 图标 SVG 路径
-│   │   └── snapping.ts          # 拖拽吸附辅助线
+│   │   ├── snapping.ts          # 拖拽吸附辅助线
+│   │   ├── refineSerialization.ts  # 精修模式：DOM 序列化回 HTML
+│   │   ├── refineInsertion.ts   # 精修模式：元素插入逻辑
+│   │   └── elementFactory.ts    # 精修模式：元素工厂
 │   ├── store/
 │   │   └── editorStore.ts       # Zustand 单一数据源
 │   ├── types/
 │   │   └── index.ts             # 类型定义
 │   └── data/
 │       ├── componentLib.ts      # 11 个内置组件
-│       ├── importedTemplates.ts # 9 套导入模板
+│       ├── importedTemplates.ts # 10 套导入模板
 │       └── templates.ts         # 内置空白模板
 ├── public/
 │   └── imported-templates/      # 运行时模板资源

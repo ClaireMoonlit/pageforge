@@ -24,6 +24,7 @@ import { useEditorStore, findById, getClipboard, getLastInternalCopyTime, getLas
 import { findComponentDef } from '@/data/componentLib'
 import type { CanvasNode, ComponentType } from '@/types'
 import { collectRectsFromDOM, computeSnap, canvasRect, type SnapLine, type PrevSnapState } from '@/utils/snapping'
+import { insertRefineElement, buildRefineInfo } from '@/utils/refineInsertion'
 
 /** 判断事件目标是否处于可输入元素中（避免快捷键误触影响输入） */
 function isTypingTarget(e: KeyboardEvent): boolean {
@@ -285,7 +286,43 @@ export default function App() {
     const zoom = useEditorStore.getState().zoom
 
     if (data.source === 'library' && data.type) {
-      // 库 → 画布根 或 容器内
+      // 库 → 画布根 / 容器内 (自由画布模式)
+      //      或 → iframe (精修模式)
+      const refineSession = useEditorStore.getState().refineSession
+      if (refineSession) {
+        // 精修模式：把元素直接插入到 iframe DOM
+        // 用 cursorRef 记录的真实光标位置（已通过 pointermove 实时更新）
+        // 兜底使用 activatorEvent 坐标
+        const ae = activatorEvent as PointerEvent | MouseEvent
+        const x = cursorRef.current.x || ae.clientX
+        const y = cursorRef.current.y || ae.clientY
+        const iframeEl = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+        if (!iframeEl?.contentDocument) return
+        const doc = iframeEl.contentDocument
+        // 用 screenX/screenY 走"基于鼠标位置定位"路径：
+        // 落到哪个元素附近就插在它前面/后面，更符合用户拖拽直觉
+        const result = insertRefineElement(doc, data.type as ComponentType, {
+          iframeEl,
+          screenX: x,
+          screenY: y,
+        })
+        if (result) {
+          // 触发选中：让右侧 Inspector 显示新元素的属性
+          const info = buildRefineInfo(doc, result.element)
+          if (info) {
+            useEditorStore.getState().selectRefineElement(info)
+          }
+          // 滚动到新元素可见区域
+          try {
+            result.element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          } catch {
+            /* ignore cross-context errors */
+          }
+          console.info('[App] 精修模式插入元素：', data.type, 'at', x, y)
+        }
+        return
+      }
+      // 精修模式下库拖拽只到这里；下面继续 freeform 模式逻辑
       // 第一性原理：modifier 把 overlay 左上角贴到 (cursor - halfW, cursor - halfH)
       // 节点也按左上角定位，所以落点必须用 overlay 的 左上角（r.left, r.top）
       // 而不是用中心（r.left + r.width/2），否则节点会向右下偏移半个尺寸

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -129,11 +129,13 @@ interface EditorState {
   /** 追加节点到现有画布（用于导入组件片段，不清空已有内容） */
   addNodes: (nodes: CanvasNode[], canvas?: Partial<CanvasConfig>) => void
   /** 启动精修模式：在 iframe 中渲染原始 HTML，可点击选中元素并编辑 */
-  startRefine: (html: string) => void
+  startRefine: (html: string, baseUrl?: string) => void
   /** 退出精修模式：返回自由画布模式（清空 refineSession） */
   exitRefine: () => void
   /** 精修模式：选中 iframe 中的某个元素（用于 Inspector 显示其属性） */
   selectRefineElement: (info: RefineElementInfo | null) => void
+  /** 精修模式：自动测量 iframe 内容尺寸并更新 wrapper（解决"页面自带滚轮"） */
+  updateRefineSize: (width: number, height: number) => void
   /** 精修模式：更新选中元素的文本内容（写入 iframe DOM） */
   updateRefineText: (text: string) => void
   /** 精修模式：更新选中元素的属性（如 src、alt、href 等） */
@@ -242,6 +244,9 @@ export interface RefineSession {
   height: number
   /** 每次 startRefine 递增，用于强制 RefineCanvas 重新挂载 */
   sessionKey: number
+  /** HTML 内相对路径解析用的 base URL（如开源模板所在的目录）。
+   *  undefined 时 RefineCanvas 自动用 window.location.origin 作为兜底 */
+  baseUrl?: string
 }
 
 /** 递归查找并就地更新节点（支持嵌套） */
@@ -761,6 +766,8 @@ export const useEditorStore = create<EditorState>()(
           state.selectedId = null
           state.selectedIds = []
           state.formatBrushStyle = null
+          // 加载预设模板时一并退出精修模式，避免 nodes 渲染与 refine iframe 互相干扰
+          state.refineSession = null
         })
       },
 
@@ -772,6 +779,8 @@ export const useEditorStore = create<EditorState>()(
           }
           state.selectedId = null
           state.selectedIds = []
+          // 追加节点时也退出精修模式（精修模式是整页 iframe，不与自由画布节点混用）
+          state.refineSession = null
         })
       },
 
@@ -811,6 +820,16 @@ export const useEditorStore = create<EditorState>()(
         set((state) => {
           if (state.refineSession) {
             state.refineSession.selectedElement = info
+          }
+        }),
+
+      /** 精修模式：根据 iframe 内容自动测量，更新 wrapper 尺寸。
+       * 解决"页面自带滚轮"问题：让 wrapper 高度始终等于内容高度。
+       * 宽度保持初始值不变（= canvas.width），避免 wrapper 居中后内容偏移。 */
+      updateRefineSize: (_width, height) =>
+        set((state) => {
+          if (state.refineSession) {
+            state.refineSession.height = Math.max(240, Math.ceil(height))
           }
         }),
 

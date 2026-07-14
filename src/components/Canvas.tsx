@@ -468,8 +468,11 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 	  }, [nodes.length])
 
   // 解析画布尺寸用于参考线长度
-  const cw = parseInt(canvas.width) || 1200
-  const ch = parseInt(canvas.height) || 800
+  // 精修模式下，画布尺寸 = 导入页面的实测尺寸（refineSession.width/height），
+  // 否则用 store 中的 canvas.width/canvas.height。
+  // 这样外层 wrapper（含标尺）会跟着页面尺寸扩张，避免页面跑到画布外面。
+  const cw = (refineSession ? refineSession.width : parseInt(canvas.width)) || 1200
+  const ch = (refineSession ? refineSession.height : parseInt(canvas.height)) || 800
 
   return (
     <div
@@ -576,8 +579,8 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           4 周各预留 24px 给标尺。 */}
       <div
         style={{
-          width: `calc(${canvas.width} * ${zoom} + 48px)`,
-          height: `calc(${canvas.height} * ${zoom} + 48px)`,
+          width: `calc(${cw}px * ${zoom} + 48px)`,
+          height: `calc(${ch}px * ${zoom} + 48px)`,
           margin: `0 auto ${24}px`,
           position: 'relative',
           transform: `translate(${panOffset.x}px, ${panOffset.y}px)`,
@@ -629,36 +632,20 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
         <Ruler orientation="vertical" edge="right" canvasRef={innerRef} />
 
         {/* 画布 */}
+        {/* 外层容器：layout 尺寸 = 视觉尺寸（cw*zoom × ch*zoom），overflow:hidden 裁剪内部缩放后溢出的内容。
+            这是第一性原理修复：之前 transform 直接加在外层，导致 layout 尺寸 = cw×ch（远大于视觉尺寸），
+            外层 wrapper 的 scroll 区域、标尺定位全部基于 layout 坐标，与视觉不对齐。
+            现在外层 = visual，内层 = content 并 scale 到 visual，scroll 和标尺都正确。 */}
         <div
           ref={setRefs}
-          data-pf-export-target="true"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) selectNode(null)
-          }}
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect()
-            if (rect) {
-              const curZoom = useEditorStore.getState().zoom
-              lastMousePosRef.current = {
-                x: Math.round((e.clientX - rect.left) / curZoom),
-                y: Math.round((e.clientY - rect.top) / curZoom),
-              }
-            }
-          }}
-          onContextMenu={(e) => {
-            e.preventDefault()
-            setCtxMenu({ x: e.clientX, y: e.clientY })
-          }}
           style={{
             position: 'absolute',
             top: 24,
             left: 24,
-            width: canvas.width,
-            height: canvas.height,
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
+            width: `${cw * zoom}px`,
+            height: `${ch * zoom}px`,
+            overflow: 'hidden',
             backgroundColor: canvas.backgroundColor,
-            color: '#1f2937',
             boxShadow: isOver ? '0 0 0 2px #6366f1, 0 8px 24px rgba(0,0,0,0.12)' : '0 8px 24px rgba(0,0,0,0.12)',
             // 手型模式下禁用画布内元素交互，让 mousedown 穿透到外层 wrapper 触发平移
             pointerEvents: panMode ? 'none' : undefined,
@@ -666,23 +653,50 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
             cursor: isPanning ? 'grabbing' : panMode ? 'grab' : undefined,
           }}
         >
-          {refineSession ? (
-            <RefineCanvas iframeId="pf-refine-iframe" />
-          ) : nodes.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400 select-none">
-              从左侧拖入组件开始创作
-            </div>
-          ) : (
-            <>
-              {nodes.map((n) => <CanvasElement key={n.id} node={n} isRoot />)}
-            </>
-          )}
-
-          {/* 对齐/分布操作结果高亮（临时显示 2.5s） */}
-          <AlignInfoOverlay cw={cw} ch={ch} />
-
-          {/* 智能吸附参考线：蓝=边缘/等间距，紫=中心 */}
-          <svg
+          {/* 内层 wrapper：content 原始尺寸（cw×ch），transform: scale(zoom) 缩放到视觉尺寸。
+              data-pf-export-target 在此层，export 取的是原始尺寸；事件处理也在此层。 */}
+          <div
+            data-pf-export-target="true"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) selectNode(null)
+            }}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              if (rect) {
+                const curZoom = useEditorStore.getState().zoom
+                lastMousePosRef.current = {
+                  x: Math.round((e.clientX - rect.left) / curZoom),
+                  y: Math.round((e.clientY - rect.top) / curZoom),
+                }
+              }
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault()
+              setCtxMenu({ x: e.clientX, y: e.clientY })
+            }}
+            style={{
+              width: `${cw}px`,
+              height: `${ch}px`,
+              transform: `scale(${zoom})`,
+              transformOrigin: 'top left',
+              color: '#1f2937',
+            }}
+          >
+            {refineSession ? (
+              <RefineCanvas iframeId="pf-refine-iframe" />
+            ) : nodes.length === 0 ? (
+              <div className="absolute inset-0 flex items-center justify-center text-gray-400 select-none">
+                从左侧拖入组件开始创作
+              </div>
+            ) : (
+              <>
+                {nodes.map((n) => <CanvasElement key={n.id} node={n} isRoot />)}
+              </>
+            )}
+            {/* 对齐/分布操作结果高亮（临时显示 2.5s） */}
+            <AlignInfoOverlay cw={cw} ch={ch} />
+            {/* 智能吸附参考线：蓝=边缘/等间距，紫=中心 */}
+            <svg
             style={{
               position: 'absolute',
               left: 0,
@@ -792,6 +806,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
               )
             })}
           </svg>
+          </div>
         </div>
       </div>
       {/* 右键菜单 */}

@@ -3,11 +3,13 @@ import { componentLib } from '@/data/componentLib'
 import { Icon } from './Icon'
 import { LayerTree } from './LayerTree'
 import { useEditorStore } from '@/store/editorStore'
+import { insertRefineElement, buildRefineInfo } from '@/utils/refineInsertion'
+import type { ComponentDef, ComponentType } from '@/types'
 
 export function ComponentPanel() {
   const collapsed = useEditorStore((s) => s.leftPanelCollapsed)
   const toggle = useEditorStore((s) => s.toggleLeftPanel)
-  /** 精修模式下组件库不可拖拽（精修模式操作的是 iframe，不是自由画布节点） */
+  /** 精修模式下组件库依然可用：拖拽到 iframe / 点击插入 */
   const refineSession = useEditorStore((s) => s.refineSession)
 
   // 折叠态：仅显示一个窄条 + 展开按钮（始终可点，避免找不到入口）
@@ -37,11 +39,7 @@ export function ComponentPanel() {
 
   // 展开态：左箭头 (<<) → 表示"把面板收起（折叠到左侧）"
   return (
-    <div
-      className={`w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200 ${
-        refineSession ? 'opacity-50 pointer-events-none' : ''
-      }`}
-    >
+    <div className="w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200">
       <div className="p-3 text-xs text-gray-400 uppercase tracking-wider flex items-center justify-between">
         <span>组件库</span>
         <button
@@ -57,12 +55,12 @@ export function ComponentPanel() {
       </div>
       {refineSession && (
         <div className="px-3 py-2 text-[11px] text-purple-300 leading-relaxed">
-          精修模式下组件库已禁用，请先退出精修模式
+          精修模式：拖入或点击组件即可添加到当前页面
         </div>
       )}
       <div className="px-2 pb-3 space-y-1.5">
         {componentLib.map((def) => (
-          <DraggableComponent key={def.type} def={def} disabled={!!refineSession} />
+          <DraggableComponent key={def.type} def={def} refineMode={!!refineSession} />
         ))}
       </div>
 
@@ -79,26 +77,56 @@ export function ComponentPanel() {
 
 function DraggableComponent({
   def,
-  disabled,
+  refineMode,
 }: {
-  def: typeof componentLib[number]
-  disabled?: boolean
+  def: ComponentDef
+  refineMode?: boolean
 }) {
+  // 精修模式：仍允许拖拽（drop 在 App.tsx 中处理为 iframe 插入），
+  // 但同时支持单击插入（更符合"快速添加"的交互习惯）
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `lib_${def.type}`,
     data: { source: 'library', type: def.type },
-    disabled,
   })
+
+  /**
+   * 精修模式单击插入：把元素追加到 body 末尾（或选中元素之后），
+   * 触发 selectRefineElement 让右侧 Inspector 显示新元素属性。
+   */
+  const handleClickInsert = (e: React.MouseEvent) => {
+    if (!refineMode) return
+    // 如果是拖拽结束的 click，忽略
+    if (isDragging) return
+    e.preventDefault()
+    const iframeEl = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+    if (!iframeEl?.contentDocument) return
+    const doc = iframeEl.contentDocument
+    // 点击插入走"无坐标 + 选中元素之后"路径
+    const result = insertRefineElement(doc, def.type as ComponentType)
+    if (result) {
+      const info = buildRefineInfo(doc, result.element)
+      if (info) {
+        useEditorStore.getState().selectRefineElement(info)
+      }
+      try {
+        result.element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      } catch {
+        /* ignore */
+      }
+      console.info('[ComponentPanel] 精修模式点击插入：', def.type)
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-2.5 px-3 py-2 rounded-md bg-ink-700 text-gray-200 text-sm transition-colors select-none ${
-        disabled
-          ? 'opacity-50 cursor-not-allowed'
-          : 'hover:bg-ink-600 cursor-grab active:cursor-grabbing'
-      } ${isDragging ? 'opacity-0' : ''}`}
+      onClick={handleClickInsert}
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-md bg-ink-700 text-gray-200 text-sm transition-colors select-none cursor-grab active:cursor-grabbing hover:bg-ink-600 ${
+        isDragging ? 'opacity-0' : ''
+      }`}
+      title={refineMode ? '点击插入到页面末尾，或拖拽到指定位置' : '拖入画布添加此组件'}
     >
       <span className="w-5 flex items-center justify-center text-brand-200">
         <Icon type={def.icon.type} value={def.icon.value} size={16} />
