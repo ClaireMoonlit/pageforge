@@ -160,11 +160,15 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const rulerCursorVisible = useEditorStore((s) => s.rulerCursorVisible)
   const toggleRulerCursor = useEditorStore((s) => s.toggleRulerCursor)
   const addNode = useEditorStore((s) => s.addNode)
+  const removeNode = useEditorStore((s) => s.removeNode)
   const modalOpen = useEditorStore((s) => s.modalOpen)
+  const selectedId = useEditorStore((s) => s.selectedId)
+  const selectedIds = useEditorStore((s) => s.selectedIds)
   /** 精修模式会话：非 null 时画布切换为 iframe 渲染 */
   const refineSession = useEditorStore((s) => s.refineSession)
 
   const innerRef = useRef<HTMLDivElement | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const lastMousePosRef = useRef({ x: 400, y: 300 }) // 画布坐标，默认中心附近
 
   // 右键菜单
@@ -331,9 +335,11 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
     else if (ref) (ref as { current: HTMLDivElement | null }).current = node
   }
 
-  // 用原生事件监听 wheel，避免 passive 警告
+  // 用原生事件监听 wheel，避免 passive 警告。
+  // 使用 canvas 容器元素监听（而非 window），因为 Chrome 会忽略 window/document 级
+  // wheel 事件的 passive:false，导致 e.preventDefault() 无效 → Ctrl+Wheel/双指缩放无反应。
   useEffect(() => {
-    const el = innerRef.current
+    const el = containerRef.current
     if (!el) return
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -355,117 +361,86 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
    */
   const lastNodesRef = useRef<typeof nodes>([])
   const lastMeasuredKeyRef = useRef('')
-	  useLayoutEffect(() => {
-	    if (!innerRef.current) return
-	    // 节点引用未变就不跑（避免拖拽/调整大小时频繁重排）
-	    if (lastNodesRef.current === nodes) return
-	    lastNodesRef.current = nodes
+  useLayoutEffect(() => {
+    if (!innerRef.current) return
+    if (lastNodesRef.current === nodes) return
+    lastNodesRef.current = nodes
 
-	    // 延迟一帧等待 DOM 完成首次布局
-	    const raf = requestAnimationFrame(() => {
-	      const inner = innerRef.current
-	      if (!inner) return
-	      // 只测量实际的根节点（带 data-node-id 属性的元素），
-	      // 排除 SVG 对齐参考线覆盖层等 height:100% 的辅助元素，否则会与画布高度形成循环依赖。
-	      const rootEls = Array.from(inner.children).filter(
-	        (el) => (el as HTMLElement).hasAttribute('data-node-id'),
-	      )
-	      if (rootEls.length === 0) return
-	      // 分类根节点：
-	      // - A 类（自动堆叠）：x===0 && y===0，是模板导入时按顺序纵向排列的节点
-	      // - B 类（显式放置）：x!==0（如两栏布局的右栏）或 y!==0（用户拖拽放置的节点），
-	      //   这类节点应保持原位，不参与纵向堆叠计算，也不影响画布高度
-	      const curZoom = useEditorStore.getState().zoom
-	      const heights: number[] = new Array(nodes.length).fill(0)
-	      // 第一步：测量所有根节点实际高度（不假设顺序，仅记录）
-	      for (let i = 0; i < rootEls.length && i < nodes.length; i++) {
-	        const el = rootEls[i] as HTMLElement
-	        const r = el.getBoundingClientRect()
-	        // getBoundingClientRect 返回屏幕空间像素（受 canvas transform: scale(zoom) 影响），
-	        // 除以 zoom 转为画布空间，与 style.y（画布空间）对齐
-	        heights[i] = r.height / curZoom
-	      }
-	      // 第二步：仅对 A 类节点计算新的 y 值（按 A 类节点在原数组中的相对顺序累加）
-	      const newYs: number[] = new Array(nodes.length).fill(0)
-	      const GAP = 24
-	      let y = 0
-	      let autoPlacedCount = 0
-	      for (let i = 0; i < nodes.length; i++) {
-	        const cur = nodes[i].style?.y ?? 0
-	        const curX = nodes[i].style?.x ?? 0
-	        if (cur !== 0 || curX !== 0) {
-	          // B 类节点：不参与堆叠，使用原 y
-	          newYs[i] = cur
-	          continue
-	        }
-	        // A 类节点：按顺序累加 y
-	        newYs[i] = y
-	        y += heights[i] + GAP
-	        autoPlacedCount += 1
-	      }
-	      // 计算画布所需高度：必须考虑所有节点（不仅是 A 类）的实际底部。
-	      // B 类节点（如模板导入时 y!=0 的 section）可能放在很高的位置，
-	      // 仅累加 A 类高度会把 maxBottom 算小，导致画布被错误覆盖回 800px。
-	      // 同时跳过 display: none 节点（如 Bootstrap modals），它们在画布中不占空间。
-	      let maxBottom = 0
-	      for (let i = 0; i < nodes.length; i++) {
-	        // display: none 节点不参与布局
-	        if (String(nodes[i].style?.display ?? '').toLowerCase() === 'none') continue
-	        const bottom = newYs[i] + heights[i]
-	        if (bottom > maxBottom) maxBottom = bottom
-	      }
-	      // 用 (heights + y 计划值) 作为「测量指纹」，避免 React maximum update depth
-	      const measurementKey = newYs.map((yi, i) => `${i}:${yi}:${heights[i].toFixed(1)}`).join('|')
-	      if (measurementKey === lastMeasuredKeyRef.current) {
-	        // 已经按这套布局跑过、不需要再 setState
-	        return
-	      }
-	      lastMeasuredKeyRef.current = measurementKey
-	      // 应用新的 y 值：仅更新 A 类节点（x===0 且 y===0），
-	      // B 类节点（x≠0 的并列布局节点，如两栏布局的右栏；或 y≠0 的用户放置节点）保持原位
-	      const updates: Array<{ id: string; y: number }> = []
-	      for (let i = 0; i < nodes.length; i++) {
-	        const cur = nodes[i].style?.y ?? 0
-	        const curX = nodes[i].style?.x ?? 0
-	        // 只自动堆叠 A 类节点（x===0 且 y===0），
-	        // 跳过 B 类节点（x≠0 的并列布局节点 或 y≠0 的用户放置节点）
-	        if (cur !== 0 || curX !== 0) continue
-	        if (Math.abs(cur - newYs[i]) > 0.5) {
-	          updates.push({ id: nodes[i].id, y: newYs[i] })
-	        }
-	      }
-	      if (updates.length > 0) {
-	        // 批量更新用 setState（immer）
-	        useEditorStore.setState((state) => {
-	          for (let i = 0; i < updates.length; i++) {
-	            const target = updates[i]
-	            for (let j = 0; j < state.nodes.length; j++) {
-	              if (state.nodes[j].id === target.id) {
-	                state.nodes[j].style.y = target.y
-	                break
-	              }
-	            }
-	          }
-	        })
-	      }
-	      // 调整画布高度以适应 A 类节点堆叠的总高度。
-		      // 只在确实存在 A 类节点、且不存在 B 类根节点时才调整画布高度：
-		      // - autoPlacedCount > 0：有需要自动堆叠的节点
-		      // - !hasBClassRoot：没有 x≠0 的并列布局节点（即纯纵向堆叠场景）
-		      // 存在 B 类根节点时（如两栏布局），画布高度由模板/用户指定，不应被自动覆盖。
-		      // 只在"实际渲染高度超出当前画布"时才调高（避免把 loadTemplate 算好的较大高度错误缩小）。
-		      const hasBClassRoot = nodes.some((n) => (n.style?.x ?? 0) !== 0)
-		      if (autoPlacedCount > 0 && !hasBClassRoot) {
+    const raf = requestAnimationFrame(() => {
+      const inner = innerRef.current
+      if (!inner) return
+      const rootEls = Array.from(inner.children).filter(
+        (el) => (el as HTMLElement).hasAttribute('data-node-id'),
+      )
+      if (rootEls.length === 0) return
+      const curZoom = useEditorStore.getState().zoom
+      const heights: number[] = new Array(nodes.length).fill(0)
+      for (let i = 0; i < rootEls.length && i < nodes.length; i++) {
+        const el = rootEls[i] as HTMLElement
+        const r = el.getBoundingClientRect()
+        heights[i] = r.height / curZoom
+      }
+      const newYs: number[] = new Array(nodes.length).fill(0)
+      const GAP = 24
+      let y = 0
+      let autoPlacedCount = 0
+      for (let i = 0; i < nodes.length; i++) {
+        const cur = nodes[i].style?.y ?? 0
+        const curX = nodes[i].style?.x ?? 0
+        if (cur !== 0 || curX !== 0) {
+          newYs[i] = cur
+          continue
+        }
+        newYs[i] = y
+        y += heights[i] + GAP
+        autoPlacedCount += 1
+      }
+      let maxBottom = 0
+      for (let i = 0; i < nodes.length; i++) {
+        if (String(nodes[i].style?.display ?? '').toLowerCase() === 'none') continue
+        const bottom = newYs[i] + heights[i]
+        if (bottom > maxBottom) maxBottom = bottom
+      }
+      const measurementKey = newYs.map((yi, i) => `${i}:${yi}:${heights[i].toFixed(1)}`).join('|')
+      if (measurementKey === lastMeasuredKeyRef.current) return
+      lastMeasuredKeyRef.current = measurementKey
+
+      const updates: Array<{ id: string; y: number }> = []
+      for (let i = 0; i < nodes.length; i++) {
+        const cur = nodes[i].style?.y ?? 0
+        const curX = nodes[i].style?.x ?? 0
+        if (cur !== 0 || curX !== 0) continue
+        if (Math.abs(cur - newYs[i]) > 0.5) {
+          updates.push({ id: nodes[i].id, y: newYs[i] })
+        }
+      }
+      if (updates.length > 0) {
+        useEditorStore.setState((state) => {
+          for (const target of updates) {
+            for (let j = 0; j < state.nodes.length; j++) {
+              if (state.nodes[j].id === target.id) {
+                state.nodes[j].style.y = target.y
+                break
+              }
+            }
+          }
+        })
+      }
+      const hasBClassRoot = nodes.some((n) => (n.style?.x ?? 0) !== 0)
+      if (autoPlacedCount > 0 && !hasBClassRoot) {
         const curH = parseInt(canvas.height) || 0
-        const desiredH = Math.max(800, Math.ceil(maxBottom + 24))
+        // 安全边距加大到 200px，覆盖 web font 加载前的高度估算误差
+        // 粘贴开源模板代码时，首次 rAF 测量在 font 加载前完成，高度偏小。
+        // ResizeObserver 会在 font 加载后再次触发 → 画布自动伸长到正确位置。
+        const desiredH = Math.max(800, Math.ceil(maxBottom + 200))
         if (desiredH > curH + 1) {
           updateCanvas({ height: `${desiredH}px` })
         }
       }
-          })
-	    return () => cancelAnimationFrame(raf)
-	  // eslint-disable-next-line react-hooks/exhaustive-deps
-	  }, [nodes.length])
+    })
+    return () => cancelAnimationFrame(raf)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes.length])
 
   // 解析画布尺寸用于参考线长度
   // 精修模式下，画布尺寸 = 导入页面的实测尺寸（refineSession.width/height），
@@ -476,6 +451,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
 
   return (
     <div
+      ref={containerRef}
       className="relative flex-1 overflow-auto"
       style={{
         backgroundColor: '#f3f4f6',
@@ -809,7 +785,7 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           </div>
         </div>
       </div>
-      {/* 右键菜单 */}
+      {/* 右键菜单 —— 与精修模式统一使用 CtxMenuItem 组件 */}
       {ctxMenu &&
         createPortal(
           <div
@@ -823,118 +799,96 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
               border: '1px solid #475569',
               borderRadius: 6,
               padding: 4,
-              minWidth: 120,
+              minWidth: 130,
               boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
             }}
             onClick={closeCtxMenu}
           >
-            {/* 上移一层 */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-                closeCtxMenu()
-                const sid = useEditorStore.getState().selectedId
-                if (sid) useEditorStore.getState().moveLayer(sid, 'up')
+            <CtxMenuItem
+              label="上移一层"
+              disabled={!selectedId}
+              onClick={() => {
+                if (selectedId) useEditorStore.getState().moveLayer(selectedId, 'up')
               }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
-                fontSize: 13,
-                userSelect: 'none',
+            />
+            <CtxMenuItem
+              label="下移一层"
+              disabled={!selectedId}
+              onClick={() => {
+                if (selectedId) useEditorStore.getState().moveLayer(selectedId, 'down')
               }}
-              onMouseEnter={(e) => {
-                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent'
-              }}
-            >
-              上移一层
-            </div>
-            {/* 下移一层 */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-                closeCtxMenu()
-                const sid = useEditorStore.getState().selectedId
-                if (sid) useEditorStore.getState().moveLayer(sid, 'down')
-              }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
-                fontSize: 13,
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => {
-                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent'
-              }}
-            >
-              下移一层
-            </div>
-            {/* 分隔线 */}
-            {useEditorStore.getState().selectedId && (
+            />
+            {selectedId && (
               <div style={{ height: 1, background: '#475569', margin: '4px 6px' }} />
             )}
-            {/* 右键复制按钮 */}
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-                closeCtxMenu()
-                const sid = useEditorStore.getState().selectedId
-                if (sid) useEditorStore.getState().copyNode(sid)
+            <CtxMenuItem
+              label="复制"
+              disabled={!selectedId}
+              onClick={() => {
+                if (selectedId) useEditorStore.getState().copyNode(selectedId)
               }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                color: useEditorStore.getState().selectedId ? '#e2e8f0' : '#64748b',
-                fontSize: 13,
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => {
-                if (useEditorStore.getState().selectedId) (e.currentTarget as HTMLElement).style.background = '#334155'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent'
-              }}
-            >
-              复制
-            </div>
-            {/* 右键粘贴按钮 */}
-            <div
-              onClick={async (e) => {
-                e.stopPropagation()
+            />
+            <CtxMenuItem
+              label="粘贴"
+              disabled={false}
+              onClick={async () => {
                 // 先粘贴再关闭菜单，保持用户手势上下文（navigator.clipboard.read 需要）
                 await unifiedAsyncPaste({ ...lastMousePosRef.current })
-                closeCtxMenu()
               }}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 4,
-                cursor: 'pointer',
-                color: '#e2e8f0',
-                fontSize: 13,
-                userSelect: 'none',
+            />
+            {selectedId && (
+              <div style={{ height: 1, background: '#475569', margin: '4px 6px' }} />
+            )}
+            <CtxMenuItem
+              label="删除"
+              disabled={!selectedId && selectedIds.length === 0}
+              onClick={() => {
+                if (selectedIds.length > 1) {
+                  for (const id of selectedIds) removeNode(id)
+                } else if (selectedId) {
+                  removeNode(selectedId)
+                }
               }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.background = '#334155'
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.background = 'transparent'
-              }}
-            >
-              粘贴
-            </div>
+              danger
+            />
           </div>,
           document.body,
         )}
     </div>
   )
 })
+
+/** 右键菜单单项（与精修模式同款暗色风格） */
+function CtxMenuItem({
+  label,
+  onClick,
+  disabled,
+  danger,
+}: {
+  label: string
+  onClick: () => void
+  disabled?: boolean
+  danger?: boolean
+}) {
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); if (!disabled) onClick() }}
+      style={{
+        padding: '6px 12px',
+        borderRadius: 4,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        color: disabled ? '#64748b' : (danger ? '#fca5a5' : '#e2e8f0'),
+        fontSize: 13,
+        userSelect: 'none',
+      }}
+      onMouseEnter={(e) => {
+        if (!disabled) (e.currentTarget as HTMLElement).style.background = '#334155'
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = 'transparent'
+      }}
+    >
+      {label}
+    </div>
+  )
+}

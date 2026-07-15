@@ -1,7 +1,7 @@
 import { useState, useCallback, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { useEditorStore, useSelectedNode } from '@/store/editorStore'
 import type { NodeStyle, NodeProps, InteractionConfig, ClickActionType, HoverEffectType, AnimationType, AnimationTrigger, AnimationConfig } from '@/types'
-import { SVG_ICON_PRESETS, SVG_ICON_MAP } from '@/components/Icons'
+import { SVG_ICON_PRESETS, SVG_ICON_MAP, IconAlignLeft, IconAlignCenter, IconAlignRight, IconAlignJustify } from '@/components/Icons'
 import { readFileAsDataUrl, validateFileSize, validateFileType } from '@/utils/fileUpload'
 
 const inputCls =
@@ -237,6 +237,91 @@ function NumberUnitField({
         ) : (
           <span className="text-xs text-gray-500 w-8 text-center shrink-0">{fixedUnit}</span>
         )}
+      </div>
+    </Field>
+  )
+}
+
+/** 颜色预设：常用色板 */
+const COLOR_PRESETS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+  '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7',
+  '#d946ef', '#ec4899', '#f43f5e', '#64748b', '#1e293b', '#ffffff',
+  '#000000', 'transparent',
+]
+
+/** 颜色选择器组件：预设色板 + 原生取色器 + 当前值显示（与精修模式统一） */
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const currentDisplay = (() => {
+    if (!value) return null
+    if (value === 'transparent') return 'transparent'
+    if (/^#[0-9a-fA-F]{3,8}$/.test(value)) return value
+    if (/^rgba?\(/i.test(value)) return value
+    return null
+  })()
+  return (
+    <Field label={label}>
+      <div className="space-y-1.5">
+        {/* 当前颜色预览条（与精修模式统一） */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className="w-7 h-7 rounded border border-ink-600 shrink-0"
+            style={{
+              backgroundColor: currentDisplay || 'transparent',
+              backgroundImage: currentDisplay
+                ? undefined
+                : 'linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555), linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555)',
+              backgroundSize: currentDisplay ? undefined : '8px 8px',
+              backgroundPosition: currentDisplay ? undefined : '0 0, 4px 4px',
+            }}
+            title={value ? `当前：${value}` : '未设置'}
+          />
+          <div className="flex-1 min-w-0 px-1.5 py-1 bg-ink-900 border border-ink-600 rounded text-[11px] text-gray-300 font-mono truncate" title={value || ''}>
+            {value || '未设置'}
+          </div>
+          {value && (
+            <button
+              type="button"
+              onClick={() => onChange('transparent')}
+              className="shrink-0 px-1.5 py-1 text-[10px] text-gray-400 hover:text-gray-200 hover:bg-ink-700 rounded transition-colors"
+              title="清除颜色"
+            >
+              清除
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {COLOR_PRESETS.map((color) => (
+            <button
+              key={color}
+              onClick={() => onChange(color === 'transparent' ? 'transparent' : color)}
+              className="w-5 h-5 rounded border border-ink-600 hover:scale-110 transition-transform"
+              style={{
+                backgroundColor: color === 'transparent' ? 'transparent' : color,
+                backgroundImage: color === 'transparent'
+                  ? 'linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555), linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555)'
+                  : undefined,
+                backgroundSize: color === 'transparent' ? '8px 8px' : undefined,
+                backgroundPosition: color === 'transparent' ? '0 0, 4px 4px' : undefined,
+                outline: value === color ? '2px solid #a855f7' : 'none',
+                outlineOffset: 1,
+              }}
+              title={color}
+            />
+          ))}
+          <div className="relative w-5 h-5 rounded border border-ink-600 cursor-pointer flex items-center justify-center bg-ink-800 hover:bg-ink-700 transition-colors" title="取色器">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+              <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            <input
+              type="color"
+              value={normalizeColor(value)}
+              onChange={(e) => onChange(e.target.value)}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              style={{ padding: 0 }}
+            />
+          </div>
+        </div>
       </div>
     </Field>
   )
@@ -608,14 +693,11 @@ export function Inspector() {
         </div>
         <div className="p-3 space-y-3">
           <div className="text-xs text-gray-500">未选中元素时编辑画布属性</div>
-          <Field label="背景色">
-            <input
-              type="color"
-              value={normalizeColor(canvas.backgroundColor)}
-              onChange={(e) => updateCanvas({ backgroundColor: e.target.value })}
-              className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-            />
-          </Field>
+          <ColorField
+            label="背景色"
+            value={normalizeColor(canvas.backgroundColor) || '#000000'}
+            onChange={(v) => updateCanvas({ backgroundColor: v })}
+          />
           <Field label="宽度">
             <NumberUnitField
               label=""
@@ -758,14 +840,11 @@ export function Inspector() {
                 className={quickStepBtnCls}
               >A+</button>
             </div>
-            <Field label="字色">
-              <input
-                type="color"
-                value={normalizeColor(selected.props.titleColor)}
-                onChange={(e) => updateNodeProps(selected.id, { titleColor: e.target.value })}
-                className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
+            <ColorField
+                label="字色"
+                value={normalizeColor(selected.props.titleColor) || '#000000'}
+                onChange={(v) => updateNodeProps(selected.id, { titleColor: v })}
               />
-            </Field>
             {/* 卡片内容 */}
             <SectionLabel label="卡片内容" />
             <Field label="文字">
@@ -802,14 +881,11 @@ export function Inspector() {
                 className={quickStepBtnCls}
               >A+</button>
             </div>
-            <Field label="字色">
-              <input
-                type="color"
-                value={normalizeColor(selected.props.subtitleColor)}
-                onChange={(e) => updateNodeProps(selected.id, { subtitleColor: e.target.value })}
-                className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
+            <ColorField
+                label="字色"
+                value={normalizeColor(selected.props.subtitleColor) || '#000000'}
+                onChange={(v) => updateNodeProps(selected.id, { subtitleColor: v })}
               />
-            </Field>
             {/* 卡片预设样式 */}
             <SectionLabel label="卡片预设" />
             <div className="grid grid-cols-3 gap-1.5">
@@ -1189,14 +1265,11 @@ export function Inspector() {
                 placeholder="首页,关于,服务,联系"
               />
             </Field>
-            <Field label="链接颜色">
-              <input
-                type="color"
-                value={normalizeColor(selected.props.linkColor || selected.style.color)}
-                onChange={(e) => updateNodeProps(selected.id, { linkColor: e.target.value })}
-                className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-              />
-            </Field>
+            <ColorField
+            label="链接颜色"
+            value={normalizeColor(selected.props.linkColor || selected.style.color) || '#000000'}
+            onChange={(v) => updateNodeProps(selected.id, { linkColor: v })}
+          />
           </>
         )}
         {selected.type === 'grid' && (
@@ -1378,14 +1451,48 @@ export function Inspector() {
                     <option value="900">Black (900)</option>
                   </select>
                 </Field>
-                <Field label="字色">
-                  <input
-                    type="color"
-                    value={normalizeColor(selected.style.color)}
-                    onChange={(e) => updateNodeStyle(selected.id, { color: e.target.value })}
-                    className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-                  />
+
+                <NumberUnitField
+                  label="行高"
+                  value={selected.style.lineHeight}
+                  onChange={(v) => updateNodeStyle(selected.id, { lineHeight: v })}
+                  units={['px', 'em', 'rem', '%']}
+                  min={0} max={200} step={1} placeholder="1.5"
+                />
+
+                <NumberUnitField
+                  label="字距"
+                  value={selected.style.letterSpacing}
+                  onChange={(v) => updateNodeStyle(selected.id, { letterSpacing: v })}
+                  units={['px', 'em', 'rem']}
+                  min={-10} max={50} step={0.5} placeholder="0px"
+                />
+
+                <Field label="对齐">
+                  <div className="flex gap-1">
+                    {([
+                      { value: 'left', icon: <IconAlignLeft size={14} />, title: '左对齐' },
+                      { value: 'center', icon: <IconAlignCenter size={14} />, title: '居中' },
+                      { value: 'right', icon: <IconAlignRight size={14} />, title: '右对齐' },
+                      { value: 'justify', icon: <IconAlignJustify size={14} />, title: '两端对齐' },
+                    ] as const).map((align) => (
+                      <button
+                        key={align.value}
+                        onClick={() => updateNodeStyle(selected.id, { textAlign: align.value as 'left' | 'center' | 'right' | 'justify' })}
+                        className={toggleBtnCls(selected.style.textAlign === align.value)}
+                        title={align.title}
+                      >
+                        {align.icon}
+                      </button>
+                    ))}
+                  </div>
                 </Field>
+
+                <ColorField
+                label="字色"
+                value={normalizeColor(selected.style.color) || '#000000'}
+                onChange={(v) => updateNodeStyle(selected.id, { color: v })}
+              />
               </>
             )
           })()
@@ -1422,28 +1529,22 @@ export function Inspector() {
                     className={quickStepBtnCls}
                   >A+</button>
                 </div>
-                <Field label="字色">
-                  <input
-                    type="color"
-                    value={normalizeColor(selected.style.color)}
-                    onChange={(e) => updateNodeStyle(selected.id, { color: e.target.value })}
-                    className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-                  />
-                </Field>
+                <ColorField
+                label="字色"
+                value={normalizeColor(selected.style.color) || '#000000'}
+                onChange={(v) => updateNodeStyle(selected.id, { color: v })}
+              />
               </>
             )
           })()
         )}
 
         <SectionLabel label="外观" />
-        <Field label="背景色">
-          <input
-            type="color"
-            value={normalizeColor(selected.style.backgroundColor)}
-            onChange={(e) => updateNodeStyle(selected.id, { backgroundColor: e.target.value })}
-            className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-          />
-        </Field>
+        <ColorField
+          label="背景色"
+          value={normalizeColor(selected.style.backgroundColor) || '#000000'}
+          onChange={(v) => updateNodeStyle(selected.id, { backgroundColor: v })}
+        />
         <NumberUnitField
           label="圆角"
           value={selected.style.borderRadius ?? '0px'}
@@ -1696,14 +1797,11 @@ function InteractionSections({
             </Field>
           )}
           {onHover?.effect === 'color-shift' && (
-            <Field label="Hover 颜色">
-              <input
-                type="color"
-                value={onHover.hoverColor || '#e0e7ff'}
-                onChange={(e) => onChange({ onHover: { ...onHover, hoverColor: e.target.value } })}
-                className="w-full h-8 bg-ink-900 border border-ink-600 rounded"
-              />
-            </Field>
+            <ColorField
+              label="Hover 颜色"
+              value={onHover.hoverColor || '#e0e7ff'}
+              onChange={(v) => onChange({ onHover: { ...onHover, hoverColor: v } })}
+            />
           )}
           {onHover && onHover.effect !== 'none' && (
             <NumberUnitField

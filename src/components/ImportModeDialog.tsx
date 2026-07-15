@@ -131,13 +131,14 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
           )}
         </div>
 
-        {/* 模式选择 */}
+        {/* 模式选择：只展开选中模式的详情，未选中模式仅显示标签 */}
         <div className="px-5 py-4 space-y-3 overflow-y-auto">
           <ModeOption
             mode="freeform"
             recommendation={result.recommendation}
             isSelected={selected === 'freeform'}
             onSelect={() => setSelected('freeform')}
+            showDetail={selected === 'freeform'}
           />
           <ModeOption
             mode="refine"
@@ -146,8 +147,17 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
             onSelect={() => !refineAvailable || setSelected('refine')}
             disabled={!refineAvailable}
             disabledHint={!refineAvailable ? '精修模式将在后续版本推出（基于 iframe + DOM 标注，100% 还原原页面）' : undefined}
+            showDetail={selected === 'refine'}
           />
         </div>
+
+        {/* 如果用户选了自由画布但系统强推荐精修，给出额外警告 */}
+        {selected === 'freeform' && result.recommendation === 'refine' && result.confidence >= 0.7 && (
+          <div className="mx-5 mb-3 px-3 py-2 bg-amber-900/30 border border-amber-700/40 rounded text-xs text-amber-300 leading-relaxed">
+            该页面结构复杂（flex/grid 多层嵌套、响应式断点等），自由画布模式可能无法完美还原布局。
+            建议选择「精修」以获得 100% 原样式还原。
+          </div>
+        )}
 
         {/* 操作按钮 */}
         <div className="flex justify-end gap-2 px-5 py-3 border-t border-ink-600 bg-ink-900/40">
@@ -161,8 +171,8 @@ export function ImportModeDialog({ html, onCancel, onConfirm }: ImportModeDialog
             onClick={() => onConfirm(selected)}
             className="px-5 py-2 rounded-lg text-sm font-medium bg-brand-600 hover:bg-brand-500 text-white transition-colors"
           >
-            {isHighConfidence
-              ? `使用推荐（${IMPORT_MODE_LABEL[result.recommendation]}）`
+            {selected === result.recommendation
+              ? `使用「${IMPORT_MODE_LABEL[selected]}」（推荐）开始编辑`
               : `使用「${IMPORT_MODE_LABEL[selected]}」开始编辑`}
           </button>
         </div>
@@ -179,6 +189,8 @@ interface ModeOptionProps {
   onSelect: () => void
   disabled?: boolean
   disabledHint?: string
+  /** 是否展开详情（描述 + 警告）。仅选中模式展开，避免用户看到另一种模式的 iframe/自由画布描述产生混淆 */
+  showDetail?: boolean
 }
 
 function ModeOption({
@@ -188,6 +200,7 @@ function ModeOption({
   onSelect,
   disabled,
   disabledHint,
+  showDetail = false,
 }: ModeOptionProps) {
   const isRecommended = recommendation === mode
   return (
@@ -220,7 +233,7 @@ function ModeOption({
                 className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                   isSelected
                     ? 'bg-brand-500 text-white'
-                    : 'bg-ink-700 text-brand-300 border border-brand-500/30'
+                    : 'bg-brand-200/20 text-brand-100 border border-brand-200/40'
                 }`}
               >
                 智能推荐
@@ -232,12 +245,20 @@ function ModeOption({
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-300 leading-relaxed">
-            {IMPORT_MODE_DESC[mode]}
-          </p>
-          <p className="text-[11px] text-gray-400 leading-relaxed mt-1">
-            ⚠ {IMPORT_MODE_WARNING[mode]}
-          </p>
+          {showDetail ? (
+            <>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                {IMPORT_MODE_DESC[mode]}
+              </p>
+              <p className="text-[11px] text-gray-400 leading-relaxed mt-1">
+                ⚠ {IMPORT_MODE_WARNING[mode]}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-gray-500 leading-relaxed">
+              点击选择此模式以查看详情
+            </p>
+          )}
           {disabled && disabledHint && (
             <p className="text-[11px] text-gray-400 leading-relaxed mt-1 italic">
               {disabledHint}

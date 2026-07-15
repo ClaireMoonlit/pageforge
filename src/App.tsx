@@ -20,7 +20,7 @@ import { RefineInspector } from '@/components/RefineInspector'
 import { ImageCropModal } from '@/components/ImageCropModal'
 import { setPendingPasteId, getAndClearPendingPasteId } from '@/components/Canvas'
 import { nodeToCss, renderPreviewTree } from '@/components/NodeRenderer'
-import { useEditorStore, findById, getClipboard, getLastInternalCopyTime, getLastExternalCopyTime, markExternalCopy } from '@/store/editorStore'
+import { useEditorStore, findById, getClipboard, getLastInternalCopyTime, getLastExternalCopyTime, markExternalCopy, loadDraft } from '@/store/editorStore'
 import { findComponentDef } from '@/data/componentLib'
 import type { CanvasNode, ComponentType } from '@/types'
 import { collectRectsFromDOM, computeSnap, canvasRect, type SnapLine, type PrevSnapState } from '@/utils/snapping'
@@ -88,7 +88,9 @@ class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError:
   }
 }
 
-/** 精修模式下用 RefineInspector 替代 Inspector，避免显示"未选中元素"误导用户 */
+/** 精修模式下用 RefineInspector 替代 Inspector。
+ * 预览模式下也保留 RefineInspector（只读态），与画布模式预览保持一致
+ * ——画布模式预览时 Inspector 仍在右侧显示，精修模式同样保留以维持 UI 一致性。 */
 function RefineModeBoundary() {
   const refineSession = useEditorStore((s) => s.refineSession)
   if (refineSession) return <RefineInspector />
@@ -102,6 +104,19 @@ export default function App() {
 		  const cropKey = useEditorStore((s) => s.cropModal.cropKey)
 		  const canvasRef = useRef<HTMLDivElement>(null)
   const [activeNode, setActiveNode] = useState<CanvasNode | null>(null)
+  /** 草稿恢复：页面加载时尝试从 localStorage 恢复上次编辑状态 */
+  useEffect(() => {
+    const draft = loadDraft()
+    if (!draft) return
+    const state = useEditorStore.getState()
+    if (draft.refineHtml && !state.refineSession) {
+      // 恢复精修模式草稿
+      state.startRefine(draft.refineHtml, draft.refineBaseUrl)
+    } else if (draft.nodes && draft.nodes.length > 0 && state.nodes.length === 0) {
+      // 恢复自由画布草稿
+      state.loadTemplate(draft.nodes, draft.canvas || { width: '1200px', height: '2000px', backgroundColor: '#ffffff' })
+    }
+  }, [])
   /** 调试用：将 store 暴露到 window */
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -291,34 +306,35 @@ export default function App() {
       const refineSession = useEditorStore.getState().refineSession
       if (refineSession) {
         // 精修模式：把元素直接插入到 iframe DOM
-        // 用 cursorRef 记录的真实光标位置（已通过 pointermove 实时更新）
-        // 兜底使用 activatorEvent 坐标
         const ae = activatorEvent as PointerEvent | MouseEvent
         const x = cursorRef.current.x || ae.clientX
         const y = cursorRef.current.y || ae.clientY
         const iframeEl = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
         if (!iframeEl?.contentDocument) return
-        const doc = iframeEl.contentDocument
-        // 用 screenX/screenY 走"基于鼠标位置定位"路径：
-        // 落到哪个元素附近就插在它前面/后面，更符合用户拖拽直觉
-        const result = insertRefineElement(doc, data.type as ComponentType, {
-          iframeEl,
-          screenX: x,
-          screenY: y,
-        })
-        if (result) {
-          // 触发选中：让右侧 Inspector 显示新元素的属性
-          const info = buildRefineInfo(doc, result.element)
-          if (info) {
-            useEditorStore.getState().selectRefineElement(info)
+        try {
+          const doc = iframeEl.contentDocument
+          const result = insertRefineElement(doc, data.type as ComponentType, {
+            iframeEl,
+            screenX: x,
+            screenY: y,
+          })
+          if (result) {
+            const info = buildRefineInfo(doc, result.element)
+            if (info) {
+              useEditorStore.getState().selectRefineElement(info)
+            }
+            try {
+              result.element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            } catch {
+              /* ignore */
+            }
+            // 通知 RefineCanvas 重新测量尺寸
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('pf-refine-remeasure'))
+            }, 100)
           }
-          // 滚动到新元素可见区域
-          try {
-            result.element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          } catch {
-            /* ignore cross-context errors */
-          }
-          console.info('[App] 精修模式插入元素：', data.type, 'at', x, y)
+        } catch (err) {
+          console.error('[App] 精修模式拖拽插入失败:', err)
         }
         return
       }
@@ -515,6 +531,18 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (isTypingTarget(e)) return
 
+      // 精修模式下，撤销/重做/删除/Escape 由 RefineCanvas 独立处理，
+      // 避免与 zundo（自由画布模式撤销栈）冲突
+      const state = useEditorStore.getState()
+      if (state.refineSession) {
+        if (
+          ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'y')) ||
+          e.key === 'Delete' || e.key === 'Backspace' || e.key === 'Escape'
+        ) {
+          return // 交给 RefineCanvas 的键盘处理器
+        }
+      }
+
       // Ctrl+Z / Ctrl+Shift+Z 撤销重做（不依赖选中状态）
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault()
@@ -527,7 +555,6 @@ export default function App() {
         return
       }
 
-      const state = useEditorStore.getState()
       const sid = state.selectedId
       const selectedIds = state.selectedIds
 

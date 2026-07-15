@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -105,6 +105,8 @@ interface EditorState {
   modalOpen: boolean
   /** 精修模式会话：null = 自由画布模式，非 null = 精修模式（iframe + DOM 标注） */
   refineSession: RefineSession | null
+  /** 精修预览模式：隐藏编辑 UI，仅显示页面内容 */
+  refinePreviewMode: boolean
 
   addNode: (type: ComponentType, x: number, y: number, parentId?: string) => string
   removeNode: (id: string) => void
@@ -168,6 +170,8 @@ interface EditorState {
   togglePreviewMode: () => void
   /** 设置预览模式 */
   setPreviewMode: (on: boolean) => void
+  /** 切换精修模式预览 */
+  toggleRefinePreviewMode: () => void
   /** 预览期间临时设置元素 display（hide/show/toggle 预览用，不入历史） */
   setPreviewDisplay: (id: string, display: string) => void
   /** 清除所有预览临时 display 状态 */
@@ -309,6 +313,7 @@ export const useEditorStore = create<EditorState>()(
       },
       modalOpen: false,
       refineSession: null,
+      refinePreviewMode: false,
 
       addNode: (type, x, y, parentId) => {
         const def = findComponentDef(type)
@@ -699,6 +704,11 @@ export const useEditorStore = create<EditorState>()(
           }
         }),
 
+      toggleRefinePreviewMode: () =>
+        set((state) => {
+          state.refinePreviewMode = !state.refinePreviewMode
+        }),
+
       setPreviewDisplay: (id, display) =>
         set((state) => {
           state.previewDisplayOverrides[id] = display
@@ -969,6 +979,77 @@ export const useEditorStore = create<EditorState>()(
 // 开发环境暴露 store 到 window，便于调试
 if (typeof window !== 'undefined' && import.meta.env?.DEV) {
   ;(window as unknown as { __pageforge_store: typeof useEditorStore }).__pageforge_store = useEditorStore
+}
+
+// ═══════════════════════════════════════════════════════════
+// 草稿持久化：自动保存到 localStorage，刷新页面后恢复
+// ═══════════════════════════════════════════════════════════
+
+const DRAFT_KEY = 'pageforge_draft'
+
+interface DraftData {
+  /** 自由画布模式：节点列表 */
+  nodes?: import('@/types').CanvasNode[]
+  /** 自由画布模式：画布配置 */
+  canvas?: import('@/types').CanvasConfig
+  /** 精修模式：HTML 内容 */
+  refineHtml?: string
+  /** 精修模式：baseUrl */
+  refineBaseUrl?: string
+  /** 时间戳 */
+  savedAt: number
+}
+
+/** 保存草稿到 localStorage */
+function saveDraft() {
+  try {
+    const state = useEditorStore.getState()
+    const draft: DraftData = { savedAt: Date.now() }
+    if (state.refineSession) {
+      draft.refineHtml = state.refineSession.html
+      draft.refineBaseUrl = state.refineSession.baseUrl
+    } else if (state.nodes.length > 0) {
+      draft.nodes = JSON.parse(JSON.stringify(state.nodes))
+      draft.canvas = { ...state.canvas }
+    }
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft))
+  } catch {
+    // localStorage 不可用或数据过大，静默忽略
+  }
+}
+
+/** 从 localStorage 恢复草稿（页面加载时调用一次） */
+export function loadDraft(): DraftData | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const draft = JSON.parse(raw) as DraftData
+    // 24 小时内有效
+    if (Date.now() - draft.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(DRAFT_KEY)
+      return null
+    }
+    return draft
+  } catch {
+    return null
+  }
+}
+
+/** 清除草稿 */
+export function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+}
+
+// 订阅 store 变化，自动保存草稿（debounce 2s）
+let draftTimer: ReturnType<typeof setTimeout> | null = null
+useEditorStore.subscribe(() => {
+  if (draftTimer) clearTimeout(draftTimer)
+  draftTimer = setTimeout(saveDraft, 2000)
+})
+
+// 页面关闭前保存
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', saveDraft)
 }
 
 /** 获取当前选中节点 */

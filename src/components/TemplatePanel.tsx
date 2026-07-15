@@ -19,10 +19,12 @@ export function TemplatePanel() {
    *  source: 'html' 表示来自粘贴/上传的 HTML 导入（带"作为片段追加"选项）
    *          'preset' 表示来自预设模板（只有"取消 / 确认替换"）
    *          'refine' 表示精修模式下又导入新 HTML（弹"替换当前精修页面"确认）
+   *          'freeform_to_refine' 自由画布有元素时切换到精修（弹确认）
+   *          'refine_to_freeform' 精修模式切换到自由画布（弹确认）
    *  注：开源模板（'imported'）和重新生成（'reimport'）已改走模式选择弹窗，
    *      不再使用此处的二次确认，故类型中已删除 */
   const [pendingImport, setPendingImport] = useState<{
-    source: 'html' | 'preset' | 'refine'
+    source: 'html' | 'preset' | 'refine' | 'freeform_to_refine' | 'refine_to_freeform'
     html?: string
     presetIndex?: number
     parsedCount?: number
@@ -93,7 +95,7 @@ export function TemplatePanel() {
       if (Number.isFinite(v) && v > 0) extractedH = v
     }
     // 3. 取 max(实际内容, extractedHeight, 400) + 40px 留白
-    return `${Math.max(400, Math.ceil(maxBottom) + 40, extractedH)}px`
+    return `${Math.max(800, Math.ceil(maxBottom) + 120, extractedH)}px`
   }
 
   /** 判断 HTML 是否为完整页面（含 pf-root / <html> / <body> 标记） */
@@ -247,6 +249,16 @@ export function TemplatePanel() {
         setPendingImport({ source: 'refine', html })
         return
       }
+      // 自由画布有元素时切换到精修：弹确认（精修模式会清空自由画布节点）
+      if (mode === 'refine' && nodes.length > 0 && !refineSession) {
+        setPendingImport({ source: 'freeform_to_refine', html })
+        return
+      }
+      // 精修模式切换到自由画布：弹确认
+      if (mode === 'freeform' && refineSession) {
+        setPendingImport({ source: 'refine_to_freeform', html })
+        return
+      }
       // 精修模式：直接走 iframe 路径，不预解析、不二次确认
       if (mode === 'refine') {
         performImport(html, undefined, 'refine')
@@ -363,12 +375,20 @@ export function TemplatePanel() {
     // 取暂存的导入模式（来自 handleModeConfirm）
     const importMode = (window as unknown as { __pfImportMode?: ImportMode }).__pfImportMode
     if (pendingImport.source === 'refine') {
-      // 精修模式下替换：可能是新 HTML（performImport 走 refine 分支）
-      // 也可能是预设模板（applyPreset 退出精修 + 加载预设）
       if (pendingImport.html) {
         performImport(pendingImport.html, 'replace', 'refine')
       } else if (pendingImport.presetIndex !== undefined) {
         applyPreset(pendingImport.presetIndex)
+      }
+    } else if (pendingImport.source === 'freeform_to_refine') {
+      // 自由画布 → 精修：清空画布，进入精修模式
+      if (pendingImport.html) {
+        performImport(pendingImport.html, 'replace', 'refine')
+      }
+    } else if (pendingImport.source === 'refine_to_freeform') {
+      // 精修 → 自由画布：退出精修，导入到自由画布
+      if (pendingImport.html) {
+        performImport(pendingImport.html, 'replace', 'freeform')
       }
     } else if (pendingImport.source === 'html' && pendingImport.html) {
       performImport(pendingImport.html, 'replace', importMode)
@@ -571,9 +591,20 @@ export function TemplatePanel() {
             <div className="flex-1 overflow-y-auto p-5">
               {tab === 'preset' && (
                 <>
-                  {nodes.length > 0 && (
-                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-300 leading-loose tracking-wide">
-                      加载模板将替换当前画布内容，可通过撤销恢复。
+                  {refineSession ? (
+                    <div className="mb-4 px-3 py-2 bg-purple-900/30 rounded text-xs text-purple-300 leading-loose tracking-wide">
+                      当前处于<span className="text-purple-200 font-medium">精修模式</span>，预设模板将<span className="text-purple-200">退出精修并切换到自由画布</span>加载。
+                      如需保留当前精修页面，请先通过导出菜单复制 HTML。
+                    </div>
+                  ) : nodes.length > 0 ? (
+                    <div className="mb-4 px-3 py-2 bg-amber-900/30 rounded text-xs text-amber-300 leading-loose tracking-wide">
+                      当前画布有 <span className="text-amber-200 font-mono">{nodes.length}</span> 个节点，加载预设模板将<span className="text-amber-200">替换全部内容</span>（可通过 Ctrl+Z 撤销恢复）。
+                      <br />
+                      <span className="text-gray-500">预设模板直接以自由画布模式加载，不经过模式选择。</span>
+                    </div>
+                  ) : (
+                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-loose tracking-wide">
+                      画布为空，选择预设模板将以<span className="text-gray-200">自由画布模式</span>直接加载，可拖拽编辑每个元素。
                     </div>
                   )}
                   <div className="grid grid-cols-2 gap-3">
@@ -597,9 +628,19 @@ export function TemplatePanel() {
 
               {tab === 'imported' && (
                 <>
-                  {nodes.length > 0 && (
-                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-300 leading-loose tracking-wide">
-                      加载模板将替换当前画布内容，可通过撤销恢复。
+                  {refineSession ? (
+                    <div className="mb-4 px-3 py-2 bg-purple-900/30 rounded text-xs text-purple-300 leading-loose tracking-wide">
+                      当前处于<span className="text-purple-200 font-medium">精修模式</span>，导入开源模板将<span className="text-purple-200">替换当前精修页面</span>。
+                      建议在模式选择中选择「精修」以保留原样式，选择「自由画布」将退出精修。
+                    </div>
+                  ) : nodes.length > 0 ? (
+                    <div className="mb-4 px-3 py-2 bg-amber-900/30 rounded text-xs text-amber-300 leading-loose tracking-wide">
+                      当前画布有 <span className="text-amber-200 font-mono">{nodes.length}</span> 个节点，导入后将弹出<span className="text-gray-200">模式选择</span>。
+                      选择「自由画布」会<span className="text-amber-200">替换全部内容</span>（可通过 Ctrl+Z 撤销），选择「精修」将切换到 iframe 编辑模式。
+                    </div>
+                  ) : (
+                    <div className="mb-4 px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-loose tracking-wide">
+                      画布为空，导入后将弹出<span className="text-gray-200">模式选择</span>（自由画布 / 精修），系统会根据页面复杂度智能推荐。
                     </div>
                   )}
                   {error && (
@@ -651,20 +692,20 @@ export function TemplatePanel() {
                   {/* 行为说明：两种检测规则 */}
                   <div className="px-3 py-2 bg-ink-700/50 rounded text-xs text-gray-400 leading-loose tracking-wide">
                     <span className="text-gray-200 font-medium">导入规则：</span>
-                    HTML 含
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">pf-root</code>
-                    /
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">&lt;html&gt;</code>
-                    /
-                    <code className="text-gray-300 bg-ink-700/70 px-1 rounded mx-1">&lt;body&gt;</code>
-                    标记时识别为<span className="text-gray-200 mx-1">完整页面</span>（替换画布），
-                    否则为<span className="text-gray-300 mx-1">组件片段</span>（追加到底部）。
+                    粘贴或上传 HTML 后将弹出<span className="text-gray-300">模式选择</span>对话框。
+                    <br />
+                    <span className="text-gray-200">自由画布</span>：将 HTML 解析为可拖拽节点，适合简单页面或组件片段。
+                    <br />
+                    <span className="text-purple-300">精修</span>：在页面中原样渲染，点击元素即可编辑文字/图片/链接，适合复杂布局。
+                    <br />
+                    <span className="text-gray-500 mt-1 block">
+                      系统会根据 HTML 复杂度自动推荐模式，也可手动切换。
+                    </span>
                   </div>
 
                   {/* 实时检测指示器 */}
                   {pasteHtml.trim() && (() => {
                     const detected = detectCompletePage(pasteHtml)
-                    const canReplace = nodes.length > 0
                     return (
                       <div className="flex items-center gap-1.5 px-3 py-2 rounded text-xs leading-loose tracking-wide bg-ink-700/50 text-gray-300">
                         {detected ? (
@@ -675,8 +716,7 @@ export function TemplatePanel() {
                               <line x1="12" y1="17" x2="12.01" y2="17" />
                             </svg>
                             <span>
-                              完整页面
-                              {canReplace ? ' — 导入时将弹出确认' : ' — 画布为空，直接替换'}
+                              完整页面 — 导入后将弹出模式选择，推荐使用<span className="text-purple-300">精修模式</span>
                             </span>
                           </>
                         ) : (
@@ -685,8 +725,7 @@ export function TemplatePanel() {
                               <polyline points="20 6 9 17 4 12" />
                             </svg>
                             <span>
-                              组件片段
-                              {nodes.length > 0 ? ' — 将追加到画布底部' : ' — 画布为空，直接添加'}
+                              组件片段 — 导入后将弹出模式选择，推荐使用<span className="text-gray-200">自由画布</span>
                             </span>
                           </>
                         )}
@@ -807,7 +846,10 @@ export function TemplatePanel() {
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
                 <h3 className="text-gray-100 font-semibold text-sm tracking-wide">
-                  {pendingImport.source === 'refine' ? '退出当前精修页面？' : '即将清空当前画布'}
+                  {pendingImport.source === 'refine' ? '替换当前精修页面？'
+                    : pendingImport.source === 'freeform_to_refine' ? '切换到精修模式？'
+                    : pendingImport.source === 'refine_to_freeform' ? '切换到自由画布模式？'
+                    : '即将清空当前画布'}
                 </h3>
               </div>
               <button
@@ -841,24 +883,50 @@ export function TemplatePanel() {
                   </div>
                 </div>
                 <p className="text-gray-400 text-xs leading-loose tracking-wide">
-                  如果直接导入，当前画布上的 {nodes.length} 个节点将被全部清空（可通过撤销恢复）。
-                  如果您只想把内容追加到现有画布，请选择"作为片段追加"。
+                  直接导入将替换当前画布上的 {nodes.length} 个节点（可通过撤销恢复）。
+                  如需保留现有内容，请选择"作为片段追加"将新内容追加到画布底部。
                 </p>
               </div>
             ) : pendingImport.source === 'refine' ? (
               <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
                 <p>
-                  当前正在精修模式，导入新内容会<span className="text-purple-300 mx-1">退出当前精修页面</span>，
-                  加载新内容到 iframe。
+                  当前正在<span className="text-purple-300 mx-1">精修模式</span>，
+                  导入新内容会<span className="text-purple-300 mx-1">替换当前精修页面</span>。
                 </p>
                 <p className="text-gray-400 text-xs leading-loose tracking-wide">
-                  如需保留当前精修页面的修改，建议先点画布右上角"复制"导出当前 HTML。
+                  如需保留当前精修页面的修改，建议先通过导出菜单复制当前 HTML。
+                </p>
+              </div>
+            ) : pendingImport.source === 'freeform_to_refine' ? (
+              <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
+                <p>
+                  当前自由画布上有 <span className="text-gray-200 font-mono">{nodes.length}</span> 个节点，
+                  切换到<span className="text-purple-300 mx-1">精修模式</span>将清空画布，
+                  在 iframe 中加载新页面进行编辑。
+                </p>
+                <p className="text-gray-400 text-xs leading-loose tracking-wide">
+                  精修模式下元素位置由原结构决定，不能像自由画布那样随意拖拽。
+                  如需保留当前画布内容，请先导出或以自由画布模式导入。
+                </p>
+              </div>
+            ) : pendingImport.source === 'refine_to_freeform' ? (
+              <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
+                <p>
+                  当前正在<span className="text-purple-300 mx-1">精修模式</span>，
+                  切换到<span className="text-gray-200 mx-1">自由画布模式</span>将退出精修，
+                  并以自由画布方式导入新内容。
+                </p>
+                <p className="text-gray-400 text-xs leading-loose tracking-wide">
+                  自由画布模式下，复杂布局（多层 flex/grid）可能错位。
+                  如需保留当前精修页面的修改，建议先导出。
                 </p>
               </div>
             ) : (
               <div className="px-5 py-4 text-sm text-gray-300 leading-loose tracking-wide space-y-2">
                 <p>
-                  当前预设模板加载后，画布上的 {nodes.length} 个节点将被全部替换（可通过撤销恢复）。
+                  {refineSession
+                    ? '当前正在精修模式，加载预设模板将退出精修并替换为模板内容。'
+                    : `当前预设模板加载后，画布上的 ${nodes.length} 个节点将被全部替换（可通过撤销恢复）。`}
                 </p>
               </div>
             )}
@@ -891,12 +959,17 @@ export function TemplatePanel() {
               <button
                 onClick={confirmReplace}
                 className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pendingImport.source === 'refine'
+                  pendingImport.source === 'refine' || pendingImport.source === 'freeform_to_refine'
                     ? 'bg-purple-700/40 hover:bg-purple-700/60 text-purple-200 border border-purple-600/40'
+                    : pendingImport.source === 'refine_to_freeform'
+                    ? 'bg-brand-600/40 hover:bg-brand-600/60 text-brand-200 border border-brand-500/40'
                     : 'bg-red-900/40 hover:bg-red-900/60 text-red-300 border border-red-800/40'
                 }`}
               >
-                {pendingImport.source === 'html' ? '仍要替换' : pendingImport.source === 'refine' ? '确认替换' : '确认替换'}
+                {pendingImport.source === 'html' ? '仍要替换'
+                  : pendingImport.source === 'freeform_to_refine' ? '确认切换到精修'
+                  : pendingImport.source === 'refine_to_freeform' ? '确认切换到自由画布'
+                  : '确认替换'}
               </button>
             </div>
           </div>

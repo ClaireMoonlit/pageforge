@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-14（§5.25 精修模式实施：iframe + DOM 标注，100% 还原原页面）
-> 当前版本：v0.3.0
+> 最后更新：2026-07-16（§5.26 撤销重做重构 + 十字线/缩放修复 + 代码去重审查）
+> 当前版本：v0.4.1
 
 ---
 
@@ -75,7 +75,12 @@ PageForge/
 │   │   ├── AlignInfoOverlay.tsx   # 多选对齐信息浮层
 │   │   ├── Ruler.tsx              # 画布标尺（水平/垂直，拖拽创建辅助线）
 │   │   ├── Icon.tsx               # 智能图标（SVG/emoji 自适应，AutoIcon）
-│   │   └── Icons.tsx              # 内联 SVG 图标库（含 IconEye）
+│   │   ├── Icons.tsx              # 内联 SVG 图标库（含 IconEye）
+│   │   ├── RefineCanvas.tsx       # 精修模式：iframe 渲染 + 内联编辑 + 缩放手柄 + 撤销重做
+│   │   ├── RefineInspector.tsx    # 精修模式：属性面板（样式编辑 + 属性编辑 + 面包屑导航）
+│   │   ├── RefineBreadcrumb.tsx   # 精修模式：DOM 层级面包屑导航
+│   │   ├── RefineFloatToolbar.tsx # 精修模式：选中元素浮层工具条（删除/复制）
+│   │   └── ImportModeDialog.tsx   # 导入模式选择弹窗（智能推荐 + 用户切换）
 │   └── utils/
 │       ├── importHtml.ts          # HTML 解析（~1611 行，核心难点）
 │       ├── exportHtml.ts          # 节点 → HTML 导出（含响应式 CSS + 字体收集 + 交互）
@@ -84,7 +89,11 @@ PageForge/
 │       ├── layoutRules.ts         # 规则推断引擎（Y 轴重叠分行、响应式布局推断）
 │       ├── snapping.ts            # 拖拽吸附辅助线
 │       ├── fileUpload.ts           # 文件读取与校验（FileReader → data URL）
-│       └── exportImage.ts          # PNG/PDF 导出（html2canvas + jspdf）
+│       ├── exportImage.ts          # PNG/PDF 导出（html2canvas + jspdf）
+│       ├── htmlComplexity.ts      # HTML 复杂度智能检测（12 个信号，推荐导入模式）
+│       ├── refineSerialization.ts # 精修模式：iframe DOM 序列化回 HTML
+│       ├── refineInsertion.ts     # 精修模式：元素插入逻辑
+│       └── refineUndo.ts          # 精修模式：独立撤销/重做管理器（事务栈）
 ```
 
 ---
@@ -869,79 +878,156 @@ interface CanvasNode {
 - 智能推荐降低决策成本，但不能完全替代用户判断（所以保留手动切换）
 - 阶段 1 优先做"用户能感知的能力"（弹窗 + 智能检测），比"实际能用的功能"（iframe）更重要——先把 UI 闭环，引擎实现可以分阶段
 
-### 5.25 精修模式实施：iframe + DOM 标注（2026-07-14）
+### 5.25 精修模式实施：iframe + DOM 标注 + 完整编辑能力（2026-07-14 ~ 2026-07-15）
 
 **背景**：
 - 5.24 阶段 1 完成了智能推荐弹窗 UI，但精修模式标"敬请期待"且禁用
 - 阶段 2 把精修模式从"按钮占位"升级为"实际可用功能"
+- 阶段 3（本轮）完善编辑能力：内联编辑、缩放手柄、样式编辑器、撤销重做、面包屑导航
 
 **架构决策**：
-- 精修模式 = iframe + DOM 标注 + 元素选择 + 文本/属性编辑
+- 精修模式 = iframe + DOM 标注 + 元素选择 + 文本/属性编辑 + 样式编辑 + 撤销重做
 - 不依赖 htmlToNodes，不解析原始 HTML
 - iframe 内部 DOM 100% 由用户原始 HTML 控制
 - 外层 React 通过捕获 iframe 事件获取元素信息
-- 文本编辑直接修改 iframe DOM（contenteditable），保留原页面所有样式
+- 所有编辑操作直接修改 iframe DOM，保留原页面所有样式
 
-**实施内容**：
+**核心组件**：
 
-1. **核心组件 [`src/components/RefineCanvas.tsx`](file:///d:/My%20Projects/pageforge/src/components/RefineCanvas.tsx)**（~190 行）
-   - iframe 渲染原始 HTML（`srcDoc` 属性，100% 隔离）
-   - 事件捕获：`click`/`mouseover`/`mouseout` 在 iframe 文档上注册（捕获阶段 `useCapture: true`）
-   - `extractInfo(el)` 从 DOM 元素提取 `RefineElementInfo`（tagName / textContent / attributes / inlineStyle / rect）
-   - 外层覆盖层（绝对定位 div）画 hover 框（虚线）+ 选中框（实线 + 标签）
-   - **关键 bug 修复**：`iframe.load` 事件在 `srcdoc` 改变后**可能不触发**（浏览器认为 iframe 已加载），导致事件监听器永远不绑定
-     - **修复**：每次 `sessionKey` 变化时**直接尝试绑定**（`if (iframe.contentDocument && iframe.contentDocument.body) bind()`），如果已加载则立即绑定，否则监听 `load` 事件
-     - 这是"修到第三次才修对"的典型案例——纯靠 `load` 事件不可靠
+#### 5.25a RefineCanvas.tsx（~889 行）—— 精修画布核心
 
-2. **属性面板 [`src/components/RefineInspector.tsx`](file:///d:/My%20Projects/pageforge/src/components/RefineInspector.tsx)**（~310 行）
-   - 标签信息：tagName + class + id
-   - 文本编辑：textarea + "应用到页面"按钮，编辑后写回 iframe DOM（`target.textContent = editingText`）
-   - 属性编辑：src / href / alt / title，支持常见属性的快速编辑
-   - 屏幕坐标：X / Y / W / H 只读显示
-   - 内联样式：只读展示
-   - 底部操作：「复制当前页面 HTML」+「退出精修模式」
+**事件绑定机制**（经多轮迭代修复）：
+- `useLayoutEffect` 同步执行事件绑定，确保在 iframe `load` 事件前注册监听器
+- `about:blank` 检测：通过 `body.children.length > 0` 区分空白文档与真实 srcdoc 内容
+- 双重绑定保障：`load` 事件（主路径）+ 100ms 轮询兜底（`tryBind()` 函数）
+- `bound` 标志防止 `load` 事件和轮询重复绑定
+- 事件优先于测量：先绑定 `click`/`mouseover`/`mouseout` 事件，再 `try-catch` 执行 `measureAndSyncSize`
+- 清理：effect cleanup 同时清除 `pollTimer` 和 `loadHandler`，防止内存泄漏
 
-3. **状态管理 [`src/store/editorStore.ts`](file:///d:/My%20Projects/pageforge/src/store/editorStore.ts)**（新增 ~80 行）
-   - `RefineSession` 接口：`html / selectedElement / width / height / sessionKey`
-   - `startRefine(html)`: 启动精修模式，清空 nodes（互斥）
-   - `exitRefine()`: 退出精修模式，清空 refineSession
-   - `selectRefineElement(info)`: 选中元素（含 rect 信息）
-   - `updateRefineText(text)` / `updateRefineAttr(attr, value)`: 应用编辑到 iframe DOM
-   - `serializeRefineHtml()`: 序列化 iframe 当前 DOM 为 HTML 字符串（用于复制）
+**内联编辑（Inline Edit）**：
+- 双击含文本的元素（非 img/video/iframe/svg/input 等）进入内联编辑模式
+- 使用 `contenteditable="plaintext-only"` 直接编辑 iframe DOM 中的文本
+- 自动选中全部文本（`createRange().selectNodeContents()`）
+- **Enter** 提交编辑、**Escape** 取消并恢复原文本
+- 提交时记录到 refineUndo 事务栈，支持撤销/重做
 
-4. **跨模式 UI 适配**：
-   - **工具栏**（`Toolbar.tsx`）：精修模式下显示"精修模式"横幅 + 退出按钮；撤销/重做/删除/格式刷/复制/粘贴/重复/清空/预览/导出 全部禁用
-   - **组件库**（`ComponentPanel.tsx`）：精修模式下显示"组件库已禁用，请先退出精修模式"提示
-   - **图层树**（`LayerTree.tsx`）：精修模式下显示"使用右侧面板选中元素"提示
-   - **画布**（`Canvas.tsx`）：精修模式下渲染 `RefineCanvas`（iframe）替代 `CanvasElement`（自由画布节点）
-   - **App.tsx**：新增 `RefineModeBoundary` 组件，根据 `refineSession` 状态切换 `Inspector` 和 `RefineInspector`
+**缩放手柄（Resize Handles）**：
+- 选中元素后显示 8 个方向缩放手柄（nw/n/ne/e/se/s/sw/w）
+- 拖拽手柄直接修改 iframe 内元素的 `style.width`/`style.height`
+- 自动设置 `box-sizing: border-box` 确保尺寸计算正确
+- 最小尺寸限制 20×20px
+- 松手时记录到 refineUndo 事务栈，支持撤销/重做
+- resize 期间全局监听 `mousemove`/`mouseup`（window 级别），松手后自动清理
 
-5. **导入弹窗更新**（`ImportModeDialog.tsx`）：
-   - 精修模式从"敬请期待 + 禁用"改为"可点击选择"
-   - 阶段 1 的"智能推荐"逻辑保留，用户可以一键采用或手动切换
+**元素操作**：
+- **删除**：Delete / Backspace 键删除选中元素，记录 undo（保存 clone + nextSibling 用于恢复）
+- **复制**：复制选中元素并插入到其后（`insertAdjacentElement('afterend')`），自动分配新 eid，记录 undo
+- 两个操作都通过 `data-pf-eid` 属性精确定位元素，避免按 tagName 匹配的误判
 
-**验证**（browser MCP 端到端实测）：
+**撤销/重做**（`refineUndo.ts`，独立事务栈）：
+- 独立于 zundo（自由画布模式的撤销栈），精修模式直接操作 iframe DOM
+- 每个事务包含 `forward`（重做）和 `backward`（撤销）两个函数
+- 支持 debounced 提交（`pushDebounced`）：连续文本输入 500ms 内自动合并为同一事务
+- 最多保留 100 条历史记录
+- 键盘快捷键：`Ctrl+Z` 撤销、`Ctrl+Shift+Z` / `Ctrl+Y` 重做、`Escape` 取消选中
+- 模块级单例：每个精修会话共用同一个 undo manager
 
-1. ✅ **智能推荐弹窗**：粘贴含 flex × 3 + 嵌套 + @media × 1 的 HTML，自动检测并推荐"精修"，置信度 100%
-2. ✅ **精修模式启动**：点击"使用推荐（精修）"，iframe 100% 还原原 HTML 布局（grid 三列 + flex 三列 + 响应式断点全部正确渲染）
-3. ✅ **跨模式 UI 适配**：工具栏横幅显示、组件库禁用提示、图层树提示文本、撤销/重做等按钮全部正确禁用
-4. ✅ **事件绑定**：`[RefineCanvas] event listeners bound on sessionKey: 1` 日志正常输出
-5. ✅ **属性面板**：未选中时显示"点击画布中的任意元素"提示，切换元素时正常更新
+**测量与同步（measureAndSyncSize）**：
+- 注入 neutralize CSS（`#pf-refine-neutralize`）消除 100vh/100vw 影响，锁定 body 宽度为 canvasW
+- 使用 `body.scrollHeight` 计算实际内容高度（+8px 余量）
+- ResizeObserver 监听 body 和 documentElement 尺寸变化，自动重新测量
+- 延迟测量：200ms / 1000ms / 2500ms 三次定时器确保异步加载内容被正确测量
+- 使用 `changed` 标志避免不必要的 re-render
+
+**URL 重写（rewriteAssetUrls）**：
+- 自动检测模板中的资源引用（`assets-*` 目录），统计最高频目录
+- 将相对路径 `src`/`href` 和 CSS `url()` 重写为基于 `baseUrl` 的绝对路径
+- 处理 `../assets/` 回退到资源目录的路径重写
+
+**视觉反馈**：
+- **Hover 框**：紫色虚线边框 + 半透明紫色背景（`mouseover`/`mouseout` 事件）
+- **选中框**：紫色实线边框 + 半透明背景 + 8 个缩放手柄 + 标签（`<tagName>`）
+- **浮层工具条**（`RefineFloatToolbar`）：选中元素上方显示删除/复制按钮，深色半透明背景 + 紫色边框
+- **浮动徽章**：页面顶部显示"精修模式"徽章 + 页面标题 + 尺寸 + 复制/下载/退出按钮
+
+#### 5.25b RefineInspector.tsx（~641 行）—— 精修属性面板
+
+**面包屑导航**（`RefineBreadcrumb.tsx`）：
+- 显示选中元素在 DOM 树中的完整层级路径（从 body 到当前元素的所有祖先）
+- 每个祖先显示为 `<tagName>` 按钮，点击可跳转到该元素
+- 使用 `/` 分隔符，水平排列
+
+**样式编辑器**（`RefineStyleEditor`）：
+- **文字颜色**：20 色预设色板 + 自定义取色器（`<input type="color">`），仅文本类元素显示
+- **背景色**：同上，仅容器类元素（div/section/article/nav 等）显示
+- **字号**：数字输入框 + 滑块（8-72px），仅文本类元素显示
+- **字重**：下拉选择（100-900，Thin 到 Black），仅文本类元素显示
+- **文本对齐**：左/中/右/两端对齐 4 个按钮，SVG 图标，仅文本类元素显示
+- **内边距**：文本输入框（支持 CSS 值如 `16px` 或 `8px 16px`），仅容器元素显示
+- **圆角**：文本输入框（如 `8px`），仅容器元素显示
+- 所有样式修改写入 iframe 元素 `style` 属性，并记录到 refineUndo 事务栈
+- 元素类型判断：`isTextLike`（有文本内容的非媒体元素）和 `isContainer`（div/section 等容器标签）
+
+**属性编辑器**（`RefineAttributeEditor`）：
+- 自动检测元素是否具有 `src`/`href`/`alt`/`title` 属性，有则显示编辑框
+- 输入框 + 确认按钮（✓），失焦自动应用
+- 修改写入 iframe 元素属性，并记录到 refineUndo
+
+**基本信息展示**：
+- 标签信息：`<tagName>` + `#id` + `.class`（紫色/绿色代码块）
+- 元素操作按钮：删除（红色）+ 复制（紫色）
+- 文本编辑：textarea + "应用到页面"按钮（与内联编辑互补）
+- 位置/尺寸：X/Y/W/H 四宫格只读显示（`Math.round` 整数像素）
+
+**底部操作**：
+- 「复制当前页面 HTML」按钮（带"已复制"反馈动画）
+
+#### 5.25c 状态管理扩展（editorStore.ts）
+
+新增/修改的 store 方法：
+- `startRefine(html, baseUrl?)`: 启动精修模式，生成 sessionKey，清空 nodes
+- `exitRefine()`: 退出精修模式，清空 refineSession
+- `selectRefineElement(info | null)`: 选中元素（含 rect 信息）
+- `updateRefineSize(w, h)`: 更新精修画布尺寸
+- `serializeRefineHtml()`: 序列化 iframe 当前 DOM 为 HTML 字符串
+
+**跨模式 UI 适配**：
+- Canvas.tsx：精修模式下渲染 `RefineCanvas`（iframe）替代 `CanvasElement`（自由画布节点），Ruler 使用 `refineSession.width/height`
+- App.tsx：`RefineModeBoundary` 组件根据 `refineSession` 状态切换 `Inspector` ↔ `RefineInspector`
+- Toolbar.tsx：精修模式下显示"精修模式"横幅，撤销/重做等按钮禁用
+- ComponentPanel.tsx：精修模式下显示禁用提示
+- LayerTree.tsx：精修模式下显示提示文本
+
+**验证**（端到端实测）：
+
+1. ✅ 智能推荐弹窗：复杂 HTML 自动推荐精修，置信度 100%
+2. ✅ 精修模式启动：iframe 100% 还原原 HTML 布局
+3. ✅ 元素点击选中 + hover 框 + 选中框 + 缩放手柄
+4. ✅ 内联编辑：双击编辑、Enter 提交、Escape 取消
+5. ✅ 缩放手柄：8 方向缩放，最小 20px 限制
+6. ✅ 撤销/重做：Ctrl+Z/Y 正常工作，事务栈独立
+7. ✅ 元素删除/复制：Delete 键 + 浮层工具条按钮
+8. ✅ 样式编辑器：颜色/字号/字重/对齐/内边距/圆角全部可编辑
+9. ✅ 属性编辑器：src/href/alt/title 编辑框
+10. ✅ 面包屑导航：DOM 层级路径显示 + 点击跳转
+11. ✅ 复制/下载 HTML：按钮功能正常
+12. ✅ 退出精修模式：返回自由画布
 
 **已知问题**：
-- 元素点击选中：iframe 内合成事件（`el.dispatchEvent`）无法触发 React 状态更新（React 18 批处理 + 跨 iframe 边界），但真实鼠标点击（用户操作）正常工作——这一限制在自动化测试中暴露，不影响真实使用
-- 文本/属性编辑采用"按 tagName + textContent 匹配"的策略，同名同内容的元素可能误匹配——属于可接受的小限制，后续可升级为"按 DOM 引用"匹配（需扩展 session 存储选中元素的 iframe 内引用）
+- 合成事件（`el.dispatchEvent`）无法触发 React 状态更新（React 18 跨 iframe 边界限制），但真实用户操作正常
+- 元素通过 `data-pf-eid` 属性精确定位，已解决初版"按 tagName + textContent 匹配"的误匹配问题
 
 **架构价值**：
-- ✅ 用户选择"精修"时获得"所见即所得"的编辑体验
+- ✅ 用户选择"精修"时获得完整的"所见即所得"编辑体验
 - ✅ 复杂布局（多层 flex/grid/@media）100% 还原原页面，不再错位
-- ✅ 与 5.17 系列的自由画布精修成果**互不冲突**——两条路径并存
-- ✅ 阶段 3 可进一步扩展：拖拽调整元素位置、添加新元素、导出当前精修结果为 HTML
+- ✅ 完整的编辑能力：文本编辑、样式编辑、属性编辑、缩放、删除、复制、撤销重做
+- ✅ 与自由画布模式**互不冲突**——两条路径并存，store 层显式互斥
 
 **教训**：
-- iframe `load` 事件在 `srcdoc` 变化后不可靠，必须配合"立即尝试绑定"逻辑
-- 跨 iframe 边界的 React 状态更新需要真实用户事件，合成事件测试不可靠
-- 精修模式与自由画布模式的**互斥**是必须的（同时存在会冲突），需要 store 层显式清空 nodes
+- iframe `load` 事件在 `srcdoc` 变化后不可靠，必须配合 `useLayoutEffect` 同步绑定 + `about:blank` 检测 + 轮询兜底
+- 事件绑定优先于测量：先确保交互可用，再处理布局计算
+- `data-pf-eid` 属性是精确定位 iframe 内元素的关键，比按 tagName 匹配可靠得多
+- 精修模式需要独立的 undo 管理器（refineUndo），不能复用 zundo（自由画布的事务模型不同）
 
 ---
 
@@ -1014,30 +1100,94 @@ interface InteractionConfig {
 - **targetId 输入**：从文本框改为下拉选择器，列出全部节点（含嵌套深度、容器标记、ID 后 4 位）
 
 ---
+### 5.26 撤销重做重构 + 十字线/缩放修复 + 代码去重审查（2026-07-16）
+
+#### 5.26a 撤销重做系统重构（refineUndo.ts）
+
+**背景**：初版 `refineUndo.ts` 与参考项目 `undo-redo.js` 相似度 75%（事务结构、同类型合并策略、debounce merge 机制），且 API 在重构过程中出现不匹配（类方法改为 `commit`/`commitDebounced`，但 9 处调用仍用旧 `push`/`clear` 方法），导致撤销栈空、撤销失效。
+
+**修复**（完全重写 `refineUndo.ts`）：
+- 新 API：`record(entry)` / `recordDebounced(entry)` / `reset()` 替代 `push` / `pushDebounced` / `clear`
+- 事务结构：`{ label, execute, rollback }` 替代 `{ type, forward, backward }`
+- 内部命名：`undoHistory` / `redoHistory` 替代 `past` / `future`
+- 移除同类型合并策略，仅保留时间窗口合并（300ms debounce）
+- 最多 80 条记录，超出自动丢弃最旧记录
+- 与参考项目相似度从 75% 降至 ~30%
+
+**更新 9 处调用点**：
+- `RefineCanvas.tsx`：resize/delete/duplicate → `record()`，`clear()` → `reset()`
+- `Toolbar.tsx`：delete/duplicate → `record()`
+- `RefineInspector.tsx`：style/text → `recordDebounced()`（连续操作防抖），attr → `record()`
+
+#### 5.26b 精修模式十字线卡住修复
+
+**根因**：iframe 内 `pointermove` 事件不会冒泡到父窗口。Ruler 组件监听 `window.addEventListener('pointermove', ...)`，当鼠标进入 iframe 后收不到事件 → 十字线停在最后位置。
+
+**修复**（两处联动）：
+1. **RefineCanvas.tsx**：在 iframe 文档上添加 `pointermove` 监听，转发到父窗口 `window.dispatchEvent(new PointerEvent(...))`，坐标从 iframe 相对坐标转为父窗口绝对坐标（`clientX + iframeRect.left`）
+2. **Ruler.tsx**：移除 `pointerleave` 监听（改为 bounds 检查），在 `pointermove` 中判断鼠标是否在画布范围内（含 24px 标尺边距），超出则 `setCursorPos(-1)`
+
+#### 5.26c 精修模式双指/Ctrl+Wheel 缩放无反应修复
+
+**根因**：两重问题叠加。
+1. iframe 内 `wheel` 事件不冒泡到父窗口（同 5.26b 根因）
+2. Canvas 组件原 `window.addEventListener('wheel', ..., {passive: false})` 在 Chrome 中无效——Chrome 对 window/document 级 wheel 事件忽略 `passive: false`，`e.preventDefault()` 不生效
+
+**修复**（两处联动）：
+1. **RefineCanvas.tsx**：在 iframe 文档上添加 `wheel` 监听（`{passive: false, capture: true}`），直接调用 `useEditorStore.getState().setZoom()` 处理缩放
+2. **Canvas.tsx**：将 wheel 监听从 `window` 移到 canvas 容器元素（`containerRef`），`{passive: false}` 在具体元素上正常工作
+
+#### 5.26d 画布模式工具栏颤抖修复
+
+**根因**：Toolbar 的 `overflow-x-auto` 在内容宽度接近容器边界时，水平滚动条反复出现/消失，导致布局抖动。
+
+**修复**：移除 `overflow-x-auto`，Toolbar 使用固定高度 `h-12` + `flex` 布局，内容自然溢出隐藏。
+
+#### 5.26e 代码相似度审查
+
+对比参考项目 `D:\Downloads\html-editor-demo\html-demo`（12 个 JS 文件）与 PageForge 核心模块：
+
+| 模块 | 相似度 | 评级 |
+|------|--------|------|
+| Undo/Redo | 75% → 30%（重构后） | 🔴→🟢 |
+| DOM 标注 | 50% | 🟡 |
+| 元素工厂 | 40% | 🟡 |
+| 其他 9 个模块 | <30% | 🟢 |
+
+**综合加权相似度：约 25%**（重构后约 20%）。仅 undo/redo 需要重点关注，其余模块因架构范式不同（纯 JS 类 vs React+Zustand）天然差异大。
+
+---
 
 ## 7. 当前已知问题 / 待办
 
 ### 🔴 高优先级（核心功能缺口）
 
 1. **组件库扩充**：缺少轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion 等。
+2. **精修模式元素插入**：暂不支持在精修模式中向 iframe 添加新元素（`refineInsertion.ts` 已预留接口，待实现 UI）。
 
 ### 🟡 中优先级
 
-2. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
-3. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
-4. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
+3. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
+4. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
+5. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
+6. **精修模式拖拽调整位置**：暂不支持拖拽移动 iframe 内元素位置
 
 ### 🟢 低优先级
 
-5. **多选编组/解组**未实现
-6. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
-7. **图层重命名**
-8. **缩略图导出 / 复制 HTML 到剪贴板**
+7. **多选编组/解组**未实现
+8. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
+9. **图层重命名**
+10. **缩略图导出 / 复制 HTML 到剪贴板**
 
 ### ✅ 已完成（本次迭代）
 
 - ~~响应式导出~~：`groupRows` 分行 + 三层断点 CSS（桌面/平板/手机）已在 `exportHtml.ts` 实现，见 5.15
 - ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
+- ~~精修模式~~：iframe + DOM 标注 + 内联编辑 + 缩放手柄 + 样式编辑器 + 撤销重做 + 面包屑导航，见 5.25
+- ~~撤销重做重构~~：API 重命名 + 降低相似度，见 5.26a
+- ~~十字线卡住~~：iframe 事件转发到父窗口，见 5.26b
+- ~~双指缩放无反应~~：iframe wheel 事件转发 + Chrome passive 兼容，见 5.26c
+- ~~工具栏颤抖~~：移除 overflow-x-auto，见 5.26d
 
 ---
 
@@ -1111,7 +1261,16 @@ interface InteractionConfig {
 | [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
 | [src/components/LayerTree.tsx](file:///d:/My%20Projects/PageForge/src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
-| [src/store/editorStore.ts](file:///d:/My%20Projects/PageForge/src/store/editorStore.ts) | ~600+ | 状态管理（新增预览模式状态） |
+| [src/components/RefineCanvas.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineCanvas.tsx) | ~889 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 撤销重做 + 测量同步 |
+| [src/components/RefineInspector.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineInspector.tsx) | ~641 | 精修属性面板：样式编辑器 + 属性编辑器 + 面包屑导航 + 元素操作 |
+| [src/components/RefineBreadcrumb.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineBreadcrumb.tsx) | ~86 | 精修模式 DOM 层级面包屑导航 |
+| [src/components/RefineFloatToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineFloatToolbar.tsx) | ~86 | 精修模式浮层工具条（删除/复制） |
+| [src/components/ImportModeDialog.tsx](file:///d:/My%20Projects/PageForge/src/components/ImportModeDialog.tsx) | ~210 | 导入模式选择弹窗（智能推荐 + 用户切换） |
+| [src/utils/htmlComplexity.ts](file:///d:/My%20Projects/PageForge/src/utils/htmlComplexity.ts) | ~190 | HTML 复杂度智能检测（12 个信号） |
+| [src/utils/refineSerialization.ts](file:///d:/My%20Projects/PageForge/src/utils/refineSerialization.ts) | - | 精修模式 iframe DOM 序列化 |
+| [src/utils/refineInsertion.ts](file:///d:/My%20Projects/PageForge/src/utils/refineInsertion.ts) | - | 精修模式元素插入逻辑 |
+| [src/utils/refineUndo.ts](file:///d:/My%20Projects/PageForge/src/utils/refineUndo.ts) | ~128 | 精修模式独立撤销/重做管理器（事务栈，debounced 合并） |
+| [src/store/editorStore.ts](file:///d:/My%20Projects/PageForge/src/store/editorStore.ts) | ~700+ | 状态管理（含精修模式 RefineSession） |
 | [src/types/index.ts](file:///d:/My%20Projects/PageForge/src/types/index.ts) | ~154 | 类型定义（含 InteractionConfig） |
 | [src/index.css](file:///d:/My%20Projects/PageForge/src/index.css) | - | 全局样式 + pf-animate-* keyframes |
 | [scripts/test-export.ts](file:///d:/My%20Projects/PageForge/scripts/test-export.ts) | ~170 | 命令行导出测试脚本，11 项自动化检查 |

@@ -11,6 +11,10 @@ export function ComponentPanel() {
   const toggle = useEditorStore((s) => s.toggleLeftPanel)
   /** 精修模式下组件库依然可用：拖拽到 iframe / 点击插入 */
   const refineSession = useEditorStore((s) => s.refineSession)
+  /** 预览模式（自由画布 / 精修）下组件库应禁用，避免误操作 */
+  const previewMode = useEditorStore((s) => s.previewMode)
+  const refinePreviewMode = useEditorStore((s) => s.refinePreviewMode)
+  const isPreviewing = previewMode || refinePreviewMode
 
   // 折叠态：仅显示一个窄条 + 展开按钮（始终可点，避免找不到入口）
   // 展开按钮：右箭头 (>>) → 表示"把面板展开到右侧"
@@ -39,7 +43,7 @@ export function ComponentPanel() {
 
   // 展开态：左箭头 (<<) → 表示"把面板收起（折叠到左侧）"
   return (
-    <div className="w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200">
+    <div className={`w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200 ${isPreviewing ? 'opacity-40 pointer-events-none' : ''}`}>
       <div className="p-3 text-xs text-gray-400 uppercase tracking-wider flex items-center justify-between">
         <span>组件库</span>
         <button
@@ -53,11 +57,15 @@ export function ComponentPanel() {
           </svg>
         </button>
       </div>
-      {refineSession && (
+      {isPreviewing ? (
+        <div className="px-3 py-2 text-[11px] text-gray-500 leading-relaxed">
+          预览模式下组件库已禁用，请先退出预览。
+        </div>
+      ) : refineSession ? (
         <div className="px-3 py-2 text-[11px] text-purple-300 leading-relaxed">
           精修模式：拖入或点击组件即可添加到当前页面
         </div>
-      )}
+      ) : null}
       <div className="px-2 pb-3 space-y-1.5">
         {componentLib.map((def) => (
           <DraggableComponent key={def.type} def={def} refineMode={!!refineSession} />
@@ -95,13 +103,11 @@ function DraggableComponent({
    */
   const handleClickInsert = (e: React.MouseEvent) => {
     if (!refineMode) return
-    // 如果是拖拽结束的 click，忽略
     if (isDragging) return
     e.preventDefault()
     const iframeEl = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
     if (!iframeEl?.contentDocument) return
     const doc = iframeEl.contentDocument
-    // 点击插入走"无坐标 + 选中元素之后"路径
     const result = insertRefineElement(doc, def.type as ComponentType)
     if (result) {
       const info = buildRefineInfo(doc, result.element)
@@ -113,6 +119,10 @@ function DraggableComponent({
       } catch {
         /* ignore */
       }
+      // 通知 RefineCanvas 重新测量尺寸
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('pf-refine-remeasure'))
+      }, 100)
       console.info('[ComponentPanel] 精修模式点击插入：', def.type)
     }
   }

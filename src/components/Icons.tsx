@@ -196,6 +196,42 @@ export const IconChevronDown = ({ size = 24 }: IconProps = {}): ReactElement =>
 export const IconChevronUp = ({ size = 24 }: IconProps = {}): ReactElement =>
   path('M6 15l6-6 6 6', size)
 
+/** 文本对齐：左对齐 — 左侧粗线 + 多行左对齐 */
+export const IconAlignLeft = ({ size = 24 }: IconProps = {}): ReactElement => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="15" y2="12" />
+    <line x1="3" y1="18" x2="18" y2="18" />
+  </svg>
+)
+
+/** 文本对齐：居中对齐 — 多行居中 */
+export const IconAlignCenter = ({ size = 24 }: IconProps = {}): ReactElement => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="6" y1="12" x2="18" y2="12" />
+    <line x1="4" y1="18" x2="20" y2="18" />
+  </svg>
+)
+
+/** 文本对齐：右对齐 — 右侧粗线 + 多行右对齐 */
+export const IconAlignRight = ({ size = 24 }: IconProps = {}): ReactElement => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="9" y1="12" x2="21" y2="12" />
+    <line x1="6" y1="18" x2="21" y2="18" />
+  </svg>
+)
+
+/** 文本对齐：两端对齐 — 多行两端对齐 */
+export const IconAlignJustify = ({ size = 24 }: IconProps = {}): ReactElement => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+)
+
 export const IconEye = ({ size = 24 }: IconProps = {}): ReactElement =>
   paths([
     { d: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z' },

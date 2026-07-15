@@ -249,14 +249,14 @@ export const IMPORT_MODE_LABEL: Record<ImportMode, string> = {
  * 模式描述（给用户看的）
  */
 export const IMPORT_MODE_DESC: Record<ImportMode, string> = {
-  freeform: '像从零做一样自由拖拽、resize、加新组件。简单页面首选。',
-  refine: '在 iframe 中 100% 还原原页面，点击元素可直接编辑文字/图片/链接。复杂布局首选。',
+  freeform: '将 HTML 解析为可拖拽节点，在画布上自由编辑。适合简单页面或组件片段。',
+  refine: '原样渲染页面，点击元素即可编辑文字/图片/链接。适合复杂布局，100% 还原原样式。',
 }
 
 /**
  * 模式警告（给用户看的代价）
  */
 export const IMPORT_MODE_WARNING: Record<ImportMode, string> = {
-  freeform: '复杂布局（多层 flex/grid）可能错位',
-  refine: '元素位置由原结构决定，不能像自由画布那样随意拖拽',
+  freeform: '复杂布局（多层 flex/grid）可能错位；不保留原 CSS 动画和响应式。',
+  refine: '元素位置固定，不可自由拖拽；编辑后需导出才能保存。',
 }

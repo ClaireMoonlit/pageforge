@@ -1556,7 +1556,11 @@ function populateChildren(
         populateChildren(child, built.node, built.style, built.pad, cw, cssMap, built.localVars, built.childStyles, built.inheritedStyle)
         parentNode.children.push(built.node)
         if (!isCssAbs) {
-          childY += estimateHeightRecursive(child, built.node.style, cssMap)
+          const ch = estimateHeightRecursive(child, built.node.style, cssMap)
+          if (!built.node.style.height || built.node.style.height === 'auto') {
+            built.node.style.height = `${ch}px`
+          }
+          childY += ch
           const nextFlow = builtChildren.slice(i + 1).find(bc => !bc.isCssAbs)
           if (nextFlow) childY += gap
         }
@@ -1658,7 +1662,11 @@ function populateChildren(
       populateChildren(child, built.node, built.style, built.pad, cw, cssMap, built.localVars, built.childStyles, built.inheritedStyle)
       parentNode.children.push(built.node)
       if (!isCssAbs) {
-        childY += estimateHeightRecursive(child, built.node.style, cssMap)
+        const ch = estimateHeightRecursive(child, built.node.style, cssMap)
+        if (!built.node.style.height || built.node.style.height === 'auto') {
+          built.node.style.height = `${ch}px`
+        }
+        childY += ch
         // gap 只在两个 flow 子元素之间
         const nextFlow = builtChildren.slice(i + 1).find(bc => !bc.isCssAbs)
         if (nextFlow) childY += gap
@@ -1928,6 +1936,11 @@ export function htmlToNodes(html: string, baseUrl = ''): CanvasNode[] {
     node.style.x = 0
     node.style.y = y
     const h = estimateHeightRecursive(child, node.style, cssMap)
+    // 将估算高度写入节点样式，确保 computeCanvasHeight 能正确计算画布高度
+    // 避免下标尺截断问题（之前只用了 h 算 y 偏移，没存到 style 里）
+    if (!node.style.height || node.style.height === 'auto') {
+      node.style.height = `${h}px`
+    }
     nodes.push(node)
     y += h
     if (i < children.length - 1) y += 24

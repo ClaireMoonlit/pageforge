@@ -38,23 +38,37 @@ export function Ruler({ orientation, edge, canvasRef }: RulerProps) {
   const cw = (refineSession ? refineSession.width : parseInt(canvas.width)) || 1200
   const ch = (refineSession ? refineSession.height : parseInt(canvas.height)) || 800
 
+  /** 精修模式下的有效十字线状态：两种模式都支持十字线 */
+  const effectiveCursorVisible = rulerCursorVisible
+
   // 跟踪鼠标在画布上的位置，在标尺上显示指示线
+  // 使用 window 监听 pointermove 而非 canvas 元素，因为精修模式下 iframe 会捕获 pointer 事件，
+  // 导致 canvas wrapper 的 pointermove 不触发 → 十字线不显示。
+  // 不再使用 pointerleave（iframe 内部鼠标移动会误触发 → 十字线卡住），
+  // 改为在 pointermove 中判断鼠标是否在画布范围内。
   useEffect(() => {
     const el = canvasRef.current
     if (!el) return
     const onMove = (e: globalThis.PointerEvent) => {
       const rect = el.getBoundingClientRect()
+      // 判断鼠标是否在画布范围内（含 24px 标尺边距）
+      const inBounds =
+        e.clientX >= rect.left - 24 &&
+        e.clientX <= rect.right + 24 &&
+        e.clientY >= rect.top - 24 &&
+        e.clientY <= rect.bottom + 24
+      if (!inBounds) {
+        setCursorPos(-1)
+        return
+      }
       const pos = orientation === 'horizontal'
         ? (e.clientX - rect.left) / zoom
         : (e.clientY - rect.top) / zoom
       setCursorPos(pos)
     }
-    const onLeave = () => setCursorPos(-1)
-    el.addEventListener('pointermove', onMove)
-    el.addEventListener('pointerleave', onLeave)
+    window.addEventListener('pointermove', onMove, { passive: true })
     return () => {
-      el.removeEventListener('pointermove', onMove)
-      el.removeEventListener('pointerleave', onLeave)
+      window.removeEventListener('pointermove', onMove)
     }
   }, [canvasRef, zoom, orientation])
 
@@ -189,7 +203,7 @@ export function Ruler({ orientation, edge, canvasRef }: RulerProps) {
         })}
 
         {/* 光标位置指示线：标尺端用实色虚线（保持原样） */}
-        {rulerCursorVisible && cursorPos >= 0 && cursorPos <= length && (
+        {effectiveCursorVisible && cursorPos >= 0 && cursorPos <= length && (
           orientation === 'horizontal' ? (
             <line
               x1={cursorPos * zoom}
@@ -216,7 +230,7 @@ export function Ruler({ orientation, edge, canvasRef }: RulerProps) {
 
       {/* 画布端延伸：从标尺边沿（RULER_SIZE=24px）开始，向画布内延伸。
           使用 border 虚线实现，与标尺内 SVG 虚线风格一致，接头在标尺边沿不留痕迹。 */}
-      {rulerCursorVisible && cursorPos >= 0 && cursorPos <= length && (
+      {effectiveCursorVisible && cursorPos >= 0 && cursorPos <= length && (
         <div
           style={
             orientation === 'horizontal'

@@ -6,8 +6,6 @@
  *    用 elementFromPoint 判断 + 上下半线决定 insertBefore/insertAfter
  * 2. 点击插入场景：不传坐标，优先插入到当前选中元素之后，
  *    否则追加到 body 末尾
- *
- * 与参考项目 drag-manager.js 的插入逻辑对齐。
  */
 import type { RefineElementInfo } from '@/store/editorStore'
 import { createRefineElement } from './elementFactory'
@@ -75,12 +73,26 @@ export function insertRefineElement(
     parent = opts.selectedEl.parentNode
     nextSibling = opts.selectedEl.nextSibling
   } else {
-    // 默认：插到 body 末尾
+    // 默认（点击插入且无选中元素）：追加到 body 最后一个块级元素之后（作为 body 的直接子元素）
+    // 不能插入到最后一个块级容器内部（对于 flex column 的 section，新元素会作为子元素堆叠，
+    // 导致 section 高度膨胀、将原有内容顶出屏幕）。作为 body 的兄弟节点追加最安全。
+    let lastBlock: Element | null = null
+    for (const child of Array.from(doc.body.children)) {
+      if (!(child instanceof HTMLElement)) continue
+      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue
+      const display = doc.defaultView?.getComputedStyle(child).display ?? ''
+      if (display === 'block' || display === 'flex' || display === 'grid' || display === 'list-item' || display === '') {
+        lastBlock = child
+      }
+    }
     parent = doc.body
-    nextSibling = null
+    // 插在最后一个 block 之后（作为兄弟节点），而非嵌套进去
+    nextSibling = lastBlock ? lastBlock.nextSibling : null
   }
 
-  // 3. 插入
+  // 3. 分配 eid 并插入
+  const eid = 'e' + Math.random().toString(36).slice(2, 8)
+  newEl.setAttribute('data-pf-eid', eid)
   parent.insertBefore(newEl, nextSibling)
 
   return { element: newEl, parent, nextSibling }

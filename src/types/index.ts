@@ -57,7 +57,7 @@ export interface NodeStyle {
   fontStyle?: 'normal' | 'italic' | 'oblique'
   textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
   color?: string
-  textAlign?: 'left' | 'center' | 'right'
+  textAlign?: 'left' | 'center' | 'right' | 'justify'
   lineHeight?: string
   letterSpacing?: string
   // 布局

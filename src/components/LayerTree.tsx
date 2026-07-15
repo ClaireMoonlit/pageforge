@@ -63,7 +63,10 @@ export function LayerTree() {
   const toggleVisible = useEditorStore((s) => s.toggleVisible)
   const removeNode = useEditorStore((s) => s.removeNode)
   const previewMode = useEditorStore((s) => s.previewMode)
+  const refinePreviewMode = useEditorStore((s) => s.refinePreviewMode)
   const refineSession = useEditorStore((s) => s.refineSession)
+  /** 两种模式预览下都禁用图层树交互 */
+  const isPreviewing = previewMode || refinePreviewMode
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
   // 拖拽状态
@@ -165,7 +168,21 @@ export function LayerTree() {
   if (nodes.length === 0) {
     return (
       <div className="px-3 py-4 text-xs text-gray-600 leading-relaxed">
-        {refineSession ? '精修模式下使用右侧面板选中元素' : '画布上还没有元素，从上方组件库拖入即可。'}
+        {refineSession ? '精修模式下图层树不可用，请使用右侧属性面板' : '画布上还没有元素，从上方组件库拖入即可。'}
+      </div>
+    )
+  }
+
+  // 精修模式下禁用图层树交互
+  if (refineSession) {
+    return (
+      <div className="px-3 py-4 text-xs text-gray-500 leading-relaxed">
+        <div className="mb-1 text-gray-400 font-medium">图层树（精修模式不可用）</div>
+        <div className="text-gray-600">
+          精修模式下图层树无法使用，请通过右侧属性面板管理元素。
+          <br />
+          如需图层树功能，请切换到自由画布模式。
+        </div>
       </div>
     )
   }
@@ -202,7 +219,7 @@ export function LayerTree() {
               isCollapsed={isCollapsed}
               label={label}
               hasCustomIcon={hasCustomIcon}
-              previewMode={previewMode}
+              previewMode={isPreviewing}
               onSelect={() => selectNode(node.id)}
               onToggleCollapse={() => toggleCollapse(node.id)}
               onMoveUp={() => moveLayer(node.id, 'up')}
