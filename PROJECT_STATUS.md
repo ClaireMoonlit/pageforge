@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-16（§5.26 撤销重做重构 + 十字线/缩放修复 + 代码去重审查）
-> 当前版本：v0.4.1
+> 最后更新：2026-07-16（§5.27 十字线/缩放第二轮修复）
+> 当前版本：v0.4.2
 
 ---
 
@@ -1156,6 +1156,25 @@ interface InteractionConfig {
 
 **综合加权相似度：约 25%**（重构后约 20%）。仅 undo/redo 需要重点关注，其余模块因架构范式不同（纯 JS 类 vs React+Zustand）天然差异大。
 
+### 5.27 十字线/缩放第二轮修复（2026-07-16）
+
+#### 5.27a 精修模式十字线转发改用 MouseEvent + document.dispatchEvent
+
+**背景**：5.26b 的修复（`window.dispatchEvent(new PointerEvent(...))`）在部分浏览器中 `PointerEvent` 构造函数不能正确设置 `clientX`/`clientY`，导致 Ruler 收到的坐标始终为 0 → 十字线卡住不跟随鼠标。
+
+**修复**（`RefineCanvas.tsx`）：
+- `forwardPointerMove` 改用 `new MouseEvent('pointermove', {...})` 构造事件（`MouseEvent` 构造函数在跨浏览器环境下可靠设置 `clientX`/`clientY`）
+- 派发目标从 `window.dispatchEvent` 改为 `document.dispatchEvent`（利用 DOM 冒泡机制：`document → window`，确保事件传播到 Ruler 的 `window` 级监听器）
+
+#### 5.27b 精修模式缩放增加 contentWindow 兜底监听
+
+**背景**：5.26c 的修复（`doc.addEventListener('wheel', ...)`）在部分浏览器中 iframe 内部元素可能先消费 wheel 事件，导致 document 级 capture 无法捕获。
+
+**修复**（`RefineCanvas.tsx`）：
+- 同时监听 iframe 的 `contentWindow` 的 wheel 事件（`iframeWin.addEventListener('wheel', forwardWheel, {passive: false, capture: true})`），作为 document 监听的兜底
+- 添加 `bound` 标志防止 `load` 事件和 polling 都触发 `bind()` 导致重复绑定
+- cleanup 中同时移除 `contentWindow` 的 wheel 监听
+
 ---
 
 ## 7. 当前已知问题 / 待办
@@ -1185,8 +1204,8 @@ interface InteractionConfig {
 - ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
 - ~~精修模式~~：iframe + DOM 标注 + 内联编辑 + 缩放手柄 + 样式编辑器 + 撤销重做 + 面包屑导航，见 5.25
 - ~~撤销重做重构~~：API 重命名 + 降低相似度，见 5.26a
-- ~~十字线卡住~~：iframe 事件转发到父窗口，见 5.26b
-- ~~双指缩放无反应~~：iframe wheel 事件转发 + Chrome passive 兼容，见 5.26c
+- ~~十字线卡住~~：iframe 事件转发（初版 PointerEvent），见 5.26b → 第二轮修复改用 MouseEvent + document.dispatchEvent，见 5.27a
+- ~~双指缩放无反应~~：iframe wheel 事件转发 + Chrome passive 兼容，见 5.26c → 第二轮增加 contentWindow 兜底监听，见 5.27b
 - ~~工具栏颤抖~~：移除 overflow-x-auto，见 5.26d
 
 ---

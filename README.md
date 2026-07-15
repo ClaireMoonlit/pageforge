@@ -108,6 +108,7 @@ PageForge/
 │   │   ├── snapping.ts          # 拖拽吸附辅助线
 │   │   ├── refineSerialization.ts  # 精修模式：DOM 序列化回 HTML
 │   │   ├── refineInsertion.ts   # 精修模式：元素插入逻辑
+│   │   ├── refineUndo.ts        # 精修模式：独立撤销/重做管理器
 │   │   └── elementFactory.ts    # 精修模式：元素工厂
 │   ├── store/
 │   │   └── editorStore.ts       # Zustand 单一数据源

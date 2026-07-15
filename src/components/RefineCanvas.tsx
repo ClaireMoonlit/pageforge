@@ -438,7 +438,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     if (!iframe) return
 
     let cancelled = false
+    let bound = false
     let doc: Document | null = null
+    let iframeWin: Window | null = null
     let loadHandler: (() => void) | null = null
     let pollTimer: number | null = null
 
@@ -534,20 +536,20 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (!isResizing) setHoverRect(null)
     }
 
-    /** 将 iframe 内的 pointermove 转发到父窗口（用于十字线/标尺指示） */
+    /** 将 iframe 内的 pointermove 转发到父窗口（用于十字线/标尺指示）。
+     *  关键：使用 MouseEvent（而非 PointerEvent）确保 clientX/clientY 在跨浏览器环境下被正确设置；
+     *  派发到 document（而非 window）利用 DOM 冒泡机制确保事件传播到 window 监听器。 */
     const forwardPointerMove = (e: PointerEvent) => {
       const iframeRect = iframeRef.current?.getBoundingClientRect()
       if (!iframeRect) return
-      window.dispatchEvent(new PointerEvent('pointermove', {
+      document.dispatchEvent(new MouseEvent('pointermove', {
         clientX: e.clientX + iframeRect.left,
         clientY: e.clientY + iframeRect.top,
         screenX: e.screenX,
         screenY: e.screenY,
         bubbles: true,
         cancelable: true,
-        pointerId: e.pointerId,
-        pointerType: e.pointerType,
-        isPrimary: e.isPrimary,
+        view: window,
       }))
     }
 
@@ -562,9 +564,10 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     }
 
     const bind = () => {
-      if (cancelled) return
+      if (cancelled || bound) return
       doc = iframe.contentDocument
       if (!doc || !doc.body) return
+      bound = true
 
       doc.body.setAttribute('data-pf-refine', 'true')
       doc.addEventListener('click', onClick, true)
@@ -574,6 +577,12 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       doc.addEventListener('mouseout', onMouseOut, true)
       doc.addEventListener('pointermove', forwardPointerMove, true)
       doc.addEventListener('wheel', forwardWheel, { passive: false, capture: true })
+
+      // 同时监听 iframe 的 contentWindow 的 wheel 事件（兜底：document 级 capture 可能被 iframe 内部元素消费）
+      iframeWin = iframe.contentWindow
+      if (iframeWin) {
+        iframeWin.addEventListener('wheel', forwardWheel, { passive: false, capture: true })
+      }
 
       try { measureAndSyncSize() } catch (e) { console.error('[RefineCanvas] measureAndSyncSize failed:', e) }
       setReady(true)
@@ -643,6 +652,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         doc.removeEventListener('mouseout', onMouseOut, true)
         doc.removeEventListener('pointermove', forwardPointerMove, true)
         doc.removeEventListener('wheel', forwardWheel, { capture: true } as any)
+      }
+      if (iframeWin) {
+        iframeWin.removeEventListener('wheel', forwardWheel, { capture: true } as any)
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
