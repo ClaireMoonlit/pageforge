@@ -399,6 +399,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       styleEl.textContent = `
         html, body, * { min-height: 0 !important; max-height: none !important; }
         html, body { height: auto !important; }
+        html { overflow: hidden !important; }
         body { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }
         .vh-100, .min-vh-100, .h-100, [style*="100vh"], [style*="100%"] { height: auto !important; min-height: 0 !important; }
         [style*="100vw"] { width: 100% !important; max-width: 100% !important; }
@@ -477,7 +478,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (info) selectRefineElement(info)
     }
 
-    /** 双击编辑：对文本元素触发即时编辑（选中后自动 focus 到编辑区） */
+    /** 双击编辑：对文本元素触发即时编辑（选中后自动 focus 到编辑区，光标置于末尾） */
     const onDblClick = (e: MouseEvent) => {
       if (refinePreviewMode) return
       e.preventDefault()
@@ -488,15 +489,17 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       const info = extractInfo(target)
       if (info) {
         selectRefineElement(info)
-        // 延迟一帧等选中状态更新后，触发 textarea 的 focus
-        requestAnimationFrame(() => {
-          // 如果有文本内容，滚动到属性面板的文本编辑区
+        // 清除 iframe 内浏览器双击默认选中的文字
+        const sel = iframeRef.current?.contentWindow?.getSelection()
+        if (sel) sel.removeAllRanges()
+        // setTimeout 延迟等待 React 完成 RefineTextEditor 的挂载/更新，再聚焦并放置光标于末尾
+        setTimeout(() => {
           const textEditor = document.querySelector('[data-pf-refine-text-editor]') as HTMLTextAreaElement | null
           if (textEditor) {
             textEditor.focus()
-            textEditor.select()
+            textEditor.setSelectionRange(textEditor.value.length, textEditor.value.length)
           }
-        })
+        }, 100)
       }
     }
 
@@ -536,17 +539,37 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (!isResizing) setHoverRect(null)
     }
 
-    /** 将 iframe 内的 pointermove 转发到父窗口（用于十字线/标尺指示）。
-     *  关键：使用 MouseEvent（而非 PointerEvent）确保 clientX/clientY 在跨浏览器环境下被正确设置；
-     *  派发到 document（而非 window）利用 DOM 冒泡机制确保事件传播到 window 监听器。 */
-    const forwardPointerMove = (e: PointerEvent) => {
-      const iframeRect = iframeRef.current?.getBoundingClientRect()
-      if (!iframeRect) return
-      document.dispatchEvent(new MouseEvent('pointermove', {
-        clientX: e.clientX + iframeRect.left,
-        clientY: e.clientY + iframeRect.top,
+    /** 将 iframe 内的 pointer 事件转发到父窗口（用于十字线/标尺指示 + 手型平移）。
+     *  关键 1：使用 MouseEvent（而非 PointerEvent）确保 clientX/clientY 在跨浏览器环境下被正确设置；
+     *  关键 2：派发到 document（而非 window）利用 DOM 冒泡机制确保事件传播到 window 监听器；
+     *  关键 3：使用 iframeRect.width / innerWidth 计算实际视觉缩放比（而非 store 中的 zoom），
+     *          避免 store zoom 更新与渲染不同步导致的十字线偏移；
+     *  关键 4：加上 iframe 内部滚动偏移（scrollX/scrollY），确保十字线在内容滚动后仍与光标对齐。 */
+    const forwardPointerEvent = (e: PointerEvent) => {
+      const iframe = iframeRef.current
+      if (!iframe) return
+      const iframeRect = iframe.getBoundingClientRect()
+      if (!iframeRect || iframeRect.width === 0) return
+      const iframeWin = iframe.contentWindow
+      if (!iframeWin) return
+      const cssW = iframeWin.innerWidth
+      const cssH = iframeWin.innerHeight
+      if (cssW === 0 || cssH === 0) return
+
+      const scaleX = iframeRect.width / cssW
+      const scaleY = iframeRect.height / cssH
+
+      // iframe 内部滚动偏移：若内容比视口宽/高，浏览器可能产生滚动，e.clientX/Y 仅相对于视口
+      const sx = iframeWin.scrollX || 0
+      const sy = iframeWin.scrollY || 0
+
+      document.dispatchEvent(new MouseEvent(e.type, {
+        clientX: (e.clientX + sx) * scaleX + iframeRect.left,
+        clientY: (e.clientY + sy) * scaleY + iframeRect.top,
         screenX: e.screenX,
         screenY: e.screenY,
+        button: e.button,
+        buttons: e.buttons,
         bubbles: true,
         cancelable: true,
         view: window,
@@ -575,7 +598,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       doc.addEventListener('contextmenu', onContextMenu, true)
       doc.addEventListener('mouseover', onMouseOver, true)
       doc.addEventListener('mouseout', onMouseOut, true)
-      doc.addEventListener('pointermove', forwardPointerMove, true)
+      doc.addEventListener('pointermove', forwardPointerEvent, true)
+      doc.addEventListener('pointerdown', forwardPointerEvent, true)
+      doc.addEventListener('pointerup', forwardPointerEvent, true)
       doc.addEventListener('wheel', forwardWheel, { passive: false, capture: true })
 
       // 同时监听 iframe 的 contentWindow 的 wheel 事件（兜底：document 级 capture 可能被 iframe 内部元素消费）
@@ -650,7 +675,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         doc.removeEventListener('contextmenu', onContextMenu, true)
         doc.removeEventListener('mouseover', onMouseOver, true)
         doc.removeEventListener('mouseout', onMouseOut, true)
-        doc.removeEventListener('pointermove', forwardPointerMove, true)
+        doc.removeEventListener('pointermove', forwardPointerEvent, true)
+        doc.removeEventListener('pointerdown', forwardPointerEvent, true)
+        doc.removeEventListener('pointerup', forwardPointerEvent, true)
         doc.removeEventListener('wheel', forwardWheel, { capture: true } as any)
       }
       if (iframeWin) {
@@ -723,6 +750,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
 <style id="pf-refine-neutralize">
   html, body, * { min-height: 0 !important; max-height: none !important; }
   html, body { height: auto !important; width: ${canvasW}px !important; box-sizing: border-box !important; }
+  html { overflow: hidden !important; }
   body { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }
   .vh-100, .min-vh-100, .h-100, [style*="100vh"], [style*="100%"] { height: auto !important; min-height: 0 !important; }
   [style*="100vw"] { width: 100% !important; max-width: 100% !important; }

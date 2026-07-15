@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-16（§5.27 十字线/缩放第二轮修复）
-> 当前版本：v0.4.2
+> 最后更新：2026-07-16（§5.28 十字线对齐 + 手掌平移 + 双击文本编辑修复）
+> 当前版本：v0.4.3
 
 ---
 
@@ -1177,6 +1177,36 @@ interface InteractionConfig {
 
 ---
 
+### 5.28 十字线对齐 + 手掌平移 + 双击文本编辑修复（2026-07-16）
+
+#### 5.28a 十字线焦点与光标位置不匹配
+
+**背景**：精修模式下十字线位置与鼠标实际位置存在偏移，尤其在 iframe 内容比视口宽时（neutralize CSS 设置 `body { width: ${canvasW}px }` 可能导致内部滚动）。
+
+**修复**（`RefineCanvas.tsx`）：
+- **坐标计算增加滚动偏移**：`forwardPointerEvent` 中新增 `iframeWin.scrollX / scrollY` 补偿，将 `e.clientX/Y`（仅相对视口）转换为 `e.clientX/Y + scrollX/Y`（相对内容真实位置），再乘以 `scaleX/Y` 映射到父窗口坐标
+- **防止滚动条产生**：两处 neutralize CSS（`measureAndSyncSize` 动态注入 + `srcdoc` 模板注入）均添加 `html { overflow: hidden !important; }`，从源头消除 iframe 内部滚动条，确保 `scrollX/Y` 始终为 0
+
+#### 5.28b 手掌移动模式在精修模式下失效
+
+**背景**：手掌平移（空格 + 拖拽）在画布模式正常，但在精修模式下完全无效。根因是 pan 模式使用 React 合成事件（`onMouseDown/Move/Up` 绑定在 wrapper div 上），而精修模式下 iframe 内的事件被转发为 `pointerdown/pointermove/pointerup` 类型并派发到 `document`，React 的 `onMouse*` 合成事件无法捕获这些转发事件。
+
+**修复**（`Canvas.tsx`）：
+- 移除 wrapper div 上的 `onMouseDown/Move/Up/Leave` 四个 React 事件处理器
+- 改为 `document` 级原生 `pointerdown/pointermove/pointerup` 事件监听器
+- 使用 `isPanningRef` / `panOffsetRef` / `panModeRef` 三个 ref 同步 state，避免原生监听器闭包捕获过期值
+- 两套事件来源统一处理：画布模式原生 `PointerEvent` + 精修模式转发 `MouseEvent`
+
+#### 5.28c 双击文本整块替换无法单独编辑
+
+**背景**：精修模式下双击文本元素后，浏览器默认双击行为会选中文字，且 `requestAnimationFrame` 延迟不足以等待 React 完成 RefineTextEditor 的挂载/更新，导致 textarea 聚焦时 value 同步覆盖光标位置 → 用户一输入就整块替换。
+
+**修复**（`RefineCanvas.tsx`）：
+- 双击后调用 `iframe.contentWindow.getSelection().removeAllRanges()` 清除浏览器默认选中的文字范围
+- 将 `requestAnimationFrame` 改为 `setTimeout(100ms)`，确保 React 完成 RefineTextEditor 的渲染后再聚焦并放置光标于末尾
+
+---
+
 ## 7. 当前已知问题 / 待办
 
 ### 🔴 高优先级（核心功能缺口）
@@ -1207,6 +1237,9 @@ interface InteractionConfig {
 - ~~十字线卡住~~：iframe 事件转发（初版 PointerEvent），见 5.26b → 第二轮修复改用 MouseEvent + document.dispatchEvent，见 5.27a
 - ~~双指缩放无反应~~：iframe wheel 事件转发 + Chrome passive 兼容，见 5.26c → 第二轮增加 contentWindow 兜底监听，见 5.27b
 - ~~工具栏颤抖~~：移除 overflow-x-auto，见 5.26d
+- ~~十字线偏移~~：滚动偏移补偿 + html overflow:hidden 防滚动条，见 5.28a
+- ~~手掌平移精修模式失效~~：React 合成事件 → 原生 pointer 事件监听，见 5.28b
+- ~~双击文本整块替换~~：清除浏览器选中 + setTimeout 延迟聚焦，见 5.28c
 
 ---
 

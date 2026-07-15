@@ -194,6 +194,14 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const panStartRef = useRef({ x: 0, y: 0 })
   const panOriginRef = useRef({ x: 0, y: 0 })
+  // 用 ref 避免 native 事件监听器中闭包捕获过期 state（精修模式 iframe 转发的事件也走这套）
+  const isPanningRef = useRef(false)
+  const panOffsetRef = useRef({ x: 0, y: 0 })
+  const panModeRef = useRef(false)
+
+  useEffect(() => { isPanningRef.current = isPanning }, [isPanning])
+  useEffect(() => { panOffsetRef.current = panOffset }, [panOffset])
+  useEffect(() => { panModeRef.current = panMode }, [panMode])
 
   // 空格键监听
   useEffect(() => {
@@ -217,36 +225,42 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
     }
   }, [])
 
-  // 鼠标离开窗口时强制结束拖拽
+  // 原生 document 级 pointer 事件监听：手型平移
+  // 使用 pointerdown/pointermove/pointerup（而非 React onMouse*），
+  // 因为精修模式下 iframe 内的事件被转发为 pointer 事件派发到 document，
+  // React 合成事件（onMouse*）无法捕获这些转发事件。
   useEffect(() => {
-    if (!isPanning) return
-    const onGlobalUp = () => setIsPanning(false)
-    window.addEventListener('mouseup', onGlobalUp)
-    return () => window.removeEventListener('mouseup', onGlobalUp)
-  }, [isPanning])
-
-  const handlePanStart = useCallback((e: React.MouseEvent) => {
-    if (!panMode || e.button !== 0) return
-    e.preventDefault()
-    e.stopPropagation()
-    setIsPanning(true)
-    panStartRef.current = { x: e.clientX, y: e.clientY }
-    panOriginRef.current = { ...panOffset }
-  }, [panMode, panOffset])
-
-  const handlePanMove = useCallback((e: React.MouseEvent) => {
-    if (!isPanning) return
-    const dx = e.clientX - panStartRef.current.x
-    const dy = e.clientY - panStartRef.current.y
-    setPanOffset({
-      x: panOriginRef.current.x + dx,
-      y: panOriginRef.current.y + dy,
-    })
-  }, [isPanning])
-
-  const handlePanEnd = useCallback(() => {
-    if (isPanning) setIsPanning(false)
-  }, [isPanning])
+    const onPointerDown = (e: PointerEvent | MouseEvent) => {
+      if (!panModeRef.current || e.button !== 0) return
+      isPanningRef.current = true
+      setIsPanning(true)
+      panStartRef.current = { x: e.clientX, y: e.clientY }
+      panOriginRef.current = { ...panOffsetRef.current }
+    }
+    const onPointerMove = (e: PointerEvent | MouseEvent) => {
+      if (!isPanningRef.current) return
+      const dx = e.clientX - panStartRef.current.x
+      const dy = e.clientY - panStartRef.current.y
+      setPanOffset({
+        x: panOriginRef.current.x + dx,
+        y: panOriginRef.current.y + dy,
+      })
+    }
+    const onPointerUp = () => {
+      if (isPanningRef.current) {
+        isPanningRef.current = false
+        setIsPanning(false)
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointermove', onPointerMove)
+    document.addEventListener('pointerup', onPointerUp)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('pointerup', onPointerUp)
+    }
+  }, [])
 
   const cursor = isPanning ? 'grabbing' : panMode ? 'grab' : undefined
   // ========== 手型平移 END ==========
@@ -563,10 +577,6 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
           cursor,
           userSelect: panMode ? 'none' : undefined,
         }}
-        onMouseDown={handlePanStart}
-        onMouseMove={handlePanMove}
-        onMouseUp={handlePanEnd}
-        onMouseLeave={handlePanEnd}
       >
         {/* 4 个标尺角（左上 / 右上 / 左下 / 右下） */}
         <div
