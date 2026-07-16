@@ -520,6 +520,19 @@ function RefineTextEditor({ element }: { element: RefineElementInfo }) {
 
   useEffect(() => {
     setEditingText(element.textContent)
+    // 如果本次选中来自双击（RefineCanvas onDblClick 设置了标志），
+    // 在 React 完成 DOM 更新后自动聚焦 textarea 并将光标置于末尾
+    if ((window as any).__pfJustDoubleClicked) {
+      delete (window as any).__pfJustDoubleClicked
+      // setTimeout(0) 确保在 React 完成当前渲染周期（包括 setEditingText 触发的重渲染）后再聚焦
+      setTimeout(() => {
+        const textEditor = document.querySelector('[data-pf-refine-text-editor]') as HTMLTextAreaElement | null
+        if (textEditor) {
+          textEditor.focus()
+          textEditor.setSelectionRange(textEditor.value.length, textEditor.value.length)
+        }
+      }, 0)
+    }
   }, [element.textContent, element.tagName])
 
   /** 实时写入 iframe DOM（debounce 300ms） */

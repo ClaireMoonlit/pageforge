@@ -478,7 +478,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (info) selectRefineElement(info)
     }
 
-    /** 双击编辑：对文本元素触发即时编辑（选中后自动 focus 到编辑区，光标置于末尾） */
+    /** 双击编辑：对文本元素触发即时编辑（选中后 RefineTextEditor 的 useEffect 自动聚焦 textarea） */
     const onDblClick = (e: MouseEvent) => {
       if (refinePreviewMode) return
       e.preventDefault()
@@ -488,18 +488,12 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       ensureEid(target)
       const info = extractInfo(target)
       if (info) {
+        // 设置全局标志，RefineTextEditor 的 useEffect 检测到此标志后自动聚焦
+        ;(window as any).__pfJustDoubleClicked = true
         selectRefineElement(info)
         // 清除 iframe 内浏览器双击默认选中的文字
         const sel = iframeRef.current?.contentWindow?.getSelection()
         if (sel) sel.removeAllRanges()
-        // setTimeout 延迟等待 React 完成 RefineTextEditor 的挂载/更新，再聚焦并放置光标于末尾
-        setTimeout(() => {
-          const textEditor = document.querySelector('[data-pf-refine-text-editor]') as HTMLTextAreaElement | null
-          if (textEditor) {
-            textEditor.focus()
-            textEditor.setSelectionRange(textEditor.value.length, textEditor.value.length)
-          }
-        }, 100)
       }
     }
 
