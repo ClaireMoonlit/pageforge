@@ -9,8 +9,8 @@ import { RefineCanvas } from './RefineCanvas'
 import type { SnapLine } from '@/utils/snapping'
 import { readFileAsDataUrl } from '@/utils/fileUpload'
 
-const CURSOR_GRAB = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7 11.5V8a2 2 0 0 1 4 0v2h1V5a2 2 0 0 1 4 0v3h1V4a2 2 0 0 1 4 0v4h1V6a2 2 0 0 1 4 0v8l-3 6H10l-4-4 2-3' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M7 11.5V8a2 2 0 0 1 4 0v2h1V5a2 2 0 0 1 4 0v3h1V4a2 2 0 0 1 4 0v4h1V6a2 2 0 0 1 4 0v8l-3 6H10l-4-4 2-3' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 12 12, grab`
-const CURSOR_GRABBING = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M7 11.5V8a2 2 0 0 1 4 0v2h1V5a2 2 0 0 1 4 0v3h1V4a2 2 0 0 1 4 0v4h1V6a2 2 0 0 1 4 0v8l-3 6H10l-4-4 2-3' fill='%23fff' stroke='%23000' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") 12 12, grabbing`
+const CURSOR_GRAB = 'grab'
+const CURSOR_GRABBING = 'grabbing'
 
 /** 协调内部剪贴板粘贴与系统剪贴板图片粘贴：当两者同时存在时，优先图片 */
 let pendingPasteId: string | null = null
