@@ -1,8 +1,8 @@
 # PageForge 项目状态交接文档
 
 > 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-16（§5.28 十字线对齐 + 手掌平移 + 双击文本编辑修复）
-> 当前版本：v0.4.3
+> 最后更新：2026-07-17（§5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入）
+> 当前版本：v0.4.4
 
 ---
 
@@ -1174,6 +1174,46 @@ interface InteractionConfig {
 - 同时监听 iframe 的 `contentWindow` 的 wheel 事件（`iframeWin.addEventListener('wheel', forwardWheel, {passive: false, capture: true})`），作为 document 监听的兜底
 - 添加 `bound` 标志防止 `load` 事件和 polling 都触发 `bind()` 导致重复绑定
 - cleanup 中同时移除 `contentWindow` 的 wheel 监听
+
+---
+
+---
+### 5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入（2026-07-17）
+
+#### 5.29a 手型光标恢复为 git 原始版本
+
+**背景**：前几轮尝试了多种自定义手型 SVG（16x16 描边、Feather Icons 手型等），用户反馈"太大"、"不像手"、"黑底"、"难看"。根因是 URL 编码的 SVG data URI 在部分浏览器中加载失败，回退到浏览器默认的 grab 光标（用户看到的"黑底大手型"）。
+
+**修复**（`Canvas.tsx`）：
+- 恢复 git 原始版本的手型光标设计（双层路径，24x24）：
+  - **grab 状态**：外层白色粗描边（stroke-width 4, `#fff`）+ 内层黑色细描边（stroke-width 2, `#000`），形成白底黑边的光晕效果
+  - **grabbing 状态**：白色填充 + 黑色描边（stroke-width 2.5），表示抓握状态
+- 改用 **base64 编码**替代 URL 编码，确保跨浏览器可靠加载
+
+#### 5.29b 内容编辑黄色 focus 框消除
+
+**背景**：双击文本元素进入 contentEditable 原地编辑后，浏览器默认给 editable 元素添加黄色 focus outline，影响视觉。
+
+**修复**（`RefineCanvas.tsx`）：
+- 在 `onDblClick` 中设置 `contentEditable = 'true'` 后，同步设置 `target.style.outline = 'none'` 消除浏览器默认 focus 框
+
+#### 5.29c 组件插入延迟一帧修复
+
+**背景**：点击组件库添加组件时，"点击一次无反应，再点一次才看到上一个"。根因是 `insertRefineElement` 直接修改 iframe DOM 后，通过 `pf-refine-remeasure` 自定义事件 + 双 rAF 触发 `measureAndSyncSize`，但测量时机过早（浏览器未完成新元素重排），`setMeasured` 检测到高度未变 → 不触发 `updateRefineSize` → 画布 wrapper 高度不变 → 新元素被隐藏。
+
+**修复**（`ComponentPanel.tsx`）：
+- 插入后立即**强制重排**：`void element.offsetHeight; void doc.body.offsetHeight`
+- 然后**同步调用** `useEditorStore.getState().updateRefineSize(canvasW, h)` 直接更新画布尺寸，不再依赖事件系统
+- 双 rAF 兜底：二次确认测量（覆盖字体加载等异步场景）
+
+#### 5.29d 预览模式点击页头触发自导入修复
+
+**背景**：预览模式下点击页头（通常是 `<a>` 标签或带 onclick 的 `<div>`），浏览器导航到同源路径 → 触发 app 重新导入当前页面。前几轮尝试了多种策略（仅拦截 anchor、拦截所有元素 + stopPropagation、完全放行非 anchor），均导致要么自导入复现、要么页头消失。
+
+**修复**（`RefineCanvas.tsx`）：
+- 对所有点击执行 `e.preventDefault()`（阻止浏览器默认导航），但**不调用 `e.stopPropagation()`**（保留 JS 事件处理）
+- Anchor 元素：锚点链接手动 `scrollIntoView`，外部链接 `window.open`，同源链接静默阻止
+- 非 anchor 元素：`preventDefault()` 阻止可能的 JS 导航（如 `location.href`），但 JS 事件处理（如 Bootstrap toggle）正常执行
 
 ---
 

@@ -13,13 +13,19 @@ import type { ComponentType } from '@/types'
 
 /**
  * 在 iframe 文档中插入一个新元素
+ *
+ * 关键设计：把新元素包在 `.pf-refine-inserted` wrapper 中。
+ * - wrapper 负责间距、居中、最大宽度，避免新元素（特别是 navbar/grid 这种 width:1200px 的）
+ *   直接撑满 body 拉乱整个页面布局
+ * - 真正的内容元素保留 componentLib 的 defaultStyle
+ *
  * @param doc                iframe.contentDocument
  * @param type               组件类型
  * @param opts.iframeEl      iframe DOM 元素（用于 screenX/screenY 转换）
  * @param opts.screenX       鼠标屏幕 X（可选）
  * @param opts.screenY       鼠标屏幕 Y（可选）
  * @param opts.selectedEl    当前选中的元素（点击插入时优先插到它后面）
- * @returns                  新插入的元素 + 它现在在 DOM 中的位置；失败返回 null
+ * @returns                  新插入的 wrapper 元素 + 它现在在 DOM 中的位置；失败返回 null
  */
 export interface InsertOptions {
   iframeEl?: HTMLIFrameElement | null
@@ -35,11 +41,11 @@ export function insertRefineElement(
 ): { element: HTMLElement; parent: Node; nextSibling: Node | null } | null {
   if (!doc || !doc.body) return null
 
-  // 1. 创建新元素
-  const newEl = createRefineElement(doc, type)
-  if (!newEl) return null
+  // 1. 创建内部新元素
+  const inner = createRefineElement(doc, type)
+  if (!inner) return null
 
-  // 2. 决定插入位置
+  // 2. 决定插入位置（与原逻辑一致，但查的是 wrapper 层级）
   let parent: Node = doc.body
   let nextSibling: Node | null = null
 
@@ -48,54 +54,61 @@ export function insertRefineElement(
     const rect = opts.iframeEl.getBoundingClientRect()
     const localX = opts.screenX - rect.left
     const localY = opts.screenY - rect.top
-    // iframe 内部 document 的坐标系 = iframe 视口坐标系，直接用
     let target: Element | null = null
     try {
-      // elementFromPoint 会"穿透"新元素，但新元素还没插入，不影响
       target = doc.elementFromPoint(localX, localY)
     } catch {
       target = null
     }
+    // 跳过 wrapper 自身（避免插到自己的 wrapper 内部）
+    if (target && target.closest('.pf-refine-inserted') && target.closest('.pf-refine-inserted') !== target) {
+      target = target.closest('.pf-refine-inserted') as HTMLElement
+    }
     if (target && target !== doc.body && target !== doc.documentElement) {
-      // 跳过 html/body 这种"伪目标"
       const targetRect = target.getBoundingClientRect()
       const targetMidY = targetRect.top + targetRect.height / 2
       const insertBefore = localY < targetMidY
       parent = target.parentNode ?? doc.body
       nextSibling = insertBefore ? target : target.nextSibling
     } else {
-      // 落到空白处：插入到 body 末尾
       parent = doc.body
       nextSibling = null
     }
   } else if (opts.selectedEl && opts.selectedEl.isConnected && opts.selectedEl.parentNode) {
-    // 点击插入：插到选中元素之后
-    parent = opts.selectedEl.parentNode
-    nextSibling = opts.selectedEl.nextSibling
-  } else {
-    // 默认（点击插入且无选中元素）：追加到 body 最后一个块级元素之后（作为 body 的直接子元素）
-    // 不能插入到最后一个块级容器内部（对于 flex column 的 section，新元素会作为子元素堆叠，
-    // 导致 section 高度膨胀、将原有内容顶出屏幕）。作为 body 的兄弟节点追加最安全。
-    let lastBlock: Element | null = null
-    for (const child of Array.from(doc.body.children)) {
-      if (!(child instanceof HTMLElement)) continue
-      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue
-      const display = doc.defaultView?.getComputedStyle(child).display ?? ''
-      if (display === 'block' || display === 'flex' || display === 'grid' || display === 'list-item' || display === '') {
-        lastBlock = child
-      }
+    // 点击插入：插到选中元素之后（向上找最近的 wrapper，作为同级）
+    let anchor: HTMLElement = opts.selectedEl
+    while (anchor.parentElement && !anchor.classList.contains('pf-refine-inserted') && anchor.parentElement !== doc.body) {
+      anchor = anchor.parentElement
     }
+    parent = anchor.parentNode ?? doc.body
+    nextSibling = anchor.nextSibling
+  } else {
+    // 默认：追加到 body 末尾
     parent = doc.body
-    // 插在最后一个 block 之后（作为兄弟节点），而非嵌套进去
-    nextSibling = lastBlock ? lastBlock.nextSibling : null
+    nextSibling = null
   }
 
-  // 3. 分配 eid 并插入
-  const eid = 'e' + Math.random().toString(36).slice(2, 8)
-  newEl.setAttribute('data-pf-eid', eid)
-  parent.insertBefore(newEl, nextSibling)
+  // 3. 创建 wrapper（负责布局/间距）
+  const wrapper = doc.createElement('div')
+  wrapper.className = 'pf-refine-inserted'
+  wrapper.setAttribute('data-pf-refine-inserted', 'true')
+  // wrapper 样式：仅顶部留间距、宽度跟随 body，不做居中避免 layout shift
+  wrapper.style.cssText = [
+    'box-sizing: border-box',
+    'margin: 24px 0 0 0',
+    'padding: 0',
+    'width: 100%',
+  ].join(';')
+  wrapper.appendChild(inner)
 
-  return { element: newEl, parent, nextSibling }
+  // 4. 分配 eid 到 wrapper（让 Inspector / hover 选中的是 wrapper 而不是内部元素）
+  const eid = 'e' + Math.random().toString(36).slice(2, 8)
+  wrapper.setAttribute('data-pf-eid', eid)
+
+  // 5. 插入 DOM
+  parent.insertBefore(wrapper, nextSibling)
+
+  return { element: wrapper, parent, nextSibling }
 }
 
 /**

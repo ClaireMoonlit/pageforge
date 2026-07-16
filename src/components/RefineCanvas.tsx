@@ -31,6 +31,11 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
   const [ready, setReady] = useState(false)
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null)
 
+  /** 正在编辑的元素的 eid（用于 blur 时记录 undo） */
+  const editingEidRef = useRef<string | null>(null)
+  /** 编辑前的原始文本（用于 undo） */
+  const editingOldTextRef = useRef<string>('')
+
   /** 缩放手柄状态 */
   const [isResizing, setIsResizing] = useState(false)
   const [resizeRect, setResizeRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
@@ -331,59 +336,6 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     if (info) selectRefineElement(info)
   }, [session?.selectedElement, findElementByEid, ensureEid, extractInfo, selectRefineElement])
 
-  // ========== 键盘快捷键 ==========
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // 不拦截输入元素中的键盘事件
-      const target = e.target as HTMLElement | null
-      if (target) {
-        const tag = target.tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
-      }
-
-      // Ctrl+Z / Ctrl+Shift+Z 撤销重做
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) {
-          refineUndo.redo()
-          refreshSelection()
-        } else {
-          refineUndo.undo()
-          refreshSelection()
-        }
-        return
-      }
-
-      // Ctrl+Y 重做
-      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-        e.preventDefault()
-        refineUndo.redo()
-        refreshSelection()
-        return
-      }
-
-      // Delete / Backspace 删除选中元素
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (session?.selectedElement) {
-          e.preventDefault()
-          deleteElement()
-        }
-        return
-      }
-
-      // Escape 取消选中
-      if (e.key === 'Escape') {
-        if (session?.selectedElement) {
-          selectRefineElement(null)
-        }
-        return
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [session?.selectedElement, deleteElement, selectRefineElement, refreshSelection])
-
   // ========== 测量与同步 ==========
 
   const measureAndSyncSize = useCallback(() => {
@@ -391,6 +343,10 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     if (!iframe) return
     const doc = iframe.contentDocument
     if (!doc || !doc.body) return
+
+    // 强制浏览器重排，确保 body.scrollHeight 反映最新 DOM 变更
+    void doc.body.offsetHeight
+    void doc.documentElement.offsetHeight
 
     const NEUTRALIZE_ID = 'pf-refine-neutralize'
     if (!doc.getElementById(NEUTRALIZE_ID)) {
@@ -431,6 +387,63 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     if (changed) updateRefineSize(finalW, finalH)
   }, [updateRefineSize])
 
+  // ========== 键盘快捷键 ==========
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // 不拦截输入元素中的键盘事件
+      const target = e.target as HTMLElement | null
+      if (target) {
+        const tag = target.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return
+      }
+
+      // Ctrl+Z / Ctrl+Shift+Z 撤销重做
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          refineUndo.redo()
+          refreshSelection()
+          measureAndSyncSize()
+        } else {
+          refineUndo.undo()
+          refreshSelection()
+          measureAndSyncSize()
+        }
+        return
+      }
+
+      // Ctrl+Y 重做
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault()
+        refineUndo.redo()
+        refreshSelection()
+        measureAndSyncSize()
+        return
+      }
+
+      // Delete / Backspace 删除选中元素
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (session?.selectedElement) {
+          e.preventDefault()
+          deleteElement()
+          measureAndSyncSize()
+        }
+        return
+      }
+
+      // Escape 取消选中
+      if (e.key === 'Escape') {
+        if (session?.selectedElement) {
+          selectRefineElement(null)
+        }
+        return
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [session?.selectedElement, deleteElement, selectRefineElement, refreshSelection, measureAndSyncSize])
+
   // ========== iframe 事件绑定 ==========
 
   useLayoutEffect(() => {
@@ -446,22 +459,36 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     let pollTimer: number | null = null
 
     const onClick = (e: MouseEvent) => {
-      // 预览模式下：让链接/按钮正常工作，但拦截同源相对路径（避免"跳转导入自身"的循环）
+      // 预览模式下：阻止所有浏览器默认导航，但保留 JS 事件（不 stopPropagation）
       if (refinePreviewMode) {
         const t = e.target as HTMLElement | null
         const a = t?.closest('a[href]') as HTMLAnchorElement | null
         if (a) {
           const href = a.getAttribute('href') || ''
-          if (href.startsWith('#')) return
+          // 锚点链接：手动滚动
+          if (href.startsWith('#')) {
+            e.preventDefault()
+            const id = href.slice(1)
+            const target = doc?.getElementById(id)
+            if (target) target.scrollIntoView({ behavior: 'smooth' })
+            return
+          }
+          // 空 href / javascript: / 同源路径 → 阻止导航
           e.preventDefault()
-          e.stopPropagation()
+          if (!href || href === '.' || href === './' || href === '/' || href === window.location.pathname || href.startsWith('javascript:')) {
+            return
+          }
+          // 外部链接：新窗口打开
           try {
             const absoluteUrl = new URL(href, a.baseURI).toString()
-            window.open(absoluteUrl, '_blank', 'noopener,noreferrer')
-          } catch {
-            window.open(href, '_blank', 'noopener,noreferrer')
-          }
+            if (!absoluteUrl.startsWith(window.location.origin + '/') && absoluteUrl !== window.location.origin + '/' && absoluteUrl !== window.location.origin) {
+              window.open(absoluteUrl, '_blank', 'noopener,noreferrer')
+            }
+          } catch { /* 无效 URL，静默 */ }
+          return
         }
+        // 非 anchor 元素：阻止默认导航，但放行 JS 事件处理
+        e.preventDefault()
         return
       }
       // 编辑模式：阻止所有链接跳转和弹窗触发（防止开源模板中 href/onclick 误触导致页面跳转）
@@ -478,7 +505,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (info) selectRefineElement(info)
     }
 
-    /** 双击编辑：对文本元素触发即时编辑（选中后 RefineTextEditor 的 useEffect 自动聚焦 textarea） */
+    /**
+     * 双击编辑：直接在原元素上原地编辑（contentEditable），保留原样式。
+     */
     const onDblClick = (e: MouseEvent) => {
       if (refinePreviewMode) return
       e.preventDefault()
@@ -487,14 +516,58 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (!target) return
       ensureEid(target)
       const info = extractInfo(target)
-      if (info) {
-        // 设置全局标志，RefineTextEditor 的 useEffect 检测到此标志后自动聚焦
-        ;(window as any).__pfJustDoubleClicked = true
-        selectRefineElement(info)
-        // 清除 iframe 内浏览器双击默认选中的文字
-        const sel = iframeRef.current?.contentWindow?.getSelection()
-        if (sel) sel.removeAllRanges()
+      if (!info) return
+
+      // 选中元素
+      selectRefineElement(info)
+
+      // void 元素不可编辑
+      const VOID_TAGS = new Set(['img', 'input', 'hr', 'br', 'video', 'audio', 'iframe', 'source', 'track'])
+      if (VOID_TAGS.has(info.tagName)) return
+
+      // 使元素可编辑
+      const eid = target.getAttribute('data-pf-eid') || ''
+      if (!eid) return
+
+      editingEidRef.current = eid
+      editingOldTextRef.current = target.textContent ?? ''
+      target.contentEditable = 'true'
+      // 消除浏览器默认的黄色 focus outline
+      target.style.outline = 'none'
+      target.focus()
+      // 选中全文
+      const sel = doc?.getSelection()
+      if (sel && doc) {
+        sel.selectAllChildren(target)
       }
+    }
+
+    /**
+     * 处理 contentEditable 元素 blur → 结束编辑，记录 undo
+     */
+    const onBlur = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null
+      if (!target || !target.isContentEditable) return
+      const eid = editingEidRef.current
+      if (!eid) return
+      const newText = target.textContent ?? ''
+      const oldText = editingOldTextRef.current
+      target.contentEditable = 'inherit'
+      if (newText !== oldText) {
+        refineUndo.record({
+          label: 'text',
+          execute: () => {
+            const t = findElementByEid(eid)
+            if (t) t.textContent = newText
+          },
+          rollback: () => {
+            const t = findElementByEid(eid)
+            if (t) t.textContent = oldText
+          },
+        })
+      }
+      editingEidRef.current = null
+      editingOldTextRef.current = ''
     }
 
     /**
@@ -596,6 +669,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       doc.addEventListener('pointerdown', forwardPointerEvent, true)
       doc.addEventListener('pointerup', forwardPointerEvent, true)
       doc.addEventListener('wheel', forwardWheel, { passive: false, capture: true })
+      doc.addEventListener('focusout', onBlur, true)
 
       // 同时监听 iframe 的 contentWindow 的 wheel 事件（兜底：document 级 capture 可能被 iframe 内部元素消费）
       iframeWin = iframe.contentWindow
@@ -673,6 +747,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         doc.removeEventListener('pointerdown', forwardPointerEvent, true)
         doc.removeEventListener('pointerup', forwardPointerEvent, true)
         doc.removeEventListener('wheel', forwardWheel, { capture: true } as any)
+        doc.removeEventListener('focusout', onBlur, true)
       }
       if (iframeWin) {
         iframeWin.removeEventListener('wheel', forwardWheel, { capture: true } as any)
@@ -884,7 +959,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
           </div>
         )}
 
-        {/* 浮层工具条已移除 —— 改用右键菜单（与画布模式一致） */}
+        {/* 文本编辑：双击直接在原元素上原地编辑（contentEditable），保留原样式 */}
       </div>
 
       {/* 右键菜单 — 与画布模式同款（fixed + 暗色风格 + Portal 到 body） */}

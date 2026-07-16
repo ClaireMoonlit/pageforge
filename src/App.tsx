@@ -25,6 +25,7 @@ import { findComponentDef } from '@/data/componentLib'
 import type { CanvasNode, ComponentType } from '@/types'
 import { collectRectsFromDOM, computeSnap, canvasRect, type SnapLine, type PrevSnapState } from '@/utils/snapping'
 import { insertRefineElement, buildRefineInfo } from '@/utils/refineInsertion'
+import { refineUndo } from '@/utils/refineUndo'
 
 /** 判断事件目标是否处于可输入元素中（避免快捷键误触影响输入） */
 function isTypingTarget(e: KeyboardEvent): boolean {
@@ -319,6 +320,48 @@ export default function App() {
             screenY: y,
           })
           if (result) {
+            const { element, parent, nextSibling } = result
+            const eid = element.getAttribute('data-pf-eid') || ''
+            const elClone = element.cloneNode(true) as HTMLElement
+            const parentEl = parent as HTMLElement
+            let parentEid: string
+            if (parentEl === doc.body) {
+              parentEid = '__body__'
+            } else {
+              let e = parentEl.getAttribute('data-pf-eid')
+              if (!e) {
+                e = 'e' + Math.random().toString(36).slice(2, 8)
+                parentEl.setAttribute('data-pf-eid', e)
+              }
+              parentEid = e
+            }
+            const nextEid = nextSibling instanceof HTMLElement ? nextSibling.getAttribute('data-pf-eid') || null : null
+
+            refineUndo.record({
+              label: 'insert',
+              execute: () => {
+                const iframe = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+                const d = iframe?.contentDocument
+                if (!d) return
+                const p = parentEid === '__body__' ? d.body : d.querySelector(`[data-pf-eid="${parentEid}"]`)
+                if (!p) return
+                const clone = elClone.cloneNode(true) as HTMLElement
+                const ns = nextEid ? d.querySelector(`[data-pf-eid="${nextEid}"]`) : null
+                if (ns && ns.parentNode === p) {
+                  p.insertBefore(clone, ns)
+                } else {
+                  p.appendChild(clone)
+                }
+              },
+              rollback: () => {
+                const iframe = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+                const d = iframe?.contentDocument
+                if (!d) return
+                const el = d.querySelector(`[data-pf-eid="${eid}"]`)
+                if (el) el.remove()
+              },
+            })
+
             const info = buildRefineInfo(doc, result.element)
             if (info) {
               useEditorStore.getState().selectRefineElement(info)
@@ -328,10 +371,12 @@ export default function App() {
             } catch {
               /* ignore */
             }
-            // 通知 RefineCanvas 重新测量尺寸
-            setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('pf-refine-remeasure'))
-            }, 100)
+            // 通知 RefineCanvas 重新测量尺寸（双 rAF 确保浏览器完成重排）
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                window.dispatchEvent(new CustomEvent('pf-refine-remeasure'))
+              })
+            })
           }
         } catch (err) {
           console.error('[App] 精修模式拖拽插入失败:', err)

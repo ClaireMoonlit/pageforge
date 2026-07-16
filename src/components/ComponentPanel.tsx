@@ -4,6 +4,7 @@ import { Icon } from './Icon'
 import { LayerTree } from './LayerTree'
 import { useEditorStore } from '@/store/editorStore'
 import { insertRefineElement, buildRefineInfo } from '@/utils/refineInsertion'
+import { refineUndo } from '@/utils/refineUndo'
 import type { ComponentDef, ComponentType } from '@/types'
 
 export function ComponentPanel() {
@@ -101,6 +102,16 @@ function DraggableComponent({
    * 精修模式单击插入：把元素追加到 body 末尾（或选中元素之后），
    * 触发 selectRefineElement 让右侧 Inspector 显示新元素属性。
    */
+  /** 确保元素有 data-pf-eid（供 undo 查找用） */
+  const ensureEid = (el: HTMLElement): string => {
+    let eid = el.getAttribute('data-pf-eid')
+    if (!eid) {
+      eid = 'e' + Math.random().toString(36).slice(2, 8)
+      el.setAttribute('data-pf-eid', eid)
+    }
+    return eid
+  }
+
   const handleClickInsert = (e: React.MouseEvent) => {
     if (!refineMode) return
     if (isDragging) return
@@ -110,19 +121,63 @@ function DraggableComponent({
     const doc = iframeEl.contentDocument
     const result = insertRefineElement(doc, def.type as ComponentType)
     if (result) {
-      const info = buildRefineInfo(doc, result.element)
+      const { element, parent, nextSibling } = result
+      const eid = ensureEid(element)
+      const elClone = element.cloneNode(true) as HTMLElement
+      const parentEl = parent as HTMLElement
+      const parentEid = parentEl === doc.body ? '__body__' : ensureEid(parentEl)
+      const nextEid = nextSibling instanceof HTMLElement ? nextSibling.getAttribute('data-pf-eid') || null : null
+
+      // 强制重排：确保新元素完成布局后再测量
+      void element.offsetHeight
+      void doc.body.offsetHeight
+
+      // 记录撤销
+      refineUndo.record({
+        label: 'insert',
+        execute: () => {
+          const iframe = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+          const d = iframe?.contentDocument
+          if (!d) return
+          const p = parentEid === '__body__' ? d.body : d.querySelector(`[data-pf-eid="${parentEid}"]`)
+          if (!p) return
+          const clone = elClone.cloneNode(true) as HTMLElement
+          const ns = nextEid ? d.querySelector(`[data-pf-eid="${nextEid}"]`) : null
+          if (ns && ns.parentNode === p) {
+            p.insertBefore(clone, ns)
+          } else {
+            p.appendChild(clone)
+          }
+        },
+        rollback: () => {
+          const iframe = document.getElementById('pf-refine-iframe') as HTMLIFrameElement | null
+          const d = iframe?.contentDocument
+          if (!d) return
+          const el = d.querySelector(`[data-pf-eid="${eid}"]`)
+          if (el) el.remove()
+        },
+      })
+
+      // 直接同步更新 refine 尺寸（不依赖事件系统，避免延迟一帧）
+      const canvasW = Math.max(320, parseInt(String(useEditorStore.getState().canvas.width)) || 1200)
+      const h = Math.max(doc.body.scrollHeight, doc.body.offsetHeight)
+      useEditorStore.getState().updateRefineSize(canvasW, Math.ceil(h) + 8)
+
+      const info = buildRefineInfo(doc, element)
       if (info) {
         useEditorStore.getState().selectRefineElement(info)
       }
-      try {
-        result.element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      } catch {
-        /* ignore */
-      }
-      // 通知 RefineCanvas 重新测量尺寸
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('pf-refine-remeasure'))
-      }, 100)
+      // 二次确认：双 rAF 后再次测量（兜底字体加载等异步场景）
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const doc2 = iframeEl?.contentDocument
+          if (doc2?.body) {
+            void doc2.body.offsetHeight
+            const h2 = Math.max(doc2.body.scrollHeight, doc2.body.offsetHeight)
+            useEditorStore.getState().updateRefineSize(canvasW, Math.ceil(h2) + 8)
+          }
+        })
+      })
       console.info('[ComponentPanel] 精修模式点击插入：', def.type)
     }
   }
