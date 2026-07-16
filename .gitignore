@@ -12,10 +12,14 @@ out
 vite.config.d.ts
 vite.config.js
 vite.config.ts.timestamp-*.mjs
+vite.config.js.timestamp-*.mjs
 
-# Logs
+# Build / error logs
 *.log
 dev-*.log
+build.txt
+preview.err
+tsc-out.txt
 
 # Environment & OS
 *.local

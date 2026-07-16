@@ -11,59 +11,72 @@
 
 ## 这是什么
 
-造页工坊是一款**浏览器内的可视化网页搭建工具**。无需写一行代码，像做 PPT 一样在自由画布上拖拽组件，智能吸附对齐，规则推断自动转化为响应式 HTML/CSS，一键导出干净的生产级单文件 HTML，可独立部署、无平台锁定。
+造页工坊是一款**浏览器内的可视化网页搭建工具**。无需写代码，像做 PPT 一样拖拽组件、自由排版，一键导出可直接部署的响应式 HTML 文件。
 
-### 核心闭环
+- **不会写代码？** 14 种组件自由拖拽，智能吸附对齐，所见即所得
+- **AI 生成了网页想微调？** 把 HTML 粘贴进来，秒变可视化编辑器，双击改文字、拖拽调布局
+- **做好了怎么用？** 一键导出干净的单文件 HTML，无水印、无平台锁定，直接部署
 
-```
-拖拽组件 → 自由摆放 → 智能吸附对齐 → 规则推断转响应式 → 一键导出 HTML
-```
+🌐 **[在线体验](https://clairemoonlit.github.io/pageforge/)**
 
 ---
 
-## 功能
+## 核心功能
 
-- 🎨 **自由画布**：绝对定位自由摆放，所见即所得
-- 🧲 **智能吸附**：拖拽时自动识别对齐参考线
-- 📱 **响应式导出**：桌面保持绝对定位、平板自适应、手机全宽堆叠，三层断点自动适配
-- 🧩 **10 套模板**：一键导入 Start Bootstrap 系列模板，开箱即用
-- 🔬 **精修模式**：导入 HTML 后在 iframe 中原样渲染，点击选中元素直接编辑属性，所见即所得微调
-- ⚡ **交互支持**：零代码配置链接、点击、悬停、入场动画，导出 HTML 自带 vanilla JS 运行时
-- 👁️ **编辑器内预览**：不导出也能预览交互效果
-- 🔄 **撤销/重做**：完整的历史记录
-- 📋 **复制粘贴**：跨画布节点复制
-- 🖌️ **格式刷**：一键复制样式
-- 🏷️ **多选对齐**：Ctrl/Cmd 多选 → 左/中/右/上/中/下对齐 + 等距分布
-- 📏 **标尺 + 辅助线**：画布标尺，拖拽创建辅助线
+### 🧩 自由画布 + 14 种组件
+
+标题、正文、图片、按钮、卡片、容器、分隔线、图标、视频、输入框、导航栏、网格、表单、嵌入 —— 全部可在画布上自由拖拽、缩放、旋转、镜像。内置**智能吸附对齐**（边缘 / 中心 / 等间距），拖拽时实时显示蓝色参考线。
+
+### 🔬 精修模式 —— 可视化编辑任意 HTML
+
+导入现有 HTML 页面，在 iframe 中 100% 还原原布局，**点击选中元素直接编辑**：
+- 双击改文字、拖拽手柄调尺寸
+- 样式编辑器（颜色 / 字号 / 字重 / 对齐 / 内边距 / 圆角）
+- 属性编辑器（图片地址 / 链接 / 描述 / 提示文字）
+- DOM 面包屑导航，快速跳转任意层级
+
+**特别适合精修 AI 生成的网页** —— 把 DeepSeek / GLM / MiniMax 写的 HTML 粘贴进来，不用对着代码找标签。
+
+### 📱 响应式导出
+
+桌面保持绝对定位、平板自适应、手机全宽堆叠 —— 三层断点自动适配，导出的 HTML 含完整响应式 CSS 和 Google Fonts 国内镜像加速。
+
+### 🎬 交互动画（导出后保留）
+
+零代码配置：链接跳转、点击动作（跳转 / 滚动锚点 / 切换显隐 / 提交表单）、悬停效果（缩放 / 阴影 / 变色 / 发光）、7 种入场动画。所有交互以 `data-pf-*` 属性序列化，由零依赖运行时驱动。
+
+### 📚 18 套模板 + HTML 导入
+
+9 套预设模板（简历 / SaaS 落地页 / 暗色主题 / 杂志风等）+ 9 套开源模板（Start Bootstrap 系列）。支持粘贴 HTML 或上传 `.html` 文件，智能检测复杂度并推荐最佳编辑模式。
+
+### 🎨 属性面板 + 预设样式
+
+21 种字体、按钮 8 种预设、卡片 6 种预设、图标选择器（SVG + emoji）、格式刷（一键复制样式）。
+
+### 📐 图层树 + 多选对齐
+
+嵌套树形展示、拖拽排序、显示/隐藏切换。Ctrl/Cmd 多选自动弹出对齐工具栏（六向对齐 + 等距分布）。
+
+### 📤 三种导出
+
+HTML（自包含单文件，可独立部署）、PNG、PDF。导出的 HTML 完全属于你。
+
+### ✂️ 图片裁切
+
+矩形 / 圆形 / 圆角三种形状，8 向手柄，正方形磁吸 + 原比例吸附 + 边缘吸附三套系统，支持旋转、翻转、重新裁切。
 
 ---
 
 ## 快速开始
 
 ```bash
-# 克隆仓库
 git clone https://github.com/ClaireMoonlit/pageforge.git
 cd pageforge
-
-# 安装依赖
 npm install
-
-# 启动开发服务器
 npm run dev
-
-# 打开浏览器访问
-# http://localhost:5173（默认）或终端输出的实际地址
 ```
 
-### 运行测试
-
-```bash
-npx tsx scripts/test-export.ts
-```
-
-### 在线体验
-
-🌐 **[GitHub Pages Demo](https://clairemoonlit.github.io/pageforge/)**
+浏览器访问 `http://localhost:5173` 即可使用。
 
 ---
 
@@ -71,71 +84,12 @@ npx tsx scripts/test-export.ts
 
 | 类别 | 选型 |
 |------|------|
-| 构建 | Vite 5 |
 | 框架 | React 18 + TypeScript |
-| 状态 | Zustand + Immer + zundo（撤销/重做） |
+| 构建 | Vite 5 |
+| 状态管理 | Zustand + Immer + zundo（撤销/重做） |
 | 拖拽 | @dnd-kit/core + @dnd-kit/sortable |
-| HTML 解析 | JSDOM（运行时导入）+ 内置 CSS 解析器 |
-| 样式 | 原生 CSS + Tailwind（仅工具类） |
-
----
-
-## 项目结构
-
-```
-PageForge/
-├── src/
-│   ├── App.tsx                  # 三栏布局 + 拖拽上下文
-│   ├── components/
-│   │   ├── Toolbar.tsx          # 顶部工具栏
-│   │   ├── ComponentPanel.tsx   # 左：组件库 / 模板
-│   │   ├── Canvas.tsx           # 中：自由画布 + 标尺
-│   │   ├── CanvasElement.tsx    # 节点渲染 + 拖拽 + 预览
-│   │   ├── NodeRenderer.tsx     # 节点 → React 元素
-│   │   ├── Inspector.tsx        # 右：属性面板
-│   │   ├── LayerTree.tsx        # 右上：层级树
-│   │   ├── AlignToolbar.tsx     # 多选对齐工具栏
-│   │   ├── Ruler.tsx            # 画布标尺
-│   │   ├── RefineCanvas.tsx     # 精修模式：iframe 渲染 + 元素选中
-│   │   ├── RefineInspector.tsx  # 精修模式：选中元素属性编辑
-│   │   └── Icon.tsx             # 智能图标组件
-│   ├── utils/
-│   │   ├── importHtml.ts        # HTML 解析（~1611 行）
-│   │   ├── exportHtml.ts        # 节点 → 响应式 HTML 导出
-│   │   ├── interactionRuntime.ts # 零依赖 vanilla JS 运行时
-│   │   ├── layoutRules.ts       # 规则推断引擎
-│   │   ├── iconPaths.ts         # 图标 SVG 路径
-│   │   ├── snapping.ts          # 拖拽吸附辅助线
-│   │   ├── refineSerialization.ts  # 精修模式：DOM 序列化回 HTML
-│   │   ├── refineInsertion.ts   # 精修模式：元素插入逻辑
-│   │   ├── refineUndo.ts        # 精修模式：独立撤销/重做管理器
-│   │   └── elementFactory.ts    # 精修模式：元素工厂
-│   ├── store/
-│   │   └── editorStore.ts       # Zustand 单一数据源
-│   ├── types/
-│   │   └── index.ts             # 类型定义
-│   └── data/
-│       ├── componentLib.ts      # 11 个内置组件
-│       ├── importedTemplates.ts # 10 套导入模板
-│       └── templates.ts         # 内置空白模板
-├── public/
-│   └── imported-templates/      # 运行时模板资源
-├── scripts/
-│   └── test-export.ts           # 导出功能测试
-└── PROJECT_STATUS.md            # 项目状态交接文档
-```
-
----
-
-## 开发
-
-> 新对话接入时，建议让 AI 读取 `PROJECT_STATUS.md` 了解项目上下文。
-
-```bash
-npm run dev      # 启动开发服务器
-npm run build    # 构建生产版本
-npm run preview  # 预览构建产物
-```
+| HTML 解析 | JSDOM + 内置 CSS 解析器 |
+| 样式 | 原生 CSS + Tailwind（工具类） |
 
 ---
 
