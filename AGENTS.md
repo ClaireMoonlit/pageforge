@@ -1,8 +1,9 @@
-# PageForge 项目状态交接文档
+# AGENTS.md — PageForge 项目状态交接文档
 
-> 用途：在新对话中快速恢复项目上下文。
-> 最后更新：2026-07-17（§5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入）
-> 当前版本：v0.4.4
+> **用途**：在新的 AI 对话开头，发一句"读取 `d:\My Projects\pageforge\AGENTS.md` 了解项目状态"即可让 AI 快速恢复上下文。
+> **读者**：AI 助手（Claude / GPT / DeepSeek / GLM / MiniMax 等），不是给人类看的
+> **最后更新**：2026-07-17（§5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入）
+> **当前版本**：v0.4.4
 
 ---
 
@@ -1394,4 +1395,4 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ---
 
-**文档结束。** 建议在新对话开头告诉 AI "读取 `d:\My Projects\PageForge\PROJECT_STATUS.md` 了解项目状态"。
+**文档结束。** 建议在新对话开头告诉 AI "读取 `d:\My Projects\pageforge\AGENTS.md` 了解项目状态"。
