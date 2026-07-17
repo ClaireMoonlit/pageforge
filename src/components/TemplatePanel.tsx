@@ -36,6 +36,8 @@ export function TemplatePanel() {
    */
   const [modePrompt, setModePrompt] = useState<{ html: string; pendingForReplace?: boolean } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  /** 上传文件后检测到的本地资源警告（用于在上传区域显示） */
+  const [uploadWarn, setUploadWarn] = useState<string | null>(null)
   /** 粘贴 textarea 引用：用于根据内容动态调整高度（自适应 + 最大高度限制） */
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null)
   const loadTemplate = useEditorStore((s) => s.loadTemplate)
@@ -105,6 +107,12 @@ export function TemplatePanel() {
       /<html[\s>]/i.test(html) ||
       /<body[\s>]/i.test(html)
     )
+  }
+
+  /** 检测 HTML 内是否包含相对路径图片引用（无法自动解析本地资源时用于提示） */
+  const detectRelativeImages = (html: string): boolean => {
+    // 匹配 src/href 中不以 http(s):/data:/# 开头的 assets/、./、../ 路径
+    return /(?:src|href)=["'](?!(?:https?:|data:|\/\/|#))[./]?(?:assets\/|\.\.?\/|\.\/)/i.test(html)
   }
 
   /**
@@ -450,6 +458,18 @@ export function TemplatePanel() {
         if (!text.trim()) {
           setError('文件内容为空。')
           return
+        }
+        // 检测本地相对路径资源：上传本地 HTML 时，浏览器无法访问同目录图片，
+        // 必须用「从模板库导入」路径（pageforge 内置了 assets-* 资源）才能正常显示。
+        // 上传方式下相对路径图片必然 404，提示用户。
+        if (detectRelativeImages(text)) {
+          setUploadWarn(
+            '检测到 HTML 包含相对路径图片（如 assets/...、./...、../...）。' +
+            '本地文件无法被浏览器访问，导入后图片将无法显示。' +
+            '建议：从模板库选择模板，或将 HTML 内的图片路径改为绝对 URL。',
+          )
+        } else {
+          setUploadWarn(null)
         }
         const ok = handleImport(text)
         // 导入流程已启动（成功直接导入 / 弹出确认框均算 ok）→ 清空文件名，
@@ -807,6 +827,11 @@ export function TemplatePanel() {
                     <p className="text-gray-500 text-xs leading-loose tracking-wide px-1">
                       已启用粘贴模式：上方文件上传已禁用，如需上传请先清空。
                     </p>
+                  )}
+                  {!pasteHtml.trim() && uploadWarn && (
+                    <div className="text-amber-400 text-xs px-1 leading-relaxed bg-amber-400/5 border border-amber-400/20 rounded p-2">
+                      ⚠ {uploadWarn}
+                    </div>
                   )}
                   {error && (
                     <div className="text-red-400 text-xs px-1">{error}</div>
