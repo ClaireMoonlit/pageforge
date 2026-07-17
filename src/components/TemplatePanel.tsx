@@ -5,7 +5,9 @@ import { pageTemplates } from '@/data/templates'
 import { importedTemplates, type ImportedTemplateMeta } from '@/data/importedTemplates'
 import { htmlToNodes, extractCanvasConfig } from '@/utils/importHtml'
 import { ImportModeDialog } from '@/components/ImportModeDialog'
+import { ImageWarningDialog } from '@/components/ImageWarningDialog'
 import { detectHtmlComplexity, type ImportMode } from '@/utils/htmlComplexity'
+import { scanLocalImages, type LocalImageRef } from '@/utils/scanLocalImages'
 import type { CanvasNode, CanvasConfig } from '@/types'
 
 export function TemplatePanel() {
@@ -38,6 +40,14 @@ export function TemplatePanel() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   /** 上传文件后检测到的本地资源警告（用于在上传区域显示） */
   const [uploadWarn, setUploadWarn] = useState<string | null>(null)
+  /**
+   * 智能检测：导入 HTML（含粘贴/上传）后，若检测到本地图片，
+   * 弹出 ImageWarningDialog 提示用户。仅在有结果时弹出。
+   * 弹窗关闭后本次会话内不再弹（防骚扰）。
+   */
+  const [imageWarning, setImageWarning] = useState<{ count: number; refs: LocalImageRef[] } | null>(null)
+  /** 已对本次会话提示过图片警告，避免重复弹出 */
+  const imageWarningShownRef = useRef(false)
   /** 粘贴 textarea 引用：用于根据内容动态调整高度（自适应 + 最大高度限制） */
   const pasteTextareaRef = useRef<HTMLTextAreaElement>(null)
   const loadTemplate = useEditorStore((s) => s.loadTemplate)
@@ -525,6 +535,14 @@ export function TemplatePanel() {
     if (!pasteHtml.trim()) {
       setError('请先粘贴 HTML 代码。')
       return
+    }
+    // 智能检测：粘贴 HTML 内的本地图片
+    if (!imageWarningShownRef.current) {
+      const refs = scanLocalImages(pasteHtml)
+      if (refs.length > 0) {
+        imageWarningShownRef.current = true
+        setImageWarning({ count: refs.length, refs })
+      }
     }
     const ok = handleImport(pasteHtml)
     if (ok) {
@@ -1019,6 +1037,14 @@ export function TemplatePanel() {
           html={modePrompt.html}
           onCancel={() => setModePrompt(null)}
           onConfirm={handleModeConfirm}
+        />
+      )}
+
+      {/* 本地图片资源警告弹窗：智能检测，仅在有本地图片时弹出 */}
+      {imageWarning && (
+        <ImageWarningDialog
+          count={imageWarning.count}
+          onClose={() => setImageWarning(null)}
         />
       )}
     </>
