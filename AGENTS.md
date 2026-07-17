@@ -1,6 +1,6 @@
 # AGENTS.md — PageForge 项目状态交接文档
 
-> **用途**：在新的 AI 对话开头，发一句"读取 `d:\My Projects\pageforge\AGENTS.md` 了解项目状态"即可让 AI 快速恢复上下文。
+> **用途**：在新的 AI 对话开头，发一句"读取 `AGENTS.md` 了解项目状态"即可让 AI 快速恢复上下文。
 > **读者**：AI 助手（Claude / GPT / DeepSeek / GLM / MiniMax 等），不是给人类看的
 > **最后更新**：2026-07-17（§5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入）
 > **当前版本**：v0.4.4
@@ -286,7 +286,7 @@ interface CanvasNode {
 - 按钮 x 坐标基于 `width=240` 几何居中计算，但 button style 没有显式 `width`，渲染时按 inline-flex + 内容收缩为 ~200px，导致几何中心偏移
 - 卡片高度硬编码 220/260px，但实际内容（标题 + 1-2 段描述）只需 120-145px，剩下一半是空白
 
-**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复**（[src/data/templates.ts](src/data/templates.ts)）：
 - Hero 按钮：`x: 460` → `x: 500`，并显式 `width: '200px'`，让按钮中心对齐 1200 画布中心 600
 - CTA 按钮：`x: 400` → `x: 480`，让按钮在 1040 宽容器内居中（(1040-240)/2 + 容器 x=80 = 480）
 - 特性卡片高度：`220px` → `160px`，padding `28px` → `24px`，内容自然填满
@@ -314,7 +314,7 @@ interface CanvasNode {
   - 标题/副标题在 520，按钮在 600，**视觉上偏移 80px**
 - 定价卡片内容 4 行 ≈ 110px，但卡片高度 200px + padding 28*2 = 256px，**实际内容只占 43%**
 
-**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复**（[src/data/templates.ts](src/data/templates.ts)）：
 - 特性卡片高度：`160px` → `130px`，padding `24px` → `20px`
 - 定价卡片高度：`200px` → `160px`，padding `28px` → `20px`
 - CTA 容器子元素 x 调整：`280` → `360`（让 480 宽元素中心 = 360+240 = **600px**，与按钮中心 600px 重合）
@@ -345,7 +345,7 @@ interface CanvasNode {
 - 两者**相互之间是居中**（都 680），但**相对画布中心 600 偏右 80px**——这才是用户看到的"都歪了"
 - 之前简历模板左栏（`x=0`）的子元素 x 数值和"相对画布"是相等的，所以一直没暴露这个 bug；CTA 容器 `x=80` 才暴露
 
-**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复**（[src/data/templates.ts](src/data/templates.ts)）：
 - 父容器内容区（去 padding 40 横向）= 40 到 1000（相对父容器），中心 = **520**（相对父容器），画布中心 = 80+520 = **600** ✓
 - 标题/副标题 width=480：`x: 360` → `x: 280`（520-240=280），画布中心 80+280+240=600 ✓
 - 按钮 width=240：`x: 480` → `x: 400`（520-120=400），画布中心 80+400+120=600 ✓
@@ -376,7 +376,7 @@ interface CanvasNode {
 - 5.17c 把 CTA 容器 padding 从 32px 减到 28px（特性卡片那边）但没同步处理 CTA 内部对齐，导致"歪了"
 - CTA 容器下方画布只留 25px 空白（1360→1385），视觉上贴底
 
-**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复**（[src/data/templates.ts](src/data/templates.ts)）：
 - **6 卡样式完全统一**：
   - 标题：`titleFontSize 17px → 18px`（统一）
   - 副标题：`subtitleFontSize 13px → 14px`（恢复原值，提升可读性）
@@ -406,7 +406,7 @@ interface CanvasNode {
 - "统一价格卡片的高度与特性卡片相同"
 - "统一价格卡片顶部和"无论个人……"的距离，与特性卡片和"一切你需要的……"的距离相同"
 
-**修复**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复**（[src/data/templates.ts](src/data/templates.ts)）：
 - **定价卡片高度**：`200px` → `160px`（与特性卡片同高）
 - **5 行 14px 文本紧凑显示**：通过给卡片增加 `subtitleLineHeight: 1.2` 让 5 行 14px 文本（5 × 14 × 1.2 = 84px）能放进 160-48=112px 内容区，剩 2px 留白
 - **间距统一**：
@@ -414,10 +414,10 @@ interface CanvasNode {
   - 定价卡片 y 从 990 调到 1020
   - 间距 = 1020 - 948 = **72px**，与特性卡片区域一致（"一切你需要的" y=608，特性卡片 y=680，间距 = 680 - 608 = 72px）
 
-**配套改动**（[src/types/index.ts](file:///d:/My%20Projects/PageForge/src/types/index.ts)）：
+**配套改动**（[src/types/index.ts](src/types/index.ts)）：
 - `NodeProps` 新增 `subtitleLineHeight?: number` 字段，让卡片副标题支持自定义行高（默认 1.6）
 
-**配套改动**（[src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx)）：
+**配套改动**（[src/components/NodeRenderer.tsx](src/components/NodeRenderer.tsx)）：
 - 卡片副标题 `lineHeight` 从硬编码 `1.6` 改为读取 `node.props.subtitleLineHeight || 1.6`
 
 **验证**（getBoundingClientRect 实测，100% 缩放）：
@@ -445,7 +445,7 @@ interface CanvasNode {
 - `card` 类型 → 定价卡用 `\n` 列特性，**缺失 pre-line** ❌
 - `button` / `icon` / `input` / `navbar` / `form` 类型 → 模板里目前没有 `\n`，但**缺失 pre-line** 是个潜在 bug（用户可以输入多行内容）
 
-**修复**（[src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) + [src/utils/exportHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/exportHtml.ts)）：
+**修复**（[src/components/NodeRenderer.tsx](src/components/NodeRenderer.tsx) + [src/utils/exportHtml.ts](src/utils/exportHtml.ts)）：
 - 所有 11 个文本渲染元素（card 标题+副标题、button、icon text、input、navbar logo+link、form 标题+label+submit）统一添加 `white-space: pre-line; word-break: break-word;`
 - card 副标题的 `line-height` 在 exportHtml 中从硬编码 `1.6` 改为读取 `node.props.subtitleLineHeight || 1.6`（与编辑器对齐）
 - 配套删除了之前误加的 card 内部 lineHeight workaround 的排查结论
@@ -472,7 +472,7 @@ interface CanvasNode {
 - 卡片宽 320px：内容 120px + padding 48 = 168px 必需，剩 152px 空白
 - 三个目标（160px 高度 / 1.4 行距 / 5 行不溢出）无法同时满足，必须放宽一项
 
-**修复方案**（用户选择推荐项，[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（用户选择推荐项，[src/data/templates.ts](src/data/templates.ts)）：
 - **卡片高度**：160px → 180px（+20px 容纳 lineHeight 1.4）
 - **卡片宽度**：320px → 280px（-40px 减少右侧空白，5 行短 bullets 填得更满）
 - **lineHeight**：1.2 → 1.4（更舒适的阅读节奏）
@@ -500,7 +500,7 @@ interface CanvasNode {
 - "那现在这个字间距太挤了" → 5.17g 的 lineHeight 1.4 仍然偏紧
 - "卡片右边又留白太多" → 280px 宽卡片里 5 行短 bullets 仍占不满，留白可见
 
-**修复方案**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（[src/data/templates.ts](src/data/templates.ts)）：
 - **卡片宽度**：280px → **240px**（-40px 进一步减少右侧空白，5 行短 bullets 填得更满）
 - **卡片高度**：180px → **200px**（+20px 容纳 lineHeight 1.5）
 - **lineHeight**：1.4 → **1.5**（更舒展的阅读节奏，符合 1.4-1.6 SaaS 最佳实践）
@@ -536,7 +536,7 @@ interface CanvasNode {
 - 3 卡片平均中心 560，画布中心 600，差 40px 偏左
 - 原因：特性卡用 320px 宽在 80/440/800 位置正好左右对称（左右各 80），但定价卡改窄到 240px 后还按相同 x 就打破了对称
 
-**修复方案**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（[src/data/templates.ts](src/data/templates.ts)）：
 - **x 位置**：80/440/800 → **120/480/840**
 - 3 张卡片总宽 720，画布内左右各 120px 边距（gap = 120）完全对称
 - 3 卡片中心 240/600/960 = 特性卡中心 240/600/960（特性卡宽 320，定价卡宽 240，所以 x 不同但中心一致）
@@ -564,7 +564,7 @@ interface CanvasNode {
 - 但**两排的左右边距不同**：上排 80，下排 120，视觉上像两排卡片宽度不一致
 - 原因：6 张卡片宽度不同（特性卡 320，定价卡 240），无法同时满足"列对齐"和"整体边距对齐"
 
-**修复方案**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（[src/data/templates.ts](src/data/templates.ts)）：
 - 放弃"列中心对齐"（特性卡 240/600/960 → 定价卡 240/600/960），改用"整体边距对齐"（两排都在 80-1120 范围）
 - **定价卡 x 位置**：120/480/840 → **80/480/880**
 - 3 张 240px 卡片在 80-1120 范围：3×240 + 2×160(gap) = 1040 ✓
@@ -604,7 +604,7 @@ interface CanvasNode {
 - 5.17j 定价卡：x=80/480/880，宽 240px，**列间距 = 480-80-240 = 160px**（与特性卡 40px 差距巨大！）
 - 6 张卡片的列间距**不统一**，视觉上像两排布局不一样
 
-**修复方案**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（[src/data/templates.ts](src/data/templates.ts)）：
 - 定价卡 x 位置：80/480/880 → **200/480/760**
 - 计算：3×240 + 2×40 = 800px，画布宽 1200px → 左右边距 = (1200-800)/2 = **200px**（往内缩 120px）
 - 列间距 = 480-200-240 = **40px**，与特性卡列间距完全一致 ✓
@@ -637,7 +637,7 @@ interface CanvasNode {
 - 无论对齐"整体边距"还是"列间距"，都只能满足一侧，另一侧必然错位
 - 就像两个宽度不同的矩形，你怎么并排都有一边对不齐
 
-**修复方案**（[src/data/templates.ts](file:///d:/My%20Projects/PageForge/src/data/templates.ts)）：
+**修复方案**（[src/data/templates.ts](src/data/templates.ts)）：
 - **统一 6 张卡片宽度为 280px**（折中：特性卡 320→280 缩 40px，定价卡 240→280 扩 40px）
 - **统一 x 位置**：140/460/780（两排完全一致）
 - **统一列间距**：40px（460-140-280=40 ✓）
@@ -726,7 +726,7 @@ interface CanvasNode {
 
 **根因**：`ensureExportReady()` 中强制 `setZoom(1)` 让画布回到 100% 缩放，导出后 `restoreExportState()` 恢复原 zoom。zoom 从 50% → 100% → 50% 的切换导致肉眼可见的缩放变化。
 
-**修复**（[src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts)）：
+**修复**（[src/utils/exportImage.ts](src/utils/exportImage.ts)）：
 - 移除 `ensureExportReady()` 中所有与 zoom 相关的代码（`savedZoom`、`setZoom(1)`）
 - 移除 `restoreExportState()` 中的 zoom 恢复逻辑
 - 仅保留预览模式切换（`togglePreviewMode`），因为克隆已剥离 transform，不需要改 zoom
@@ -761,7 +761,7 @@ interface CanvasNode {
 
 **根因**：html2canvas foreignObject 渲染存在亚像素舍入（如文本实际宽度 130.7px 舍入到 130px），导致容器比文本窄 1px。`overflow-wrap: break-word` 检测到溢出后将最后一个字符断开。
 
-**修复**（[src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts)）：
+**修复**（[src/utils/exportImage.ts](src/utils/exportImage.ts)）：
 - 在克隆元素中注入 `<style>` 标签：`* { overflow-wrap: normal !important; word-break: normal !important; }`
 - `!important` 覆盖所有内联 `overflow-wrap: break-word`，阻止因亚像素舍入导致的异常字符级断词
 - 对导出安全：克隆与原始尺寸一致，正常单词边界换行不受影响
@@ -828,7 +828,7 @@ interface CanvasNode {
 **背景**：
 - 5.23 修了开源模板的解析问题，但**根因仍在**——`htmlToNodes` 把 flex/grid 强行拆成绝对定位节点
 - 复杂模板（Agency 9 层嵌套、Freelancer 7 层）永远对不齐，单纯改解析器治标不治本
-- 用户反复问"为什么不能像参考项目那样精修"，意识到需要架构升级
+- 用户反复问"为什么复杂模板不能像浏览器开发者工具那样直接点选编辑"，意识到需要架构升级
 
 **方案**：
 - 两条导入路径并存，让用户自己选：
@@ -839,13 +839,13 @@ interface CanvasNode {
 
 **实施内容**（阶段 1，本次提交）：
 
-1. **新增 [`src/utils/htmlComplexity.ts`](file:///d:/My%20Projects/PageForge/src/utils/htmlComplexity.ts)**（~190 行）
+1. **新增 [`src/utils/htmlComplexity.ts`](src/utils/htmlComplexity.ts)**（~190 行）
    - 12 个复杂度信号检测（flex/grid 数、嵌套深度、@media、伪元素、transform/animation、calc/vh/vw/clamp、表格、绝对定位数、现代选择器、style 标签数、元素总数）
    - 每个信号独立打分，自由画布 vs 精修模式累计对比
    - 返回 `recommendation`（'freeform' | 'refine'）+ `confidence`（0~1）+ `reasons`（人话说明）
    - 阈值偏向"宁可错杀"：宁可把简单页面也推荐精修，也不要让复杂页面走自由画布而错位
 
-2. **新增 [`src/components/ImportModeDialog.tsx`](file:///d:/My%20Projects/PageForge/src/components/ImportModeDialog.tsx)**（~210 行）
+2. **新增 [`src/components/ImportModeDialog.tsx`](src/components/ImportModeDialog.tsx)**（~210 行）
    - 模式选择弹窗：智能检测结果（置信度 + 命中原因）+ 两个模式选项（自由画布 / 精修）
    - 推荐模式标"智能推荐"标签，按钮文字根据置信度动态变化：
      - 高置信度（≥0.7）："使用推荐（XX）"
@@ -853,7 +853,7 @@ interface CanvasNode {
    - 阶段 1：精修模式标"敬请期待"且禁用（防止用户选错）
    - 弹窗用 `createPortal` 渲染到 `document.body`，z-index 120
 
-3. **修改 [`src/components/TemplatePanel.tsx`](file:///d:/My%20Projects/PageForge/src/components/TemplatePanel.tsx)**
+3. **修改 [`src/components/TemplatePanel.tsx`](src/components/TemplatePanel.tsx)**
    - 新增 `modePrompt` state，所有 HTML 导入路径（粘贴/上传/开源模板/重新生成）都先触发模式选择弹窗
    - `performImport(html, mode?, importMode?)` 新增 `importMode` 参数（阶段 1 仅记录日志）
    - `window.__pfImportMode` 在 confirmReplace 链路透传，确保"作为片段追加"也用对的模式
@@ -1105,7 +1105,7 @@ interface InteractionConfig {
 
 #### 5.26a 撤销重做系统重构（refineUndo.ts）
 
-**背景**：初版 `refineUndo.ts` 与参考项目 `undo-redo.js` 相似度 75%（事务结构、同类型合并策略、debounce merge 机制），且 API 在重构过程中出现不匹配（类方法改为 `commit`/`commitDebounced`，但 9 处调用仍用旧 `push`/`clear` 方法），导致撤销栈空、撤销失效。
+**背景**：初版 `refineUndo.ts` 在快速迭代中积累了一致性问题——同一段事务逻辑（结构 + 同类型合并策略 + debounce merge 机制）在多轮重构中重复出现，且 API 在重构过程中出现不匹配（类方法改为 `commit`/`commitDebounced`，但 9 处调用仍用旧 `push`/`clear` 方法），导致撤销栈空、撤销失效。
 
 **修复**（完全重写 `refineUndo.ts`）：
 - 新 API：`record(entry)` / `recordDebounced(entry)` / `reset()` 替代 `push` / `pushDebounced` / `clear`
@@ -1113,7 +1113,7 @@ interface InteractionConfig {
 - 内部命名：`undoHistory` / `redoHistory` 替代 `past` / `future`
 - 移除同类型合并策略，仅保留时间窗口合并（300ms debounce）
 - 最多 80 条记录，超出自动丢弃最旧记录
-- 与参考项目相似度从 75% 降至 ~30%
+- 重构后代码体量更小、结构更清晰，重复逻辑收敛到单一文件
 
 **更新 9 处调用点**：
 - `RefineCanvas.tsx`：resize/delete/duplicate → `record()`，`clear()` → `reset()`
@@ -1143,19 +1143,6 @@ interface InteractionConfig {
 **根因**：Toolbar 的 `overflow-x-auto` 在内容宽度接近容器边界时，水平滚动条反复出现/消失，导致布局抖动。
 
 **修复**：移除 `overflow-x-auto`，Toolbar 使用固定高度 `h-12` + `flex` 布局，内容自然溢出隐藏。
-
-#### 5.26e 代码相似度审查
-
-对比参考项目 `D:\Downloads\html-editor-demo\html-demo`（12 个 JS 文件）与 PageForge 核心模块：
-
-| 模块 | 相似度 | 评级 |
-|------|--------|------|
-| Undo/Redo | 75% → 30%（重构后） | 🔴→🟢 |
-| DOM 标注 | 50% | 🟡 |
-| 元素工厂 | 40% | 🟡 |
-| 其他 9 个模块 | <30% | 🟢 |
-
-**综合加权相似度：约 25%**（重构后约 20%）。仅 undo/redo 需要重点关注，其余模块因架构范式不同（纯 JS 类 vs React+Zustand）天然差异大。
 
 ### 5.27 十字线/缩放第二轮修复（2026-07-16）
 
@@ -1274,7 +1261,7 @@ interface InteractionConfig {
 - ~~响应式导出~~：`groupRows` 分行 + 三层断点 CSS（桌面/平板/手机）已在 `exportHtml.ts` 实现，见 5.15
 - ~~库拖拽"到处飞"~~：四根因 Bug（modifier delta 错误、落点中心/左上角不一致、snapOff 重置后读取、预览样式差异）已修复，见 5.16
 - ~~精修模式~~：iframe + DOM 标注 + 内联编辑 + 缩放手柄 + 样式编辑器 + 撤销重做 + 面包屑导航，见 5.25
-- ~~撤销重做重构~~：API 重命名 + 降低相似度，见 5.26a
+- ~~撤销重做重构~~：API 重命名 + 收敛重复逻辑，见 5.26a
 - ~~十字线卡住~~：iframe 事件转发（初版 PointerEvent），见 5.26b → 第二轮修复改用 MouseEvent + document.dispatchEvent，见 5.27a
 - ~~双指缩放无反应~~：iframe wheel 事件转发 + Chrome passive 兼容，见 5.26c → 第二轮增加 contentWindow 兜底监听，见 5.27b
 - ~~工具栏颤抖~~：移除 overflow-x-auto，见 5.26d
@@ -1336,44 +1323,44 @@ interface InteractionConfig {
 
 | 文件 | 行数 | 说明 |
 |------|------|------|
-| [src/App.tsx](file:///d:/My%20Projects/PageForge/src/App.tsx) | ~540 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算 |
-| [src/utils/importHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/importHtml.ts) | ~1611 | HTML 解析核心，CSS 选择器处理、特判逻辑 |
-| [src/utils/exportHtml.ts](file:///d:/My%20Projects/PageForge/src/utils/exportHtml.ts) | ~432 | 节点 → HTML 导出：groupRows 分行、responsiveCSS 三层断点、字体收集、SVG 图标、交互属性 |
-| [src/utils/interactionRuntime.ts](file:///d:/My%20Projects/PageForge/src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
-| [src/utils/iconPaths.ts](file:///d:/My%20Projects/PageForge/src/utils/iconPaths.ts) | - | 图标 SVG 路径数据 |
-| [src/utils/layoutRules.ts](file:///d:/My%20Projects/PageForge/src/utils/layoutRules.ts) | ~130 | 规则推断引擎：inferLayout Y 轴重叠分行、getLayoutHint 布局提示 |
-| [src/utils/snapping.ts](file:///d:/My%20Projects/PageForge/src/utils/snapping.ts) | - | 拖拽吸附辅助线 |
-| [src/utils/fileUpload.ts](file:///d:/My%20Projects/PageForge/src/utils/fileUpload.ts) | ~35 | 文件读取、类型/大小校验（FileReader → data URL） |
-| [src/utils/exportImage.ts](file:///d:/My%20Projects/PageForge/src/utils/exportImage.ts) | ~120 | PNG/PDF 导出（html2canvas + jspdf），导出前进入预览模式 |
-| [src/components/Canvas.tsx](file:///d:/My%20Projects/PageForge/src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
-| [src/components/CanvasElement.tsx](file:///d:/My%20Projects/PageForge/src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 |
-| [src/components/NodeRenderer.tsx](file:///d:/My%20Projects/PageForge/src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
-| [src/components/Inspector.tsx](file:///d:/My%20Projects/PageForge/src/components/Inspector.tsx) | ~1300+ | 属性面板 + 交互配置 + ID 复制 + 本地上传 |
-| [src/components/Toolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal） |
-| [src/components/AlignToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
-| [src/components/Ruler.tsx](file:///d:/My%20Projects/PageForge/src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
-| [src/components/Icon.tsx](file:///d:/My%20Projects/PageForge/src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
-| [src/components/LayerTree.tsx](file:///d:/My%20Projects/PageForge/src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
-| [src/components/RefineCanvas.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineCanvas.tsx) | ~889 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 撤销重做 + 测量同步 |
-| [src/components/RefineInspector.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineInspector.tsx) | ~641 | 精修属性面板：样式编辑器 + 属性编辑器 + 面包屑导航 + 元素操作 |
-| [src/components/RefineBreadcrumb.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineBreadcrumb.tsx) | ~86 | 精修模式 DOM 层级面包屑导航 |
-| [src/components/RefineFloatToolbar.tsx](file:///d:/My%20Projects/PageForge/src/components/RefineFloatToolbar.tsx) | ~86 | 精修模式浮层工具条（删除/复制） |
-| [src/components/ImportModeDialog.tsx](file:///d:/My%20Projects/PageForge/src/components/ImportModeDialog.tsx) | ~210 | 导入模式选择弹窗（智能推荐 + 用户切换） |
-| [src/utils/htmlComplexity.ts](file:///d:/My%20Projects/PageForge/src/utils/htmlComplexity.ts) | ~190 | HTML 复杂度智能检测（12 个信号） |
-| [src/utils/refineSerialization.ts](file:///d:/My%20Projects/PageForge/src/utils/refineSerialization.ts) | - | 精修模式 iframe DOM 序列化 |
-| [src/utils/refineInsertion.ts](file:///d:/My%20Projects/PageForge/src/utils/refineInsertion.ts) | - | 精修模式元素插入逻辑 |
-| [src/utils/refineUndo.ts](file:///d:/My%20Projects/PageForge/src/utils/refineUndo.ts) | ~128 | 精修模式独立撤销/重做管理器（事务栈，debounced 合并） |
-| [src/store/editorStore.ts](file:///d:/My%20Projects/PageForge/src/store/editorStore.ts) | ~700+ | 状态管理（含精修模式 RefineSession） |
-| [src/types/index.ts](file:///d:/My%20Projects/PageForge/src/types/index.ts) | ~154 | 类型定义（含 InteractionConfig） |
-| [src/index.css](file:///d:/My%20Projects/PageForge/src/index.css) | - | 全局样式 + pf-animate-* keyframes |
-| [scripts/test-export.ts](file:///d:/My%20Projects/PageForge/scripts/test-export.ts) | ~170 | 命令行导出测试脚本，11 项自动化检查 |
+| [src/App.tsx](src/App.tsx) | ~540 | 拖拽上下文、onDragStart/Move/End、modifier、吸附计算 |
+| [src/utils/importHtml.ts](src/utils/importHtml.ts) | ~1611 | HTML 解析核心，CSS 选择器处理、特判逻辑 |
+| [src/utils/exportHtml.ts](src/utils/exportHtml.ts) | ~432 | 节点 → HTML 导出：groupRows 分行、responsiveCSS 三层断点、字体收集、SVG 图标、交互属性 |
+| [src/utils/interactionRuntime.ts](src/utils/interactionRuntime.ts) | ~100+ | 零依赖 vanilla JS 运行时（动画/悬停/点击） |
+| [src/utils/iconPaths.ts](src/utils/iconPaths.ts) | - | 图标 SVG 路径数据 |
+| [src/utils/layoutRules.ts](src/utils/layoutRules.ts) | ~130 | 规则推断引擎：inferLayout Y 轴重叠分行、getLayoutHint 布局提示 |
+| [src/utils/snapping.ts](src/utils/snapping.ts) | - | 拖拽吸附辅助线 |
+| [src/utils/fileUpload.ts](src/utils/fileUpload.ts) | ~35 | 文件读取、类型/大小校验（FileReader → data URL） |
+| [src/utils/exportImage.ts](src/utils/exportImage.ts) | ~120 | PNG/PDF 导出（html2canvas + jspdf），导出前进入预览模式 |
+| [src/components/Canvas.tsx](src/components/Canvas.tsx) | ~330 | 画布渲染、缩放、动态高度修正（含 Ruler） |
+| [src/components/CanvasElement.tsx](src/components/CanvasElement.tsx) | ~600+ | 节点渲染 + resize + 拖拽 + 选中框 + 预览交互 + 双击上传 |
+| [src/components/NodeRenderer.tsx](src/components/NodeRenderer.tsx) | ~380 | nodeToCss、renderNodeContent、renderPreviewTree |
+| [src/components/Inspector.tsx](src/components/Inspector.tsx) | ~1300+ | 属性面板 + 交互配置 + ID 复制 + 本地上传 |
+| [src/components/Toolbar.tsx](src/components/Toolbar.tsx) | ~260 | 工具栏（含预览按钮 + 导出下拉菜单 Portal） |
+| [src/components/AlignToolbar.tsx](src/components/AlignToolbar.tsx) | - | 多选对齐工具栏（左/中/右/上/中/下对齐 + 分布） |
+| [src/components/Ruler.tsx](src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
+| [src/components/Icon.tsx](src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
+| [src/components/LayerTree.tsx](src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
+| [src/components/RefineCanvas.tsx](src/components/RefineCanvas.tsx) | ~889 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 撤销重做 + 测量同步 |
+| [src/components/RefineInspector.tsx](src/components/RefineInspector.tsx) | ~641 | 精修属性面板：样式编辑器 + 属性编辑器 + 面包屑导航 + 元素操作 |
+| [src/components/RefineBreadcrumb.tsx](src/components/RefineBreadcrumb.tsx) | ~86 | 精修模式 DOM 层级面包屑导航 |
+| [src/components/RefineFloatToolbar.tsx](src/components/RefineFloatToolbar.tsx) | ~86 | 精修模式浮层工具条（删除/复制） |
+| [src/components/ImportModeDialog.tsx](src/components/ImportModeDialog.tsx) | ~210 | 导入模式选择弹窗（智能推荐 + 用户切换） |
+| [src/utils/htmlComplexity.ts](src/utils/htmlComplexity.ts) | ~190 | HTML 复杂度智能检测（12 个信号） |
+| [src/utils/refineSerialization.ts](src/utils/refineSerialization.ts) | - | 精修模式 iframe DOM 序列化 |
+| [src/utils/refineInsertion.ts](src/utils/refineInsertion.ts) | - | 精修模式元素插入逻辑 |
+| [src/utils/refineUndo.ts](src/utils/refineUndo.ts) | ~128 | 精修模式独立撤销/重做管理器（事务栈，debounced 合并） |
+| [src/store/editorStore.ts](src/store/editorStore.ts) | ~700+ | 状态管理（含精修模式 RefineSession） |
+| [src/types/index.ts](src/types/index.ts) | ~154 | 类型定义（含 InteractionConfig） |
+| [src/index.css](src/index.css) | - | 全局样式 + pf-animate-* keyframes |
+| [scripts/test-export.ts](scripts/test-export.ts) | ~170 | 命令行导出测试脚本，11 项自动化检查 |
 
 ---
 
 ## 10. 开发环境与启动
 
 ```bash
-cd "d:\My Projects\PageForge"
+cd "<repo-root>"
 npm install
 npm run dev    # 启动 Vite，默认 http://localhost:5173
 ```
@@ -1395,4 +1382,4 @@ npx tsx scripts/test-export.ts   # 导出功能自动化测试（11 项检查）
 
 ---
 
-**文档结束。** 建议在新对话开头告诉 AI "读取 `d:\My Projects\pageforge\AGENTS.md` 了解项目状态"。
+**文档结束。** 建议在新对话开头告诉 AI "读取 `<repo-root>/AGENTS.md` 了解项目状态"。
