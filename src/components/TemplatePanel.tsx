@@ -150,7 +150,18 @@ export function TemplatePanel() {
           console.info('[TemplatePanel] 启动精修模式，HTML 长度:', html.length, 'baseUrl:', baseUrl)
           return true
         }
-        const parsed = htmlToNodes(html)
+        // 解析 baseUrl：与精修模式共用同样的逻辑，
+        // 让相对路径图片在画布模式下也能正确解析为完整 URL（避免部署后图片 404）
+        let baseUrl: string | undefined
+        const cachedMeta = (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
+        if (cachedMeta?.htmlPath) {
+          const lastSlash = cachedMeta.htmlPath.lastIndexOf('/')
+          const dirPath = lastSlash >= 0 ? cachedMeta.htmlPath.slice(0, lastSlash + 1) : cachedMeta.htmlPath
+          baseUrl = typeof window !== 'undefined' ? `${window.location.origin}${dirPath.startsWith('/') ? '' : '/'}${dirPath}` : dirPath
+        } else if (typeof window !== 'undefined') {
+          baseUrl = window.location.origin + '/'
+        }
+        const parsed = htmlToNodes(html, baseUrl)
         if (parsed.length === 0) {
           setError('未能解析到有效元素，请检查 HTML 内容。')
           return false
