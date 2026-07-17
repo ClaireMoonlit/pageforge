@@ -7,7 +7,25 @@
     <!-- Google Fonts: 每种模板风格配不同字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:ital,wght@0,400;0,500&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600&family=Lora:ital,wght@0,400;0,600;0,700&family=Montserrat:ital,wght@0,400;0,700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800&family=Roboto+Slab:wght@0,100;0,300;0,400;0,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700&family=Space+Grotesk:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:ital,wght@0,400;0,500&family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600&family=Lora:ital,wght@0,400;0,600;0,700&family=Montserrat:ital,wght@0,400;0,700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800&family=Roboto+Slab:wght@0,100;0,300;0,400;0,700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700&family=Space+Grotesk:ital,wght@0,500;0,600;0,700&display=swap" rel="stylesheet" />
+    <style>
+      /* 全局滚动条样式：暗色细滚动条（与工具栏/侧栏/画布一致） */
+      /* WebKit 浏览器（Chrome/Edge/Safari） */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.25);
+        border-radius: 999px;
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        transition: background-color 0.15s ease;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.45); background-clip: padding-box; }
+      ::-webkit-scrollbar-thumb:active { background: rgba(148, 163, 184, 0.6); background-clip: padding-box; }
+      ::-webkit-scrollbar-corner { background: transparent; }
+      /* Firefox */
+      * { scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.25) transparent; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

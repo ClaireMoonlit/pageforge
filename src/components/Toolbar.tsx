@@ -369,7 +369,8 @@ export function Toolbar() {
   }, [isRefine, refineSession?.sessionKey])
 
   return (
-    <div className="h-12 shrink-0 bg-ink-900 border-b border-ink-700 flex items-center px-4 gap-2 relative z-10">
+    <div className="h-12 shrink-0 min-w-0 bg-ink-900 border-b border-ink-700 flex items-stretch relative z-10">
+    <div className="flex-1 min-w-0 flex items-center px-4 gap-2 overflow-x-auto overflow-y-hidden whitespace-nowrap [scrollbar-width:thin]">
       <div className="flex items-center gap-2 mr-4">
         <span className="w-6 h-6 rounded-md bg-gradient-to-br from-brand-500 to-pink-500" />
         <span className="text-gray-100 font-semibold">造页工坊</span>
@@ -474,36 +475,37 @@ export function Toolbar() {
       {!isRefine && <AlignToolbar />}
       {!previewMode && !isRefinePreview && <TemplatePanel key={nodes.length} />}
 
-      <div className="ml-auto flex items-center gap-3">
-        <span className="text-gray-500 text-xs">
-          {isRefine ? '精修模式（iframe 渲染）' : `${nodeCount} 个元素`}
+    </div>
+    <div className="shrink-0 flex items-center gap-3 px-4 border-l border-ink-700 bg-ink-900">
+      <span className="text-gray-500 text-xs hidden md:inline">
+        {isRefine ? '精修模式（iframe 渲染）' : `${nodeCount} 个元素`}
+      </span>
+
+      {/* 预览 */}
+      <button
+        onClick={() => isRefine ? toggleRefinePreviewMode() : togglePreviewMode()}
+        disabled={exporting !== null}
+        className={(previewMode || isRefinePreview) ? primaryBtnCls : btnCls}
+        title={previewMode || isRefinePreview ? '退出预览' : '预览交互（点击/悬停/动画/链接）'}
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <IconEye size={16} /> {previewMode || isRefinePreview ? '退出预览' : '预览'}
         </span>
+      </button>
 
-        {/* 预览 */}
-        <button
-          onClick={() => isRefine ? toggleRefinePreviewMode() : togglePreviewMode()}
-          disabled={exporting !== null}
-          className={(previewMode || isRefinePreview) ? primaryBtnCls : btnCls}
-          title={previewMode || isRefinePreview ? '退出预览' : '预览交互（点击/悬停/动画/链接）'}
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <IconEye size={16} /> {previewMode || isRefinePreview ? '退出预览' : '预览'}
-          </span>
-        </button>
-
-        {/* 导出 */}
-        <button
-          ref={exportBtnRef}
-          onClick={() => setShowExportMenu((v) => !v)}
-          disabled={(isRefine ? false : nodeCount === 0) || exporting !== null || previewMode || isRefinePreview}
-          className={primaryBtnCls}
-          title="导出"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            {exporting ? '导出中...' : <><IconDownload size={16} /> 导出</>}
-          </span>
-        </button>
-      </div>
+      {/* 导出 */}
+      <button
+        ref={exportBtnRef}
+        onClick={() => setShowExportMenu((v) => !v)}
+        disabled={(isRefine ? false : nodeCount === 0) || exporting !== null || previewMode || isRefinePreview}
+        className={primaryBtnCls}
+        title="导出"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          {exporting ? '导出中...' : <><IconDownload size={16} /> 导出</>}
+        </span>
+      </button>
+    </div>
 
       {/* 导出下拉菜单 */}
       {showExportMenu && menuPos &&
