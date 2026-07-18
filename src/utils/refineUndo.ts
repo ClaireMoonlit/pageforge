@@ -5,7 +5,7 @@
  * - 每个操作是一个闭包对 { execute, rollback }，撤销时调用 rollback()，重做时调用 execute()。
  * - 连续操作通过 recordDebounced() 在 300ms 窗口内自动合并为一条记录。
  * - 最多保留 80 条记录，超出自动丢弃最旧记录。
- * - 与参考项目的关键差异：不使用同类型合并策略，仅使用时间窗口合并。
+ * - 仅使用时间窗口合并（300ms），不按操作类型合并，避免连续属性调整被错误归并。
  */
 interface HistoryEntry {
   label: string
