@@ -1073,22 +1073,28 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       setReady(true)
       loadedAtRef.current = Date.now()
 
-      // 等待 body DOM 真正渲染完毕：2 帧绘制 + 检查子元素 + 1500ms 兜底
-      // 避免 loading 消失但 iframe 内容还在解析时出现"白屏 + 紫色 hover 框"
-      let rafCount = 0
-      const checkBodyReady = () => {
-        if (cancelled) return
-        rafCount++
-        const cd = iframe.contentDocument
-        const hasContent = cd && cd.body && cd.body.children.length > 0
-        const elapsed = Date.now() - loadedAtRef.current
-        if ((rafCount >= 2 && hasContent) || elapsed >= 1500) {
-          setBodyReady(true)
-          return
+      // 等待 iframe 内所有外部样式表加载完毕（避免 loading 消失但 CSS 还没加载完）
+      const cd = iframe.contentDocument
+      const links = cd?.querySelectorAll('link[rel="stylesheet"]') ?? []
+      if (links.length > 0) {
+        let pending = links.length
+        const onSheetDone = () => {
+          pending--
+          if (pending <= 0 || cancelled) setBodyReady(true)
         }
-        requestAnimationFrame(checkBodyReady)
+        links.forEach((l) => {
+          l.addEventListener('load', onSheetDone)
+          l.addEventListener('error', onSheetDone)
+          if ((l as HTMLLinkElement).sheet) onSheetDone()
+        })
+        const fallback = setTimeout(() => { if (!cancelled) setBodyReady(true) }, 3000)
+        const origCleanup = (bind as any).__cleanup as (() => void) | undefined
+        ;(bind as any).__cleanup = () => { clearTimeout(fallback); origCleanup?.() }
+      } else {
+        let raf = 0
+        const check = () => { raf++; if (raf >= 2 || cancelled) { setBodyReady(true); return } requestAnimationFrame(check) }
+        requestAnimationFrame(check)
       }
-      requestAnimationFrame(checkBodyReady)
 
       const timers: number[] = []
       timers.push(window.setTimeout(() => { if (!cancelled) measureAndSyncSize() }, 200))
