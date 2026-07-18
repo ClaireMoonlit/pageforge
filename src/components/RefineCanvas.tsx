@@ -1073,28 +1073,47 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       setReady(true)
       loadedAtRef.current = Date.now()
 
-      // 等待 iframe 内所有外部样式表加载完毕（避免 loading 消失但 CSS 还没加载完）
-      const cd = iframe.contentDocument
-      const links = cd?.querySelectorAll('link[rel="stylesheet"]') ?? []
-      if (links.length > 0) {
-        let pending = links.length
-        const onSheetDone = () => {
-          pending--
-          if (pending <= 0 || cancelled) setBodyReady(true)
-        }
-        links.forEach((l) => {
-          l.addEventListener('load', onSheetDone)
-          l.addEventListener('error', onSheetDone)
-          if ((l as HTMLLinkElement).sheet) onSheetDone()
-        })
-        const fallback = setTimeout(() => { if (!cancelled) setBodyReady(true) }, 3000)
-        const origCleanup = (bind as any).__cleanup as (() => void) | undefined
-        ;(bind as any).__cleanup = () => { clearTimeout(fallback); origCleanup?.() }
-      } else {
-        let raf = 0
-        const check = () => { raf++; if (raf >= 2 || cancelled) { setBodyReady(true); return } requestAnimationFrame(check) }
-        requestAnimationFrame(check)
+      // 等待 iframe 内所有外部样式表 + 图片加载完毕
+      // 避免 loading 消失但 CSS 还没加载完 / 图片还是空白时 hover 框出现
+      // 同时保证最小显示时间 400ms，避免一闪而过让人感知不到
+      const MIN_DISPLAY_MS = 400
+      const cd2 = iframe.contentDocument
+      const links = cd2?.querySelectorAll('link[rel="stylesheet"]') ?? []
+      const imgs = cd2?.querySelectorAll('img') ?? []
+      let pending = links.length + imgs.length
+      const tryBodyReady = () => {
+        if (cancelled) return
+        const elapsed = Date.now() - loadedAtRef.current
+        const remaining = Math.max(0, MIN_DISPLAY_MS - elapsed)
+        setTimeout(() => { if (!cancelled) setBodyReady(true) }, remaining)
       }
+      const onAssetDone = () => {
+        pending--
+        if (pending <= 0) {
+          // 再等 2 帧让浏览器完成首屏绘制 + 最小显示时间
+          requestAnimationFrame(() => requestAnimationFrame(tryBodyReady))
+        }
+      }
+      links.forEach((l) => {
+        l.addEventListener('load', onAssetDone)
+        l.addEventListener('error', onAssetDone)
+        if ((l as HTMLLinkElement).sheet) onAssetDone() // 已缓存
+      })
+      imgs.forEach((img) => {
+        if (img.complete && img.naturalWidth > 0) onAssetDone() // 已缓存
+        else {
+          img.addEventListener('load', onAssetDone)
+          img.addEventListener('error', onAssetDone)
+        }
+      })
+      if (pending <= 0 && !cancelled) {
+        // 没东西要等，直接 2 帧 + 最小显示时间
+        requestAnimationFrame(() => requestAnimationFrame(tryBodyReady))
+      }
+      // 兜底：5s 后强制 bodyReady（防止某资源永远挂起）
+      const fallback = setTimeout(() => { if (!cancelled) setBodyReady(true) }, 5000)
+      const origCleanup = (bind as any).__cleanup as (() => void) | undefined
+      ;(bind as any).__cleanup = () => { clearTimeout(fallback); origCleanup?.() }
 
       const timers: number[] = []
       timers.push(window.setTimeout(() => { if (!cancelled) measureAndSyncSize() }, 200))
