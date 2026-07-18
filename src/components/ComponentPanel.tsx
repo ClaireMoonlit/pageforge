@@ -44,7 +44,7 @@ export function ComponentPanel() {
 
   // 展开态：左箭头 (<<) → 表示"把面板收起（折叠到左侧）"
   return (
-    <div className={`w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200 ${isPreviewing ? 'opacity-40 pointer-events-none' : ''}`}>
+    <div className={`pf-left-panel w-52 shrink-0 bg-ink-800 border-r border-ink-700 overflow-y-auto flex flex-col transition-all duration-200 ${isPreviewing ? 'opacity-40 pointer-events-none' : ''}`}>
       <div className="p-3 text-xs text-gray-400 uppercase tracking-wider flex items-center justify-between">
         <span>组件库</span>
         <button

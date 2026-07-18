@@ -207,7 +207,7 @@ export function RefineInspector() {
   }
 
   return (
-    <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
+    <div className="pf-right-panel w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
       <div className="p-3 border-b border-ink-700 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm text-gray-200">精修模式</span>

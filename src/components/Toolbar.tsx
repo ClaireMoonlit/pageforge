@@ -14,9 +14,11 @@ import {
 } from '@/components/Icons'
 
 const btnCls =
-  'shrink-0 whitespace-nowrap px-3 py-1.5 rounded text-sm bg-ink-700 hover:bg-ink-600 text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+  'shrink-0 whitespace-nowrap px-2 sm:px-3 py-1.5 rounded text-sm bg-ink-700 hover:bg-ink-600 text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
 const primaryBtnCls =
-  'shrink-0 whitespace-nowrap px-3 py-1.5 rounded text-sm bg-brand-500 hover:bg-brand-400 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+  'shrink-0 whitespace-nowrap px-2 sm:px-3 py-1.5 rounded text-sm bg-brand-500 hover:bg-brand-400 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+/** 按钮文字：小屏隐藏，sm 及以上显示 */
+const btnLabelCls = 'hidden sm:inline'
 
 /** 精修模式：获取 iframe 文档 */
 function getRefineDoc(): Document | null {
@@ -401,7 +403,7 @@ export function Toolbar() {
         className={btnCls}
         title="撤销 (Ctrl+Z)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconUndo size={16} /> 撤销</span>
+        <span className="inline-flex items-center gap-1.5"><IconUndo size={16} /><span className={btnLabelCls}>撤销</span></span>
       </button>
 
       {/* 重做 */}
@@ -411,7 +413,7 @@ export function Toolbar() {
         className={btnCls}
         title="重做 (Ctrl+Shift+Z)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconRedo size={16} /> 重做</span>
+        <span className="inline-flex items-center gap-1.5"><IconRedo size={16} /><span className={btnLabelCls}>重做</span></span>
       </button>
 
       {/* 删除 */}
@@ -421,7 +423,7 @@ export function Toolbar() {
         className={btnCls}
         title="删除 (Delete)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconTrash size={16} /> 删除</span>
+        <span className="inline-flex items-center gap-1.5"><IconTrash size={16} /><span className={btnLabelCls}>删除</span></span>
       </button>
 
       {/* 格式刷 — 仅自由画布模式 */}
@@ -431,7 +433,7 @@ export function Toolbar() {
         className={formatBrushStyle && !previewMode ? primaryBtnCls : btnCls}
         title="格式刷：先选中源元素点击激活，再点击目标元素应用样式"
       >
-        <span className="inline-flex items-center gap-1.5"><IconBrush size={16} /> 格式刷</span>
+        <span className="inline-flex items-center gap-1.5"><IconBrush size={16} /><span className={btnLabelCls}>格式刷</span></span>
       </button>
 
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
@@ -443,7 +445,7 @@ export function Toolbar() {
         className={btnCls}
         title="复制 (Ctrl+C)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconCopy size={16} /> 复制</span>
+        <span className="inline-flex items-center gap-1.5"><IconCopy size={16} /><span className={btnLabelCls}>复制</span></span>
       </button>
 
       {/* 粘贴 */}
@@ -457,7 +459,7 @@ export function Toolbar() {
         className={btnCls}
         title="粘贴 (Ctrl+V)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconPaste size={16} /> 粘贴</span>
+        <span className="inline-flex items-center gap-1.5"><IconPaste size={16} /><span className={btnLabelCls}>粘贴</span></span>
       </button>
 
       {/* 重复 */}
@@ -467,7 +469,7 @@ export function Toolbar() {
         className={btnCls}
         title="重复 (Ctrl+D)"
       >
-        <span className="inline-flex items-center gap-1.5"><IconDuplicate size={16} /> 重复</span>
+        <span className="inline-flex items-center gap-1.5"><IconDuplicate size={16} /><span className={btnLabelCls}>重复</span></span>
       </button>
 
       <div className="w-px h-5 bg-ink-600 mx-0.5 shrink-0" />
@@ -489,7 +491,7 @@ export function Toolbar() {
         title={previewMode || isRefinePreview ? '退出预览' : '预览交互（点击/悬停/动画/链接）'}
       >
         <span className="inline-flex items-center gap-1.5">
-          <IconEye size={16} /> {previewMode || isRefinePreview ? '退出预览' : '预览'}
+          <IconEye size={16} /><span className={btnLabelCls}>{previewMode || isRefinePreview ? '退出预览' : '预览'}</span>
         </span>
       </button>
 
@@ -502,7 +504,7 @@ export function Toolbar() {
         title="导出"
       >
         <span className="inline-flex items-center gap-1.5">
-          {exporting ? '导出中...' : <><IconDownload size={16} /> 导出</>}
+          {exporting ? '导出中...' : <><IconDownload size={16} /><span className={btnLabelCls}>导出</span></>}
         </span>
       </button>
     </div>

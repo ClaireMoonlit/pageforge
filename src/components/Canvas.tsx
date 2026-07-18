@@ -384,6 +384,34 @@ export const Canvas = forwardRef<HTMLDivElement, CanvasProps>((props, ref) => {
   }, [zoom, setZoom])
 
   /**
+   * 响应式画布自适应：小屏设备（< 768px）自动缩放画布以适配视口宽度。
+   * 仅在首次加载时自动适配一次，之后用户手动调整的 zoom 不受影响。
+   */
+  const hasAutoFitRef = useRef(false)
+  useEffect(() => {
+    const cw = parseInt(canvas.width) || 1200
+    const handleResize = () => {
+      if (hasAutoFitRef.current) return
+      const vw = window.innerWidth
+      // 小屏设备：画布宽度 + 两侧面板折叠态（各 40px）+ 内边距
+      const availableWidth = vw - 80 - 48
+      if (vw < 768 && availableWidth > 0) {
+        const fitZoom = Math.round((availableWidth / cw) * 10) / 10
+        const clamped = Math.max(0.2, Math.min(1, fitZoom))
+        setZoom(clamped)
+        hasAutoFitRef.current = true
+      }
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [canvas.width, setZoom])
+  // 精修模式切换时重置自动适配标记
+  useEffect(() => {
+    hasAutoFitRef.current = false
+  }, [refineSession?.sessionKey])
+
+  /**
    * 渲染后修正根节点 y 位置：
    * htmlToNodes 使用 estimateHeightRecursive 估算子高度，但估算值与实际渲染高度不一致，
    * 导致后续根节点被叠在前面 section 之上。这里用实际渲染高度重新堆叠。

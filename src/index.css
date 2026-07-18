@@ -7,11 +7,63 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  /* 移动端：使用 dvh 避免地址栏遮挡 */
+  height: 100dvh;
 }
 
 body {
   font-family: system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* 移动端：禁止 iOS 橡皮筋效果导致的误触 */
+  overscroll-behavior: none;
+}
+
+/* ═══════════════════════════════════════════════
+   响应式布局：小屏设备适配
+   策略：面板折叠态（w-10）始终可见作为手柄，
+   展开态变为 fixed overlay 滑入覆盖。
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 1023px) {
+  /* 面板展开态：变为固定浮层，从侧边滑入 */
+  .pf-left-panel {
+    position: fixed !important;
+    left: 0;
+    top: 48px;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
+  }
+  .pf-right-panel {
+    position: fixed !important;
+    right: 0;
+    top: 48px;
+    bottom: 0;
+    z-index: 100;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   移动端触摸优化
+   ═══════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  /* 触摸目标最小尺寸 44px（Apple HIG） */
+  .pf-touch-target {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* 画布滚动条：移动端隐藏 */
+  .pf-canvas-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  /* 禁止移动端长按弹出菜单 */
+  .pf-canvas-area {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 /* 输入框 placeholder 颜色更浅，避免看起来像已填内容 */

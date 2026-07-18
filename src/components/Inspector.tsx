@@ -677,7 +677,7 @@ export function Inspector() {
 
   if (!selected) {
     return (
-      <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
+      <div className="pf-right-panel w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
         <div className="p-3 border-b border-ink-700 flex items-center justify-between">
           <span className="text-sm text-gray-200">画布设置</span>
           <button
@@ -767,7 +767,7 @@ export function Inspector() {
   const hasText = selected.props.text !== undefined
 
   return (
-    <div className="w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
+    <div className="pf-right-panel w-64 shrink-0 bg-ink-800 border-l border-ink-700 overflow-y-auto transition-all duration-200">
       <div className="p-3 border-b border-ink-700 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-200">属性 · {selected.type}</span>

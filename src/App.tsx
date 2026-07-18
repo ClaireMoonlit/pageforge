@@ -706,9 +706,9 @@ export default function App() {
       onDragEnd={onDragEnd}
       onDragCancel={onDragCancel}
     >
-      <div className="flex flex-col h-screen bg-ink-900 text-gray-100">
+      <div className="flex flex-col bg-ink-900 text-gray-100" style={{ height: '100dvh', minHeight: '100vh' }}>
         <Toolbar />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden min-h-0">
           <ComponentPanel />
           <ErrorBoundary>
             <Canvas ref={canvasRef} snapLines={snapLines} />

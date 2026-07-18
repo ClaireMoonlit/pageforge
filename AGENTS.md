@@ -2,8 +2,8 @@
 
 > **用途**：在新的 AI 对话开头，发一句"读取 `AGENTS.md` 了解项目状态"即可让 AI 快速恢复上下文。
 > **读者**：AI 助手（Claude / GPT / DeepSeek / GLM / MiniMax 等），不是给人类看的
-> **最后更新**：2026-07-17（§5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入）
-> **当前版本**：v0.4.4
+> **最后更新**：2026-07-18（§5.35 精修模式 loading 提示 + 多项修复）
+> **当前版本**：v0.4.7
 
 ---
 
@@ -1244,17 +1244,16 @@ interface InteractionConfig {
 
 ### 🟡 中优先级
 
-3. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
-4. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
-5. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
-6. **精修模式拖拽调整位置**：暂不支持拖拽移动 iframe 内元素位置
+2. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
+3. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
+4. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
 
 ### 🟢 低优先级
 
-7. **多选编组/解组**未实现
-8. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
-9. **图层重命名**
-10. **缩略图导出 / 复制 HTML 到剪贴板**
+5. **多选编组/解组**未实现
+6. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
+7. **图层重命名**
+8. **缩略图导出 / 复制 HTML 到剪贴板**
 
 ### ✅ 已完成（本次迭代）
 
@@ -1268,6 +1267,237 @@ interface InteractionConfig {
 - ~~十字线偏移~~：滚动偏移补偿 + html overflow:hidden 防滚动条，见 5.28a
 - ~~手掌平移精修模式失效~~：React 合成事件 → 原生 pointer 事件监听，见 5.28b
 - ~~双击文本整块替换~~：清除浏览器选中 + setTimeout 延迟聚焦，见 5.28c
+
+---
+### 5.31 精修拖拽交互统一 + 两种模式对比分析（2026-07-18）
+
+#### 5.31a 精修拖拽交互统一（transform + shadow + zIndex）
+
+**背景**：初版精修模式拖拽使用 `left`/`top` 直接修改 + `opacity: 0.75`，而 Canvas 模式（dnd-kit）使用 `transform: translate3d()` + `boxShadow` + `zIndex` 提升。两种模式拖拽手感差异明显。
+
+**修复**（`RefineCanvas.tsx`）：
+
+1. **移动方式统一**：从 `left`/`top` 直接修改改为 `transform: translate()`（GPU 加速，不触发 layout reflow，与 dnd-kit 行为一致）
+   - 拖拽中：仅更新 `transform: translate(dx, dy)`，不修改 `left`/`top`
+   - 松手时：从实时记录的 `_finalDx`/`_finalDy` 计算 `newLeft/newTop`，提交到 `left`/`top`，清除 transform
+
+2. **视觉反馈统一**（模拟 dnd-kit 的"提起来"效果）：
+   - `boxShadow: '0 8px 25px rgba(0, 0, 0, 0.25)'` — 投影阴影
+   - `zIndex: '9999'` — 提升到最前
+   - `transition: 'box-shadow 0.15s ease'` — 阴影平滑过渡
+   - `cursor: 'grabbing'` + `userSelect: 'none'` — 与 Canvas 模式一致
+
+3. **原始状态保护**：`dragMoveRef` 新增 `origTransform` / `origZIndex` 字段，松手后恢复
+
+4. **最终 delta 追踪**：onMove 实时记录 `_finalDx`/`_finalDy`，避免解析 transform 字符串的正则不可靠
+
+#### 5.31b 两种模式对比分析
+
+**结论：两个模式是必要的，但交互体验应完全统一。**
+
+| 维度 | Canvas 模式（自由画布） | Refine 模式（精修） |
+|------|----------------------|-------------------|
+| **数据模型** | 抽象节点（CanvasNode），React 组件 | 真实 DOM（iframe），零解析 |
+| **渲染方式** | React 组件树（CanvasElement） | iframe + srcdoc（原生浏览器渲染） |
+| **拖拽引擎** | @dnd-kit（声明式、transform-based） | 原生 pointer 事件（命令式、transform-based） |
+| **撤销系统** | zundo（Zustand 中间件） | refineUndo（独立事务栈） |
+| **适用场景** | 从零搭建页面、组件库拖拽组合 | 导入已有 HTML 模板、保留原 CSS 精修 |
+| **CSS 保真度** | 部分（解析为 style 对象，丢失 @media/伪类） | 100%（浏览器原生渲染） |
+| **灵活性** | 高（任意拖拽、多选、对齐、编组） | 中（受原 DOM 结构约束） |
+
+---
+
+### 5.32 精修拖拽吸附对齐线集成（2026-07-18）
+
+**背景**：吸附对齐线基础设施（`computeRefineSnap`、`collectSiblingRects` 等）已在 §5.31 中定义，但未接入 `onMove`/`onUp` 拖拽流程，实际拖拽时无吸附效果。
+
+**修复**（`RefineCanvas.tsx`）：
+
+1. **onMove 集成**：拖拽激活时记录元素 `elWidth`/`elHeight`；拖拽中调用 `collectSiblingRects(doc, el)` 收集兄弟元素位置，`computeRefineSnap()` 计算吸附偏移，应用到 `finalDx`/`finalDy`
+2. **吸附阈值**：激活阈值 8px，脱离阈值 14px（滞后防抖，与画布模式一致）
+3. **坐标计算**：拖拽元素位置 = `origLeft + dx`、`origTop + dy`，加上 `elWidth`/`elHeight` 得到 right/bottom/centerX/centerY
+4. **dragMoveRef 扩展**：新增 `elWidth`/`elHeight` 字段，`onPointerDown` 初始化 + `onUp` 重置
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+### 5.33 精修拖拽视觉统一：ghost 浅色影子 + 选中框消失（2026-07-18）
+
+**背景**：初版精修拖拽使用 `opacity: 0.45` 降低原元素透明度，但缺少 Canvas 模式 dnd-kit 的"原地留浅色影子（框消失）"效果。
+
+**修复**（`RefineCanvas.tsx`）：
+
+1. **ghost 克隆**：拖拽激活时 `el.cloneNode(true)` 创建 ghost 元素，设置 `opacity: 0.3`、`pointer-events: none`、清除 transform/boxShadow，`insertAdjacentElement('afterend', ghost)` 插入到原元素后面
+2. **原元素降 opacity**：拖拽中 `el.style.opacity = '0.45'` + `boxShadow` + `zIndex: 9999`，模拟"提起来"效果
+3. **选中框/悬停框隐藏**：新增 `isDragging` 状态，拖拽激活时 `setIsDragging(true)`，松手时 `setIsDragging(false)`。JSX 中 `displayRect` 和 `hoverRect` 渲染条件追加 `&& !isDragging`
+4. **ghost 清理**：`onUp` 中 `dm.ghost.remove()`，恢复原元素 opacity
+5. **collectSiblingRects 跳过 ghost**：新增 `data-pf-drag-ghost` 属性过滤
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+### 5.34 精修模式三项修复：松手重新选中、浏览器原生拖拽、吸附线不显示（2026-07-18）
+
+#### 5.34a 松手后元素仍处于选中状态
+
+**背景**：拖拽结束后，`pointerup` 触发的 `click` 事件会重新选中刚拖拽的元素，导致元素看起来"松手后还在选中状态，需要再点一下才放下"。
+
+**修复**（`RefineCanvas.tsx`）：`onClick` 编辑模式分支开头添加 `if (dragJustEndedRef.current) return`，拖拽刚结束时跳过 click 选中。
+
+#### 5.34b 浏览器原生拖拽链接干扰撤销
+
+**背景**：开源模板中 `<a>` 标签存在 `href` 属性，用户拖拽页头时浏览器触发原生拖拽（显示链接地址小框），导致拖拽操作未被项目捕获，undo 无法记录。
+
+**修复**（`RefineCanvas.tsx`）：
+1. 组件级 `preventDragStart = useCallback((e: DragEvent) => e.preventDefault(), [])`
+2. `bind()` 中 `doc.addEventListener('dragstart', preventDragStart, true)`
+3. cleanup 中 `doc.removeEventListener('dragstart', preventDragStart, true)`
+
+#### 5.34c 吸附参考线不显示
+
+**背景**：吸附参考线在 iframe 内部用 `position: fixed` 渲染，但 iframe 作为 replaced element，主页面 overlay（选中框/悬停框）的 stacking context 在 iframe 之上，参考线被遮挡。
+
+**修复**（`RefineCanvas.tsx`）：
+1. **从 iframe 内部移到主页面**：删除 `snapGuidesRef`（iframe 内部 DOM ref）、`ensureSnapGuides`、旧 `showSnapGuidesFn`、旧 `hideSnapGuides`
+2. **主页面 React 层渲染**：新增 `snapGuideVRef`/`snapGuideHRef`，在 JSX 中渲染两个 `<div>`（`position: absolute`、`zIndex: 15`、`display: none`），位于 card div 内、hover 框之前
+3. **坐标转换**：`showSnapGuides(vPos, hPos)` 通过 `scaleX = iframeRect.width / iframeWin.innerWidth` 将 iframe 视口坐标转为 card div 坐标
+4. **直接 DOM 操作**：`showSnapGuides` 和 `hideSnapGuides` 直接操作 ref DOM 的 `style.left`/`style.top`/`style.display`，避免拖拽中 React 重渲染
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+### 5.35 精修模式 loading 提示（2026-07-18）
+
+**背景**：上传文件/加载模板时，精修模式 iframe 未就绪期间 `opacity: 0`，显示白屏，用户可能误以为卡死。
+
+**修复**（`RefineCanvas.tsx`）：
+- 在 card div 内、iframe 之后添加 loading 覆盖层：紫色渐变背景 + 旋转 spinner（CSS `@keyframes pf-spin`）+ "正在加载页面..." 文字
+- 条件渲染：`{!ready && (...)}`，ready 后自动消失
+- `zIndex: 5`，高于 iframe 但低于吸附参考线（zIndex: 15）
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+### 5.36 草稿保存功能确认（2026-07-18）
+
+**背景**：用户询问草稿保存是否在两种模式都生效。
+
+**确认**：`saveDraft()` 在 `editorStore.ts:1003` 实现，两种模式都支持：
+- 精修模式：保存 `refineHtml` + `refineBaseUrl`
+- 画布模式：保存 `nodes` + `canvas`
+- 触发：2 秒 debounce（store 订阅）+ `beforeunload` 页面关闭
+- 恢复：`loadDraft()` 在 `App.tsx:108` 调用，24 小时有效
+- 同一时间只保存一种模式的数据（当前激活的模式）
+
+**涉及文件**：`src/store/editorStore.ts`、`src/App.tsx`
+
+---
+
+## 6. 为什么不能合并？
+- Canvas 模式把 HTML 解析为抽象节点 → 丢失 CSS 选择器（@media、`:hover`、`nth-child`）、伪元素、复杂布局
+- Refine 模式的 iframe 是浏览器原生渲染，100% 还原原页面，但无法用 dnd-kit 操作内部 DOM
+- 强合并会导致：要么牺牲 CSS 保真度，要么放弃组件库拖拽
+
+**当前统一状态：**
+- ✅ 拖拽手感：两种模式均使用 `transform: translate()` + `boxShadow` + `zIndex` 提升
+- ✅ 工具栏、属性面板、右键菜单、导出、预览、键盘快捷键：全部统一
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+### 5.30 精修模式拖拽移动 + 响应式适配 + 模式整合（2026-07-18）
+
+#### 5.30a 精修模式拖拽移动坐标系统修复
+
+**背景**：初版拖拽移动实现存在坐标系统不一致的 Bug —— `onPointerDown` 在 iframe 内捕获 `e.clientX/Y`（iframe 局部坐标），但全局 `onMove` 收到的是 `forwardPointerEvent` 转发的主文档坐标。两者坐标系不同导致 `dx = e.clientX - dm.startX` 计算错误，元素拖拽偏移。
+
+**修复**（`RefineCanvas.tsx`）：
+1. **坐标转换**：`onPointerDown` 中新增 iframe 局部 → 主文档坐标转换逻辑（与 `forwardPointerEvent` 相同的 scaleX/scaleY 计算），将 `startX/startY` 统一为主文档坐标
+2. **缩放因子传递**：`dragMoveRef` 新增 `scaleX`/`scaleY` 字段，存储 iframe 视觉缩放比（`iframeRect.width / innerWidth`）
+3. **像素转换**：`onMove` 中 `dx = (e.clientX - dm.startX) / dm.scaleX`，将主文档像素差转为 iframe CSS 像素后再应用到 `el.style.left/top`
+4. **视觉反馈**：拖拽激活时元素设置 `opacity: 0.75` + `cursor: grabbing` + `userSelect: none`，松手后恢复
+5. **状态重置**：`onUp` 中恢复所有视觉状态，重置 `dragMoveRef` 包含 scaleX/scaleY 默认值
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+#### 5.30b 响应式 UI 适配
+
+**背景**：前几轮已添加基础响应式布局（面板 fixed overlay + 100dvh），但工具栏按钮文字在小屏上溢出，且画布未针对移动端自动缩放。
+
+**修复**（三处联动）：
+
+1. **工具栏按钮响应式**（`Toolbar.tsx`）：
+   - 新增 `btnLabelCls = 'hidden sm:inline'` 类名
+   - 所有按钮文字（撤销/重做/删除/格式刷/复制/粘贴/重复/预览/导出）包裹 `<span className={btnLabelCls}>`
+   - 小屏（<640px）仅显示图标，sm 及以上显示图标+文字
+   - 按钮 padding 缩减：`px-3` → `px-2 sm:px-3`
+
+2. **画布自动适配移动端**（`Canvas.tsx`）：
+   - 新增 `hasAutoFitRef` 标记首次自动适配
+   - 视口宽度 < 768px 时，自动计算 `fitZoom = availableWidth / canvasWidth`，夹紧到 [0.2, 1.0]
+   - 用户手动调整 zoom 后不再自动适配（`hasAutoFitRef.current = true`）
+   - 精修模式切换时重置 `hasAutoFitRef`（`refineSession?.sessionKey` 变化）
+
+3. **移动端触摸优化**（`index.css`）：
+   - 新增 `@media (max-width: 767px)` 断点
+   - `.pf-touch-target`：最小触摸目标 44px（Apple HIG）
+   - `.pf-canvas-scroll::-webkit-scrollbar`：移动端隐藏滚动条
+   - `.pf-canvas-area`：禁止长按弹出菜单（`-webkit-touch-callout: none`）
+
+**涉及文件**：`src/components/Toolbar.tsx`、`src/components/Canvas.tsx`、`src/index.css`
+
+#### 5.30c 两种模式 UI 整合
+
+**背景**：自由画布模式和精修模式在工具栏、属性面板、右键菜单等方面已基本统一，本轮确认整合状态。
+
+**当前整合状态**：
+- ✅ 工具栏：`isRefine` 检查统一处理撤销/重做/删除/重复/预览/导出
+- ✅ 属性面板：`RefineModeBoundary` 根据 `refineSession` 自动切换 `Inspector` ↔ `RefineInspector`
+- ✅ 右键菜单：两种模式均使用 Portal 渲染到 `document.body`，统一的暗色风格
+- ✅ 导出：PNG/PDF/HTML 三种格式均支持两种模式
+- ✅ 预览：两种模式独立预览状态（`previewMode` / `refinePreviewMode`）
+- ✅ 键盘快捷键：精修模式下 Ctrl+Z/Y/Delete/Escape 独立处理，不干扰 zundo
+- ✅ 组件库插入：精修模式下通过 `refineInsertion.ts` 支持向 iframe 添加元素
+
+**未整合项（按设计）**：
+- 格式刷：仅自由画布模式（精修模式通过 RefineInspector 编辑样式）
+- 复制/粘贴：仅自由画布模式（精修模式有独立的重复/删除操作）
+- 多选对齐：仅自由画布模式（精修模式元素为真实 DOM，不支持多选）
+
+---
+
+## 7. 当前已知问题 / 待办
+
+### 🔴 高优先级（核心功能缺口）
+
+1. **组件库扩充**：缺少轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion 等。
+
+### 🟡 中优先级
+
+2. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
+3. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
+4. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
+
+### 🟢 低优先级
+
+5. **多选编组/解组**未实现
+6. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
+7. **图层重命名**
+8. **缩略图导出 / 复制 HTML 到剪贴板**
+
+### ✅ 已完成（本次迭代）
+
+- ~~精修拖拽吸附对齐线集成~~：见 5.32
+- ~~精修拖拽视觉统一（ghost + 选中框消失）~~：见 5.33
+- ~~松手后重新选中修复~~：见 5.34a
+- ~~浏览器原生拖拽链接干扰撤销~~：见 5.34b
+- ~~吸附参考线不显示~~：见 5.34c
+- ~~精修模式 loading 提示~~：见 5.35
+- ~~草稿保存功能确认~~：见 5.36
 
 ---
 
@@ -1341,7 +1571,7 @@ interface InteractionConfig {
 | [src/components/Ruler.tsx](src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
 | [src/components/LayerTree.tsx](src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
-| [src/components/RefineCanvas.tsx](src/components/RefineCanvas.tsx) | ~889 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 撤销重做 + 测量同步 |
+| [src/components/RefineCanvas.tsx](src/components/RefineCanvas.tsx) | ~1400 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 拖拽移动（ghost + 吸附线） + 撤销重做 + 测量同步 + loading 提示 |
 | [src/components/RefineInspector.tsx](src/components/RefineInspector.tsx) | ~641 | 精修属性面板：样式编辑器 + 属性编辑器 + 面包屑导航 + 元素操作 |
 | [src/components/RefineBreadcrumb.tsx](src/components/RefineBreadcrumb.tsx) | ~86 | 精修模式 DOM 层级面包屑导航 |
 | [src/components/RefineFloatToolbar.tsx](src/components/RefineFloatToolbar.tsx) | ~86 | 精修模式浮层工具条（删除/复制） |

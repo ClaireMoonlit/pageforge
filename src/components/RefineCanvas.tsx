@@ -81,6 +81,34 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
   /** 页面卡片容器 ref（用于 resize 时的坐标计算） */
   const cardRef = useRef<HTMLDivElement | null>(null)
 
+  /** 拖拽移动状态（ref 避免拖拽期间重渲染） */
+  const dragMoveRef = useRef<{
+    el: HTMLElement | null
+    eid: string
+    /** 鼠标按下时的主文档屏幕坐标 */
+    startX: number
+    startY: number
+    /** 元素当前的 left/top（parseFloat 后的像素值，默认 0） */
+    origLeft: number
+    origTop: number
+    /** 是否已开始拖拽（超过阈值后为 true） */
+    active: boolean
+    /** iframe 视觉缩放比 = iframeRect.width / innerWidth，用于将主文档像素转为 iframe CSS 像素 */
+    scaleX: number
+    scaleY: number
+    /** 元素原始 transform（拖拽前保存，松手后恢复） */
+    origTransform: string
+    /** 元素原始 zIndex（拖拽前保存，松手后恢复） */
+    origZIndex: string
+    /** 元素原始宽高（拖拽开始时记录，用于吸附计算） */
+    elWidth: number
+    elHeight: number
+    /** 拖拽原地 ghost 克隆（模拟 Canvas 模式 dnd-kit 浅色影子） */
+    ghost: HTMLElement | null
+  }>({ el: null, eid: '', startX: 0, startY: 0, origLeft: 0, origTop: 0, active: false, scaleX: 1, scaleY: 1, origTransform: '', origZIndex: '', elWidth: 0, elHeight: 0, ghost: null })
+  /** 拖拽刚结束标记：防止 click 事件在拖拽后误触发选中切换 */
+  const dragJustEndedRef = useRef(false)
+
   // session 变化时强制重新挂载
   useEffect(() => {
     setReady(false)
@@ -254,6 +282,287 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       document.removeEventListener('mouseup', onUp, true)
     }
   }, [isResizing, handleResizeMove, handleResizeEnd])
+
+  // ========== 拖拽吸附对齐线 ==========
+
+  const SNAP_THRESHOLD = 8
+  const SNAP_DEACTIVATE = 14
+  /** 主页面吸附参考线 DOM ref（渲染在 card div 内，z-index 高于内容层，不会被 iframe 内容遮挡） */
+  const snapGuideVRef = useRef<HTMLDivElement | null>(null)
+  const snapGuideHRef = useRef<HTMLDivElement | null>(null)
+  const snapActiveRef = useRef({ x: false, y: false })
+  /** 拖拽中标记（用于隐藏选中框/悬停框） */
+  const [isDragging, setIsDragging] = useState(false)
+
+  /** 显示主页面吸附参考线：将 iframe 视口坐标转换为 card div 坐标 */
+  const showSnapGuides = (vPos: number | null, hPos: number | null) => {
+    const vEl = snapGuideVRef.current
+    const hEl = snapGuideHRef.current
+    if (!vEl || !hEl) return
+
+    const iframe = iframeRef.current
+    if (!iframe) return
+    const iframeWin = iframe.contentWindow
+    if (!iframeWin) return
+    const iframeRect = iframe.getBoundingClientRect()
+    const scaleX = iframeRect.width / (iframeWin.innerWidth || 1)
+    const scaleY = iframeRect.height / (iframeWin.innerHeight || 1)
+
+    if (vPos !== null) {
+      vEl.style.left = (vPos * scaleX) + 'px'
+      vEl.style.display = 'block'
+    } else {
+      vEl.style.display = 'none'
+    }
+    if (hPos !== null) {
+      hEl.style.top = (hPos * scaleY) + 'px'
+      hEl.style.display = 'block'
+    } else {
+      hEl.style.display = 'none'
+    }
+  }
+
+  const hideSnapGuides = () => {
+    if (snapGuideVRef.current) snapGuideVRef.current.style.display = 'none'
+    if (snapGuideHRef.current) snapGuideHRef.current.style.display = 'none'
+  }
+
+  const collectSiblingRects = (doc: Document, excludeEl: HTMLElement) => {
+    const rects: Array<{ left: number; right: number; top: number; bottom: number; centerX: number; centerY: number }> = []
+    const body = doc.body
+    if (!body) return rects
+    for (const child of Array.from(body.children)) {
+      if (child === excludeEl) continue
+      if (child.hasAttribute('data-pf-drag-ghost')) continue
+      if (child.hasAttribute('data-pf-snap-guide')) continue
+      if (child.hasAttribute('data-pf-resize-handle')) continue
+      if (child.hasAttribute('data-hds-overlay')) continue
+      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE') continue
+      const r = (child as HTMLElement).getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) continue
+      rects.push({
+        left: r.left, right: r.right, top: r.top, bottom: r.bottom,
+        centerX: r.left + r.width / 2, centerY: r.top + r.height / 2,
+      })
+    }
+    return rects
+  }
+
+  const computeRefineSnap = (
+    dragLeft: number, dragRight: number, dragTop: number, dragBottom: number,
+    dragCX: number, dragCY: number,
+    targets: Array<{ left: number; right: number; top: number; bottom: number; centerX: number; centerY: number }>,
+  ) => {
+    let dx = 0, dy = 0, showV: number | null = null, showH: number | null = null
+    const xTh = snapActiveRef.current.x ? SNAP_DEACTIVATE : SNAP_THRESHOLD
+    const yTh = snapActiveRef.current.y ? SNAP_DEACTIVATE : SNAP_THRESHOLD
+    for (const t of targets) {
+      if (showV === null) {
+        for (const c of [{ o: t.left - dragLeft, p: t.left }, { o: t.right - dragRight, p: t.right }, { o: t.centerX - dragCX, p: t.centerX }]) {
+          if (Math.abs(c.o) <= xTh) { dx = c.o; showV = c.p; break }
+        }
+      }
+      if (showH === null) {
+        for (const c of [{ o: t.top - dragTop, p: t.top }, { o: t.bottom - dragBottom, p: t.bottom }, { o: t.centerY - dragCY, p: t.centerY }]) {
+          if (Math.abs(c.o) <= yTh) { dy = c.o; showH = c.p; break }
+        }
+      }
+      if (showV !== null && showH !== null) break
+    }
+    return { dx, dy, showV, showH }
+  }
+
+  // ========== 拖拽移动 ==========
+
+  /** 全局 pointermove/pointerup 监听（用于拖拽移动元素位置）。
+   *  始终监听，通过 dragMoveRef 判断是否在拖拽中。
+   *  3px 移动阈值区分"点击选中"和"拖拽移动"。
+   *
+   *  坐标转换：onMove 收到的是主文档坐标（由 forwardPointerEvent 转发），
+   *  dx/dy 需除以 scaleX/scaleY 转为 iframe CSS 像素。
+   *
+   *  交互统一：使用 transform: translate() 移动（与 Canvas 模式 dnd-kit 一致），
+   *  配合 boxShadow + zIndex 提升 + opacity 降低 + ghost 克隆 实现"提起来"的拖拽手感。 */
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const dm = dragMoveRef.current
+      if (!dm.el) return
+
+      // 主文档像素差 → iframe CSS 像素差
+      const dx = (e.clientX - dm.startX) / dm.scaleX
+      const dy = (e.clientY - dm.startY) / dm.scaleY
+
+      // 3px 阈值（iframe CSS 像素）：超过后才激活拖拽
+      if (!dm.active && Math.abs(dx) < 3 && Math.abs(dy) < 3) return
+
+      if (!dm.active) {
+        dm.active = true
+        const el = dm.el
+        // 设置 position: relative 以支持 left/top 偏移
+        if (!el.style.position || el.style.position === 'static') {
+          el.style.position = 'relative'
+        }
+        // 保存原始 transform 和 zIndex（松手后恢复）
+        dm.origTransform = el.style.transform || ''
+        dm.origZIndex = el.style.zIndex || ''
+        // 记录元素原始宽高（用于吸附计算）
+        dm.elWidth = el.offsetWidth
+        dm.elHeight = el.offsetHeight
+        // 创建 ghost 克隆（模拟 Canvas 模式 dnd-kit 原地留浅色影子）
+        const ghost = el.cloneNode(true) as HTMLElement
+        ghost.setAttribute('data-pf-drag-ghost', 'true')
+        ghost.style.position = el.style.position || 'relative'
+        ghost.style.left = el.style.left || '0px'
+        ghost.style.top = el.style.top || '0px'
+        ghost.style.opacity = '0.3'
+        ghost.style.pointerEvents = 'none'
+        ghost.style.transform = ''
+        ghost.style.boxShadow = ''
+        ghost.style.zIndex = ''
+        ghost.style.cursor = ''
+        ghost.style.userSelect = ''
+        ghost.style.transition = ''
+        el.insertAdjacentElement('afterend', ghost)
+        dm.ghost = ghost
+        // 拖拽中视觉反馈：模拟 Canvas 模式 dnd-kit 的"提起来"效果
+        el.style.opacity = '0.45'
+        el.style.transform = `translate(${dx}px, ${dy}px)`
+        el.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.25)'
+        el.style.zIndex = '9999'
+        el.style.cursor = 'grabbing'
+        el.style.userSelect = 'none'
+        el.style.transition = 'box-shadow 0.15s ease'
+        // 隐藏选中框/悬停框（与 Canvas 模式一致）
+        setIsDragging(true)
+        // 不改变 left/top：仅通过 transform 移动，松手后再提交 left/top
+        return
+      }
+
+      // 拖拽中：计算吸附对齐
+      const doc = getDoc()
+      let snapDx = 0, snapDy = 0
+      if (doc) {
+        const el = dm.el
+        const elW = dm.elWidth || el.offsetWidth
+        const elH = dm.elHeight || el.offsetHeight
+        const dragLeft = dm.origLeft + dx
+        const dragTop = dm.origTop + dy
+        const dragRight = dragLeft + elW
+        const dragBottom = dragTop + elH
+        const dragCX = dragLeft + elW / 2
+        const dragCY = dragTop + elH / 2
+
+        const siblings = collectSiblingRects(doc, el)
+        const snap = computeRefineSnap(dragLeft, dragRight, dragTop, dragBottom, dragCX, dragCY, siblings)
+        snapDx = snap.dx
+        snapDy = snap.dy
+        snapActiveRef.current.x = snap.showV !== null
+        snapActiveRef.current.y = snap.showH !== null
+        showSnapGuides(snap.showV, snap.showH)
+      }
+
+      // 拖拽中：仅更新 transform（不触发 layout reflow，与 dnd-kit 一致）
+      const el = dm.el
+      const finalDx = dx + snapDx
+      const finalDy = dy + snapDy
+      el.style.transform = `translate(${finalDx}px, ${finalDy}px)`
+      // 实时记录最终 delta（供 onUp 使用，避免解析 transform 字符串）
+      ;(dm as any)._finalDx = finalDx
+      ;(dm as any)._finalDy = finalDy
+    }
+
+    const onUp = () => {
+      const dm = dragMoveRef.current
+      if (!dm.el) return
+
+      // 隐藏吸附参考线
+      hideSnapGuides()
+      snapActiveRef.current = { x: false, y: false }
+      setIsDragging(false)
+
+      if (dm.active) {
+        const el = dm.el
+        const eid = dm.eid
+
+        // 使用实时记录的最终 delta（避免解析 transform 字符串）
+        const finalDx = (dm as any)._finalDx ?? 0
+        const finalDy = (dm as any)._finalDy ?? 0
+        const newLeft = dm.origLeft + finalDx
+        const newTop = dm.origTop + finalDy
+
+        // 恢复视觉状态 + 提交 left/top
+        el.style.transform = dm.origTransform
+        el.style.boxShadow = ''
+        el.style.zIndex = dm.origZIndex
+        el.style.cursor = ''
+        el.style.userSelect = ''
+        el.style.transition = ''
+        el.style.opacity = ''
+        el.style.left = newLeft + 'px'
+        el.style.top = newTop + 'px'
+        el.style.right = 'auto'
+        el.style.bottom = 'auto'
+
+        const oldLeft = dm.origLeft
+        const oldTop = dm.origTop
+
+        refineUndo.record({
+          label: 'move',
+          execute: () => {
+            const t = findElementByEid(eid)
+            if (t) {
+              if (!t.style.position || t.style.position === 'static') {
+                t.style.position = 'relative'
+              }
+              t.style.left = newLeft + 'px'
+              t.style.top = newTop + 'px'
+              t.style.right = 'auto'
+              t.style.bottom = 'auto'
+            }
+          },
+          rollback: () => {
+            const t = findElementByEid(eid)
+            if (t) {
+              if (oldLeft === 0 && oldTop === 0) {
+                t.style.left = ''
+                t.style.top = ''
+                t.style.position = ''
+              } else {
+                t.style.left = oldLeft + 'px'
+                t.style.top = oldTop + 'px'
+              }
+              t.style.right = 'auto'
+              t.style.bottom = 'auto'
+            }
+          },
+        })
+
+        // 刷新选中元素 rect
+        refreshSelection()
+        // 标记拖拽刚结束，防止后续 click 误触发
+        dragJustEndedRef.current = true
+        setTimeout(() => { dragJustEndedRef.current = false }, 50)
+      }
+
+      // 移除 ghost 克隆
+      if (dm.ghost) {
+        dm.ghost.remove()
+      }
+
+      // 重置拖拽状态
+      dragMoveRef.current = {
+        el: null, eid: '', startX: 0, startY: 0, origLeft: 0, origTop: 0, active: false, scaleX: 1, scaleY: 1, origTransform: '', origZIndex: '', elWidth: 0, elHeight: 0, ghost: null,
+      }
+    }
+
+    document.addEventListener('pointermove', onMove, true)
+    document.addEventListener('pointerup', onUp, true)
+    return () => {
+      document.removeEventListener('pointermove', onMove, true)
+      document.removeEventListener('pointerup', onUp, true)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [findElementByEid, refreshSelection])
 
   // ========== 元素操作 ==========
 
@@ -444,6 +753,9 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
     return () => window.removeEventListener('keydown', onKey)
   }, [session?.selectedElement, deleteElement, selectRefineElement, refreshSelection, measureAndSyncSize])
 
+  /** 阻止浏览器原生拖拽（防止 <a>/<img> 等元素触发浏览器默认拖拽行为，干扰项目拖拽） */
+  const preventDragStart = useCallback((e: DragEvent) => e.preventDefault(), [])
+
   // ========== iframe 事件绑定 ==========
 
   useLayoutEffect(() => {
@@ -494,6 +806,8 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       // 编辑模式：阻止所有链接跳转和弹窗触发（防止开源模板中 href/onclick 误触导致页面跳转）
       e.preventDefault()
       e.stopPropagation()
+      // 拖拽刚结束：跳过 click 选中，防止松手后误触发重新选中
+      if (dragJustEndedRef.current) return
       const target = e.target as HTMLElement | null
       if (!target) return
       // 阻止 <a> 链接和 <button> 的 form 提交等默认行为
@@ -606,6 +920,75 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       if (!isResizing) setHoverRect(null)
     }
 
+    /**
+     * 拖拽移动：pointerdown 在选中元素上 → 记录起始位置，准备拖拽。
+     * 仅当目标元素是当前选中元素且不在缩放手柄上时触发。
+     * 使用 3px 阈值区分"点击选中"和"拖拽移动"。
+     *
+     * 坐标转换：iframe 内 pointerdown 事件的 clientX/Y 是 iframe 内部坐标，
+     * 但全局 onMove 使用的是主文档坐标（由 forwardPointerEvent 转发）。
+     * 必须统一转换为与 onMove 相同的主文档坐标系，避免拖拽偏移。
+     */
+    const onPointerDown = (e: PointerEvent) => {
+      if (refinePreviewMode || isResizing) return
+      const sel = useEditorStore.getState().refineSession?.selectedElement
+      if (!sel) return
+      const target = e.target as HTMLElement | null
+      if (!target) return
+      const selEid = sel.attributes['data-pf-eid'] || ''
+      if (!selEid) return
+      const targetEid = target.getAttribute('data-pf-eid') || target.closest('[data-pf-eid]')?.getAttribute('data-pf-eid')
+      if (targetEid !== selEid) return
+      // 不在缩放手柄上才能拖拽移动
+      if ((e.target as HTMLElement).hasAttribute('data-pf-resize-handle')) return
+      // 只处理左键
+      if (e.button !== 0) return
+
+      const el = findElementByEid(selEid)
+      if (!el) return
+      ensureEid(el)
+
+      // 读取当前 left/top（parseFloat，默认 0）
+      const curLeft = parseFloat(el.style.left) || 0
+      const curTop = parseFloat(el.style.top) || 0
+
+      // 将 iframe 内部坐标转换为主文档坐标（与 onMove 坐标系一致）
+      const iframe = iframeRef.current
+      let mainX = e.clientX
+      let mainY = e.clientY
+      let scaleX = 1
+      let scaleY = 1
+      if (iframe) {
+        const iframeRect = iframe.getBoundingClientRect()
+        const iframeWin = iframe.contentWindow
+        if (iframeWin && iframeRect.width > 0) {
+          scaleX = iframeRect.width / iframeWin.innerWidth
+          scaleY = iframeRect.height / iframeWin.innerHeight
+          const sx = iframeWin.scrollX || 0
+          const sy = iframeWin.scrollY || 0
+          mainX = (e.clientX + sx) * scaleX + iframeRect.left
+          mainY = (e.clientY + sy) * scaleY + iframeRect.top
+        }
+      }
+
+      dragMoveRef.current = {
+        el,
+        eid: selEid,
+        startX: mainX,
+        startY: mainY,
+        origLeft: curLeft,
+        origTop: curTop,
+        active: false,
+        scaleX,
+        scaleY,
+        origTransform: el.style.transform || '',
+        origZIndex: el.style.zIndex || '',
+        elWidth: 0,
+        elHeight: 0,
+        ghost: null,
+      }
+    }
+
     /** 将 iframe 内的 pointer 事件转发到父窗口（用于十字线/标尺指示 + 手型平移）。
      *  关键 1：使用 MouseEvent（而非 PointerEvent）确保 clientX/clientY 在跨浏览器环境下被正确设置；
      *  关键 2：派发到 document（而非 window）利用 DOM 冒泡机制确保事件传播到 window 监听器；
@@ -665,11 +1048,14 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       doc.addEventListener('contextmenu', onContextMenu, true)
       doc.addEventListener('mouseover', onMouseOver, true)
       doc.addEventListener('mouseout', onMouseOut, true)
+      doc.addEventListener('pointerdown', onPointerDown, true)
       doc.addEventListener('pointermove', forwardPointerEvent, true)
       doc.addEventListener('pointerdown', forwardPointerEvent, true)
       doc.addEventListener('pointerup', forwardPointerEvent, true)
       doc.addEventListener('wheel', forwardWheel, { passive: false, capture: true })
       doc.addEventListener('focusout', onBlur, true)
+      // 阻止浏览器原生拖拽（防止 <a>/<img> 等元素触发浏览器默认拖拽行为，干扰项目拖拽）
+      doc.addEventListener('dragstart', preventDragStart, true)
 
       // 同时监听 iframe 的 contentWindow 的 wheel 事件（兜底：document 级 capture 可能被 iframe 内部元素消费）
       iframeWin = iframe.contentWindow
@@ -743,11 +1129,13 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         doc.removeEventListener('contextmenu', onContextMenu, true)
         doc.removeEventListener('mouseover', onMouseOver, true)
         doc.removeEventListener('mouseout', onMouseOut, true)
+        doc.removeEventListener('pointerdown', onPointerDown, true)
         doc.removeEventListener('pointermove', forwardPointerEvent, true)
         doc.removeEventListener('pointerdown', forwardPointerEvent, true)
         doc.removeEventListener('pointerup', forwardPointerEvent, true)
         doc.removeEventListener('wheel', forwardWheel, { capture: true } as any)
         doc.removeEventListener('focusout', onBlur, true)
+        doc.removeEventListener('dragstart', preventDragStart, true)
       }
       if (iframeWin) {
         iframeWin.removeEventListener('wheel', forwardWheel, { capture: true } as any)
@@ -917,9 +1305,28 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
             transition: 'opacity 0.2s', pointerEvents: 'auto',
           }}
         />
+        {/* 加载提示：iframe 未就绪时显示，避免白屏误解 */}
+        {!ready && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%)', zIndex: 5,
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 32, height: 32, border: '3px solid #e9d5ff', borderTopColor: '#a855f7',
+                borderRadius: '50%', animation: 'pf-spin 0.8s linear infinite', margin: '0 auto 12px',
+              }} />
+              <style>{`@keyframes pf-spin { to { transform: rotate(360deg); } }`}</style>
+              <div style={{ color: '#a1a1aa', fontSize: 13 }}>正在加载页面...</div>
+            </div>
+          </div>
+        )}
+        {/* 吸附参考线（主页面渲染，z-index: 15 高于选中框/悬停框，不会被 iframe 内容遮挡） */}
+        <div ref={snapGuideVRef} style={{ position: 'absolute', top: 0, width: 1, height: '100%', background: '#3b82f6', pointerEvents: 'none', zIndex: 15, display: 'none' }} />
+        <div ref={snapGuideHRef} style={{ position: 'absolute', left: 0, width: '100%', height: 1, background: '#3b82f6', pointerEvents: 'none', zIndex: 15, display: 'none' }} />
 
-        {/* Hover 框 — 预览模式下隐藏（颜色与画布模式选中框对齐：#6366f1） */}
-        {!refinePreviewMode && hoverRect && !isResizing && (
+        {/* Hover 框 — 预览/拖拽模式下隐藏（颜色与画布模式选中框对齐：#6366f1） */}
+        {!refinePreviewMode && hoverRect && !isResizing && !isDragging && (
           <div
             style={{
               position: 'absolute', left: hoverRect.left, top: hoverRect.top,
@@ -932,8 +1339,8 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
           />
         )}
 
-        {/* 选中框 + 缩放手柄 — 预览模式下隐藏（与画布模式颜色统一：#6366f1） */}
-        {!refinePreviewMode && displayRect && !isResizing && (
+        {/* 选中框 + 缩放手柄 — 预览/拖拽模式下隐藏（与画布模式颜色统一：#6366f1） */}
+        {!refinePreviewMode && displayRect && !isResizing && !isDragging && (
           <div
             style={{
               position: 'absolute',
