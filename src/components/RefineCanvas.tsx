@@ -29,6 +29,10 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const [hoverRect, setHoverRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
   const [ready, setReady] = useState(false)
+  /** iframe 内部 DOM 真正就绪：load 事件触发 + 等 2 帧 + body 有子元素 + 1500ms 兜底
+   *  避免 loading 提示消失但内容还在解析时的"白屏 + 紫色 hover 框"误交互 */
+  const [bodyReady, setBodyReady] = useState(false)
+  const loadedAtRef = useRef<number>(0)
   const [measured, setMeasured] = useState<{ width: number; height: number } | null>(null)
 
   /** 正在编辑的元素的 eid（用于 blur 时记录 undo） */
@@ -112,6 +116,8 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
   // session 变化时强制重新挂载
   useEffect(() => {
     setReady(false)
+    setBodyReady(false)
+    loadedAtRef.current = 0
     setMeasured(null)
     setIsResizing(false)
     refineUndo.reset()
@@ -1065,6 +1071,24 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
 
       try { measureAndSyncSize() } catch (e) { console.error('[RefineCanvas] measureAndSyncSize failed:', e) }
       setReady(true)
+      loadedAtRef.current = Date.now()
+
+      // 等待 body DOM 真正渲染完毕：2 帧绘制 + 检查子元素 + 1500ms 兜底
+      // 避免 loading 消失但 iframe 内容还在解析时出现"白屏 + 紫色 hover 框"
+      let rafCount = 0
+      const checkBodyReady = () => {
+        if (cancelled) return
+        rafCount++
+        const cd = iframe.contentDocument
+        const hasContent = cd && cd.body && cd.body.children.length > 0
+        const elapsed = Date.now() - loadedAtRef.current
+        if ((rafCount >= 2 && hasContent) || elapsed >= 1500) {
+          setBodyReady(true)
+          return
+        }
+        requestAnimationFrame(checkBodyReady)
+      }
+      requestAnimationFrame(checkBodyReady)
 
       const timers: number[] = []
       timers.push(window.setTimeout(() => { if (!cancelled) measureAndSyncSize() }, 200))
@@ -1302,14 +1326,14 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
           style={{
             width: '100%', height: '100%', border: 'none', display: 'block',
             backgroundColor: 'transparent', opacity: ready ? 1 : 0,
-            transition: 'opacity 0.2s', pointerEvents: 'auto',
+            transition: 'opacity 0.2s', pointerEvents: bodyReady ? 'auto' : 'none',
           }}
         />
-        {/* 加载提示：iframe 未就绪时显示，避免白屏误解 */}
-        {!ready && (
+        {/* 加载提示：iframe 未就绪（ready）或 body 还在解析（bodyReady）时显示 */}
+        {(!ready || !bodyReady) && (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%)', zIndex: 5,
+            background: 'linear-gradient(180deg, #faf5ff 0%, #f3e8ff 100%)', zIndex: 12,
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{
@@ -1325,8 +1349,8 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         <div ref={snapGuideVRef} style={{ position: 'absolute', top: 0, width: 1, height: '100%', background: '#3b82f6', pointerEvents: 'none', zIndex: 15, display: 'none' }} />
         <div ref={snapGuideHRef} style={{ position: 'absolute', left: 0, width: '100%', height: 1, background: '#3b82f6', pointerEvents: 'none', zIndex: 15, display: 'none' }} />
 
-        {/* Hover 框 — 预览/拖拽模式下隐藏（颜色与画布模式选中框对齐：#6366f1） */}
-        {!refinePreviewMode && hoverRect && !isResizing && !isDragging && (
+        {/* Hover 框 — 预览/拖拽/body 未就绪时隐藏（避免白屏时显示紫色遮罩） */}
+        {!refinePreviewMode && bodyReady && hoverRect && !isResizing && !isDragging && (
           <div
             style={{
               position: 'absolute', left: hoverRect.left, top: hoverRect.top,
@@ -1339,8 +1363,8 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
           />
         )}
 
-        {/* 选中框 + 缩放手柄 — 预览/拖拽模式下隐藏（与画布模式颜色统一：#6366f1） */}
-        {!refinePreviewMode && displayRect && !isResizing && !isDragging && (
+        {/* 选中框 + 缩放手柄 — 预览/拖拽/body 未就绪时隐藏 */}
+        {!refinePreviewMode && bodyReady && displayRect && !isResizing && !isDragging && (
           <div
             style={{
               position: 'absolute',
