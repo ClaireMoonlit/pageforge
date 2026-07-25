@@ -161,7 +161,13 @@ export function TemplatePanel() {
             baseUrl = window.location.origin + '/'
           }
           // 2. 启动精修模式（清空 nodes，切换为 iframe 渲染）
-          useEditorStore.getState().startRefine(html, baseUrl)
+          // 推导资源目录名：sb-landing-page → assets-landing-page
+          let resourceDir: string | undefined
+          if (cachedMeta) {
+            const templateName = cachedMeta.id.replace(/^sb-/, '')
+            resourceDir = `assets-${templateName}`
+          }
+          useEditorStore.getState().startRefine(html, baseUrl, resourceDir)
           // 清理暂存的开源模板 meta（仅在精修分支用得到，freeform 分支在 handleModeConfirm 已清）
           if (cachedMeta) delete (window as unknown as { __pfImportedMeta?: ImportedTemplateMeta }).__pfImportedMeta
           setOpen(false)

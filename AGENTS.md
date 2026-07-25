@@ -2,8 +2,8 @@
 
 > **用途**：在新的 AI 对话开头，发一句"读取 `AGENTS.md` 了解项目状态"即可让 AI 快速恢复上下文。
 > **读者**：AI 助手（Claude / GPT / DeepSeek / GLM / MiniMax 等），不是给人类看的
-> **最后更新**：2026-07-18（§5.35 精修模式 loading 提示 + 多项修复）
-> **当前版本**：v0.4.7
+> **最后更新**：2026-07-26（§5.41 精修拖拽预览统一 + 多项修复）
+> **当前版本**：v0.4.8
 
 ---
 
@@ -1166,6 +1166,36 @@ interface InteractionConfig {
 ---
 
 ---
+### 5.28 十字线对齐 + 手掌平移 + 双击文本编辑修复（2026-07-16）
+
+#### 5.28a 十字线焦点与光标位置不匹配
+
+**背景**：精修模式下十字线位置与鼠标实际位置存在偏移，尤其在 iframe 内容比视口宽时（neutralize CSS 设置 `body { width: ${canvasW}px }` 可能导致内部滚动）。
+
+**修复**（`RefineCanvas.tsx`）：
+- **坐标计算增加滚动偏移**：`forwardPointerEvent` 中新增 `iframeWin.scrollX / scrollY` 补偿，将 `e.clientX/Y`（仅相对视口）转换为 `e.clientX/Y + scrollX/Y`（相对内容真实位置），再乘以 `scaleX/Y` 映射到父窗口坐标
+- **防止滚动条产生**：两处 neutralize CSS（`measureAndSyncSize` 动态注入 + `srcdoc` 模板注入）均添加 `html { overflow: hidden !important; }`，从源头消除 iframe 内部滚动条，确保 `scrollX/Y` 始终为 0
+
+#### 5.28b 手掌移动模式在精修模式下失效
+
+**背景**：手掌平移（空格 + 拖拽）在画布模式正常，但在精修模式下完全无效。根因是 pan 模式使用 React 合成事件（`onMouseDown/Move/Up` 绑定在 wrapper div 上），而精修模式下 iframe 内的事件被转发为 `pointerdown/pointermove/pointerup` 类型并派发到 `document`，React 的 `onMouse*` 合成事件无法捕获这些转发事件。
+
+**修复**（`Canvas.tsx`）：
+- 移除 wrapper div 上的 `onMouseDown/Move/Up/Leave` 四个 React 事件处理器
+- 改为 `document` 级原生 `pointerdown/pointermove/pointerup` 事件监听器
+- 使用 `isPanningRef` / `panOffsetRef` / `panModeRef` 三个 ref 同步 state，避免原生监听器闭包捕获过期值
+- 两套事件来源统一处理：画布模式原生 `PointerEvent` + 精修模式转发 `MouseEvent`
+
+#### 5.28c 双击文本整块替换无法单独编辑
+
+**背景**：精修模式下双击文本元素后，浏览器默认双击行为会选中文字，且 `requestAnimationFrame` 延迟不足以等待 React 完成 RefineTextEditor 的挂载/更新，导致 textarea 聚焦时 value 同步覆盖光标位置 → 用户一输入就整块替换。
+
+**修复**（`RefineCanvas.tsx`）：
+- 双击后调用 `iframe.contentWindow.getSelection().removeAllRanges()` 清除浏览器默认选中的文字范围
+- 将 `requestAnimationFrame` 改为 `setTimeout(100ms)`，确保 React 完成 RefineTextEditor 的渲染后再聚焦并放置光标于末尾
+
+---
+
 ### 5.29 手型光标 + 内容编辑 + 组件插入 + 预览防自导入（2026-07-17）
 
 #### 5.29a 手型光标恢复为 git 原始版本
@@ -1205,36 +1235,6 @@ interface InteractionConfig {
 
 ---
 
-### 5.28 十字线对齐 + 手掌平移 + 双击文本编辑修复（2026-07-16）
-
-#### 5.28a 十字线焦点与光标位置不匹配
-
-**背景**：精修模式下十字线位置与鼠标实际位置存在偏移，尤其在 iframe 内容比视口宽时（neutralize CSS 设置 `body { width: ${canvasW}px }` 可能导致内部滚动）。
-
-**修复**（`RefineCanvas.tsx`）：
-- **坐标计算增加滚动偏移**：`forwardPointerEvent` 中新增 `iframeWin.scrollX / scrollY` 补偿，将 `e.clientX/Y`（仅相对视口）转换为 `e.clientX/Y + scrollX/Y`（相对内容真实位置），再乘以 `scaleX/Y` 映射到父窗口坐标
-- **防止滚动条产生**：两处 neutralize CSS（`measureAndSyncSize` 动态注入 + `srcdoc` 模板注入）均添加 `html { overflow: hidden !important; }`，从源头消除 iframe 内部滚动条，确保 `scrollX/Y` 始终为 0
-
-#### 5.28b 手掌移动模式在精修模式下失效
-
-**背景**：手掌平移（空格 + 拖拽）在画布模式正常，但在精修模式下完全无效。根因是 pan 模式使用 React 合成事件（`onMouseDown/Move/Up` 绑定在 wrapper div 上），而精修模式下 iframe 内的事件被转发为 `pointerdown/pointermove/pointerup` 类型并派发到 `document`，React 的 `onMouse*` 合成事件无法捕获这些转发事件。
-
-**修复**（`Canvas.tsx`）：
-- 移除 wrapper div 上的 `onMouseDown/Move/Up/Leave` 四个 React 事件处理器
-- 改为 `document` 级原生 `pointerdown/pointermove/pointerup` 事件监听器
-- 使用 `isPanningRef` / `panOffsetRef` / `panModeRef` 三个 ref 同步 state，避免原生监听器闭包捕获过期值
-- 两套事件来源统一处理：画布模式原生 `PointerEvent` + 精修模式转发 `MouseEvent`
-
-#### 5.28c 双击文本整块替换无法单独编辑
-
-**背景**：精修模式下双击文本元素后，浏览器默认双击行为会选中文字，且 `requestAnimationFrame` 延迟不足以等待 React 完成 RefineTextEditor 的挂载/更新，导致 textarea 聚焦时 value 同步覆盖光标位置 → 用户一输入就整块替换。
-
-**修复**（`RefineCanvas.tsx`）：
-- 双击后调用 `iframe.contentWindow.getSelection().removeAllRanges()` 清除浏览器默认选中的文字范围
-- 将 `requestAnimationFrame` 改为 `setTimeout(100ms)`，确保 React 完成 RefineTextEditor 的渲染后再聚焦并放置光标于末尾
-
----
-
 ## 7. 当前已知问题 / 待办
 
 ### 🔴 高优先级（核心功能缺口）
@@ -1267,8 +1267,94 @@ interface InteractionConfig {
 - ~~十字线偏移~~：滚动偏移补偿 + html overflow:hidden 防滚动条，见 5.28a
 - ~~手掌平移精修模式失效~~：React 合成事件 → 原生 pointer 事件监听，见 5.28b
 - ~~双击文本整块替换~~：清除浏览器选中 + setTimeout 延迟聚焦，见 5.28c
+- ~~手型光标恢复~~：base64 编码替代 URL 编码，见 5.29a
+- ~~内容编辑黄色 focus 框~~：contentEditable 后设置 outline:none，见 5.29b
+- ~~组件插入延迟一帧~~：强制重排 + 同步更新画布尺寸，见 5.29c
+- ~~预览模式自导入~~：preventDefault 但保留 JS 事件，见 5.29d
+- ~~精修拖拽移动坐标修复~~：局部→主文档坐标转换 + 缩放因子，见 5.30a
+- ~~响应式 UI 适配~~：工具栏按钮 + 画布自动缩放 + 移动端触摸，见 5.30b
+- ~~两种模式 UI 整合~~：工具栏/属性面板/右键菜单/导出/预览/快捷键统一，见 5.30c
+- ~~精修拖拽交互统一~~：transform + shadow + zIndex，见 5.31
+- ~~精修拖拽吸附对齐~~：吸附参考线集成到 onMove/onUp，见 5.32
+- ~~精修拖拽视觉统一~~：ghost 浅色影子 + 选中框消失，见 5.33
+- ~~松手重新选中修复~~：dragJustEndedRef 跳过 click，见 5.34a
+- ~~浏览器原生拖拽干扰~~：capture 阶段 preventDefault dragstart，见 5.34b
+- ~~吸附参考线不显示~~：从 iframe 移到主页面 React 层渲染，见 5.34c
+- ~~精修 loading 提示~~：紫色渐变覆盖层 + spinner，见 5.35
+- ~~草稿保存确认~~：两种模式均支持 localStorage 持久化，见 5.36
+- ~~bodyReady 加载优化~~：等待 img + 400ms 最小显示 + 5s 兜底，见 5.37a
+- ~~画布尺寸不自动变长~~：React 18 批量更新修复，见 5.37b
+- ~~Freelancer Portfolio 遮罩~~：移除 h-100 全局中和，见 5.38a
+- ~~下标尺空隙~~：移除 +8 偏移量，见 5.38b
+- ~~Grayscale 文字叠页头~~：position 判断 + min-height 替代，见 5.38c
+- ~~开源模板图片显示~~：resourceDir 存储 + 路径映射，见 5.39a
+- ~~CSS url() 引号~~：保留原始引号风格，见 5.39b
+- ~~Gray 画布无限延长~~：100vh 循环依赖修复，见 5.40
+- ~~精修拖拽预览统一~~：opacity 0.92 + 无 boxShadow + ghost 占位，见 5.41
 
 ---
+
+### 5.30 精修模式拖拽移动 + 响应式适配 + 模式整合（2026-07-18）
+
+#### 5.30a 精修模式拖拽移动坐标系统修复
+
+**背景**：初版拖拽移动实现存在坐标系统不一致的 Bug —— `onPointerDown` 在 iframe 内捕获 `e.clientX/Y`（iframe 局部坐标），但全局 `onMove` 收到的是 `forwardPointerEvent` 转发的主文档坐标。两者坐标系不同导致 `dx = e.clientX - dm.startX` 计算错误，元素拖拽偏移。
+
+**修复**（`RefineCanvas.tsx`）：
+1. **坐标转换**：`onPointerDown` 中新增 iframe 局部 → 主文档坐标转换逻辑（与 `forwardPointerEvent` 相同的 scaleX/scaleY 计算），将 `startX/startY` 统一为主文档坐标
+2. **缩放因子传递**：`dragMoveRef` 新增 `scaleX`/`scaleY` 字段，存储 iframe 视觉缩放比（`iframeRect.width / innerWidth`）
+3. **像素转换**：`onMove` 中 `dx = (e.clientX - dm.startX) / dm.scaleX`，将主文档像素差转为 iframe CSS 像素后再应用到 `el.style.left/top`
+4. **视觉反馈**：拖拽激活时元素设置 `opacity: 0.75` + `cursor: grabbing` + `userSelect: none`，松手后恢复
+5. **状态重置**：`onUp` 中恢复所有视觉状态，重置 `dragMoveRef` 包含 scaleX/scaleY 默认值
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+#### 5.30b 响应式 UI 适配
+
+**背景**：前几轮已添加基础响应式布局（面板 fixed overlay + 100dvh），但工具栏按钮文字在小屏上溢出，且画布未针对移动端自动缩放。
+
+**修复**（三处联动）：
+
+1. **工具栏按钮响应式**（`Toolbar.tsx`）：
+   - 新增 `btnLabelCls = 'hidden sm:inline'` 类名
+   - 所有按钮文字（撤销/重做/删除/格式刷/复制/粘贴/重复/预览/导出）包裹 `<span className={btnLabelCls}>`
+   - 小屏（<640px）仅显示图标，sm 及以上显示图标+文字
+   - 按钮 padding 缩减：`px-3` → `px-2 sm:px-3`
+
+2. **画布自动适配移动端**（`Canvas.tsx`）：
+   - 新增 `hasAutoFitRef` 标记首次自动适配
+   - 视口宽度 < 768px 时，自动计算 `fitZoom = availableWidth / canvasWidth`，夹紧到 [0.2, 1.0]
+   - 用户手动调整 zoom 后不再自动适配（`hasAutoFitRef.current = true`）
+   - 精修模式切换时重置 `hasAutoFitRef`（`refineSession?.sessionKey` 变化）
+
+3. **移动端触摸优化**（`index.css`）：
+   - 新增 `@media (max-width: 767px)` 断点
+   - `.pf-touch-target`：最小触摸目标 44px（Apple HIG）
+   - `.pf-canvas-scroll::-webkit-scrollbar`：移动端隐藏滚动条
+   - `.pf-canvas-area`：禁止长按弹出菜单（`-webkit-touch-callout: none`）
+
+**涉及文件**：`src/components/Toolbar.tsx`、`src/components/Canvas.tsx`、`src/index.css`
+
+#### 5.30c 两种模式 UI 整合
+
+**背景**：自由画布模式和精修模式在工具栏、属性面板、右键菜单等方面已基本统一，本轮确认整合状态。
+
+**当前整合状态**：
+- ✅ 工具栏：`isRefine` 检查统一处理撤销/重做/删除/重复/预览/导出
+- ✅ 属性面板：`RefineModeBoundary` 根据 `refineSession` 自动切换 `Inspector` ↔ `RefineInspector`
+- ✅ 右键菜单：两种模式均使用 Portal 渲染到 `document.body`，统一的暗色风格
+- ✅ 导出：PNG/PDF/HTML 三种格式均支持两种模式
+- ✅ 预览：两种模式独立预览状态（`previewMode` / `refinePreviewMode`）
+- ✅ 键盘快捷键：精修模式下 Ctrl+Z/Y/Delete/Escape 独立处理，不干扰 zundo
+- ✅ 组件库插入：精修模式下通过 `refineInsertion.ts` 支持向 iframe 添加元素
+
+**未整合项（按设计）**：
+- 格式刷：仅自由画布模式（精修模式通过 RefineInspector 编辑样式）
+- 复制/粘贴：仅自由画布模式（精修模式有独立的重复/删除操作）
+- 多选对齐：仅自由画布模式（精修模式元素为真实 DOM，不支持多选）
+
+---
+
 ### 5.31 精修拖拽交互统一 + 两种模式对比分析（2026-07-18）
 
 #### 5.31a 精修拖拽交互统一（transform + shadow + zIndex）
@@ -1397,111 +1483,127 @@ interface InteractionConfig {
 
 ---
 
-## 6. 为什么不能合并？
+### 5.37 bodyReady 加载优化 + 画布尺寸不自动变长（2026-07-19）
+
+#### 5.37a bodyReady 加载提示优化
+
+**背景**：精修模式 loading 提示消失但页面未完整加载，出现白屏 + 紫色遮罩提前显示。
+
+**根因**：`bodyReady` 仅等待 `<link rel="stylesheet">`，模板使用内联 `<style>` 导致立即触发；未考虑图片加载。
+
+**修复**（`RefineCanvas.tsx`）：
+- 同时等待所有 `<img>` 加载完成（`complete` + `naturalWidth > 0` 或 `load`/`error` 事件）
+- 添加 400ms 最小显示时间（`MIN_DISPLAY_MS`），避免一闪而过
+- 5 秒兜底超时（`setTimeout(..., 5000)`），防止某资源永远挂起
+
+#### 5.37b 画布尺寸不自动变长
+
+**根因**：React 18 自动批量更新（automatic batching）使 `setState` 回调异步执行，`changed` 变量在同步检查时永远为 `false`，`updateRefineSize` 未被调用。
+
+**修复**（`RefineCanvas.tsx`）：
+- 将 `updateRefineSize(finalW, finalH)` 移入 `setMeasured` 回调内部
+- 确保尺寸变化时立即调用 store 更新，不依赖外部 `changed` 变量
+
+---
+
+### 5.38 Freelancer Portfolio 遮罩 + 下标尺空隙 + Grayscale 文字叠页头（2026-07-19）
+
+#### 5.38a Freelancer 模板 Portfolio 卡片悬停遮罩不全
+
+**根因**：中性化 CSS 中 `.h-100 { height: auto !important }` 全局覆盖了遮罩层的 `h-100` 类，导致遮罩高度仅为内容高度。
+
+**修复**（`RefineCanvas.tsx` NEUTRALIZE_CSS）：
+- 移除对 `.h-100` 和 `[style*="100%"]` 的中和，仅保留对 `100vh` 相关样式的处理
+
+#### 5.38b 下标尺与内容末端之间有空隙
+
+**根因**：`finalH` 计算中添加了 `+8` 偏移量（`const finalH = Math.ceil(h) + 8`）。
+
+**修复**（`RefineCanvas.tsx`）：
+- 移除 `+8` 偏移量，改为 `const finalH = Math.ceil(h)`
+
+#### 5.38c Grayscale 模板文字叠页头
+
+**根因 1**：中性化 CSS 中 `* { min-height: 0 !important }` 破坏了 `.masthead { min-height: 35rem }` 的原始样式。
+
+**修复 1**（`RefineCanvas.tsx` NEUTRALIZE_CSS）：
+- 将 `html, body, * { min-height: 0 !important; max-height: none !important; }` 修改为仅作用于 `html, body`
+
+**根因 2**：NEUTRALIZE 脚本把所有 `height: 100vh` 都改成了 `height: auto`，包括 Grayscale 的 `.masthead{height:100vh;padding:0}`（≥992px 时），导致 padding 被清零、高度坍塌。
+
+**修复 2**（`RefineCanvas.tsx` NEUTRALIZE 脚本）：
+- 中和脚本改为只处理 `position: fixed` 或 `position: absolute` 的元素（如 modal-backdrop 遮罩），保留 `position: relative/static` 的 hero 区块（如 masthead）
+
+---
+
+### 5.39 开源模板落地页图片 + CSS url() 引号（2026-07-19）
+
+#### 5.39a 开源模板落地页图片未能显示
+
+**根因 1**：模板中图片路径为相对路径（如 `assets/img/...`），`rewriteAssetUrls` 函数未正确映射到 `assets-<template>/` 目录。
+
+**根因 2**：`imported-templates` 目录下资源文件缺失。
+
+**修复**（`editorStore.ts` + `TemplatePanel.tsx` + `RefineCanvas.tsx`）：
+- 为 `RefineSession` 接口新增 `resourceDir` 字段，存储模板资源目录名
+- `TemplatePanel.tsx` 中从 `cachedMeta.id` 推导资源目录名（如 `sb-landing-page` → `assets-landing-page`），传递给 `startRefine`
+- `rewriteAssetUrls` 中使用 `resourceDir` 映射 `assets/` → `assets-<template>/`
+
+#### 5.39b CSS url() 引号处理
+
+**根因**：`rewriteAssetUrls` 重写 CSS `url()` 时总是用双引号 `url("...")`，但模板中 `style="background-image: url('assets/img/...')"` 用的是单引号，导致 HTML 属性被破坏。
+
+**修复**（`RefineCanvas.tsx`）：
+- `url()` 重写改为保留原始引号：`url(${quote}${base}${...}${quote})`，不再硬编码双引号
+
+---
+
+### 5.40 Gray 画布无限延长（100vh 循环依赖）（2026-07-26）
+
+**背景**：Grayscale 模板的 `.masthead` 在 `@media (min-width:992px)` 下设置 `height: 100vh`。上一轮修复（5.38c）让 NEUTRALIZE 脚本跳过 `position: relative` 的 masthead，但导致新的问题。
+
+**根因**：`.masthead` 的 `height: 100vh` 在 iframe 中形成循环依赖：
+```
+wrapperH = body.scrollHeight（包含 100vh 的 masthead）
+→ iframe 高度 = wrapperH
+→ 100vh = iframe 视口高度 = wrapperH（已变大）
+→ body.scrollHeight = wrapperH + 其他内容
+→ wrapperH 再次变大 → 无限循环 ∞
+```
+
+**修复**（`RefineCanvas.tsx` NEUTRALIZE 脚本）：
+- 对于非 `position: fixed/absolute` 的元素（如 masthead），不再跳过，而是用元素自身的 `min-height`（来自默认 CSS 规则，如 `.masthead { min-height: 35rem }`）作为固定高度替代 `100vh`
+- 既打破循环依赖，又保持 hero 区块有足够高度让内部 flex 居中正常工作
+- 对于 `position: fixed/absolute` 的元素（如 modal-backdrop），仍直接设为 `height: auto`
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+### 5.41 精修拖拽预览与自由画布模式统一（2026-07-26）
+
+**背景**：精修模式拖拽元素使用 `opacity: 0.45` + `boxShadow` + `transition`，而自由画布 DragOverlay 使用 `opacity: 0.92` + 无 boxShadow + 无 transition。两种模式拖拽手感差异明显。
+
+**修复**（`RefineCanvas.tsx`）：
+- 拖拽中元素 opacity：`0.45` → `0.92`（匹配 DragOverlay）
+- 移除 boxShadow（`0 8px 25px rgba(0, 0, 0, 0.25)`）
+- 移除 transition（`box-shadow 0.15s ease`）
+- Ghost 占位 opacity：`0.3` → `0.5`（更接近 dnd-kit 原元素留原位效果）
+
+**涉及文件**：`src/components/RefineCanvas.tsx`
+
+---
+
+## 8. 关键技术决策
+
+### 8.0 为什么不能合并两种模式？
 - Canvas 模式把 HTML 解析为抽象节点 → 丢失 CSS 选择器（@media、`:hover`、`nth-child`）、伪元素、复杂布局
 - Refine 模式的 iframe 是浏览器原生渲染，100% 还原原页面，但无法用 dnd-kit 操作内部 DOM
 - 强合并会导致：要么牺牲 CSS 保真度，要么放弃组件库拖拽
 
 **当前统一状态：**
-- ✅ 拖拽手感：两种模式均使用 `transform: translate()` + `boxShadow` + `zIndex` 提升
+- ✅ 拖拽手感：两种模式均使用 `transform: translate()` + `opacity: 0.92` + 无 boxShadow + ghost 占位
 - ✅ 工具栏、属性面板、右键菜单、导出、预览、键盘快捷键：全部统一
-
-**涉及文件**：`src/components/RefineCanvas.tsx`
-
----
-### 5.30 精修模式拖拽移动 + 响应式适配 + 模式整合（2026-07-18）
-
-#### 5.30a 精修模式拖拽移动坐标系统修复
-
-**背景**：初版拖拽移动实现存在坐标系统不一致的 Bug —— `onPointerDown` 在 iframe 内捕获 `e.clientX/Y`（iframe 局部坐标），但全局 `onMove` 收到的是 `forwardPointerEvent` 转发的主文档坐标。两者坐标系不同导致 `dx = e.clientX - dm.startX` 计算错误，元素拖拽偏移。
-
-**修复**（`RefineCanvas.tsx`）：
-1. **坐标转换**：`onPointerDown` 中新增 iframe 局部 → 主文档坐标转换逻辑（与 `forwardPointerEvent` 相同的 scaleX/scaleY 计算），将 `startX/startY` 统一为主文档坐标
-2. **缩放因子传递**：`dragMoveRef` 新增 `scaleX`/`scaleY` 字段，存储 iframe 视觉缩放比（`iframeRect.width / innerWidth`）
-3. **像素转换**：`onMove` 中 `dx = (e.clientX - dm.startX) / dm.scaleX`，将主文档像素差转为 iframe CSS 像素后再应用到 `el.style.left/top`
-4. **视觉反馈**：拖拽激活时元素设置 `opacity: 0.75` + `cursor: grabbing` + `userSelect: none`，松手后恢复
-5. **状态重置**：`onUp` 中恢复所有视觉状态，重置 `dragMoveRef` 包含 scaleX/scaleY 默认值
-
-**涉及文件**：`src/components/RefineCanvas.tsx`
-
-#### 5.30b 响应式 UI 适配
-
-**背景**：前几轮已添加基础响应式布局（面板 fixed overlay + 100dvh），但工具栏按钮文字在小屏上溢出，且画布未针对移动端自动缩放。
-
-**修复**（三处联动）：
-
-1. **工具栏按钮响应式**（`Toolbar.tsx`）：
-   - 新增 `btnLabelCls = 'hidden sm:inline'` 类名
-   - 所有按钮文字（撤销/重做/删除/格式刷/复制/粘贴/重复/预览/导出）包裹 `<span className={btnLabelCls}>`
-   - 小屏（<640px）仅显示图标，sm 及以上显示图标+文字
-   - 按钮 padding 缩减：`px-3` → `px-2 sm:px-3`
-
-2. **画布自动适配移动端**（`Canvas.tsx`）：
-   - 新增 `hasAutoFitRef` 标记首次自动适配
-   - 视口宽度 < 768px 时，自动计算 `fitZoom = availableWidth / canvasWidth`，夹紧到 [0.2, 1.0]
-   - 用户手动调整 zoom 后不再自动适配（`hasAutoFitRef.current = true`）
-   - 精修模式切换时重置 `hasAutoFitRef`（`refineSession?.sessionKey` 变化）
-
-3. **移动端触摸优化**（`index.css`）：
-   - 新增 `@media (max-width: 767px)` 断点
-   - `.pf-touch-target`：最小触摸目标 44px（Apple HIG）
-   - `.pf-canvas-scroll::-webkit-scrollbar`：移动端隐藏滚动条
-   - `.pf-canvas-area`：禁止长按弹出菜单（`-webkit-touch-callout: none`）
-
-**涉及文件**：`src/components/Toolbar.tsx`、`src/components/Canvas.tsx`、`src/index.css`
-
-#### 5.30c 两种模式 UI 整合
-
-**背景**：自由画布模式和精修模式在工具栏、属性面板、右键菜单等方面已基本统一，本轮确认整合状态。
-
-**当前整合状态**：
-- ✅ 工具栏：`isRefine` 检查统一处理撤销/重做/删除/重复/预览/导出
-- ✅ 属性面板：`RefineModeBoundary` 根据 `refineSession` 自动切换 `Inspector` ↔ `RefineInspector`
-- ✅ 右键菜单：两种模式均使用 Portal 渲染到 `document.body`，统一的暗色风格
-- ✅ 导出：PNG/PDF/HTML 三种格式均支持两种模式
-- ✅ 预览：两种模式独立预览状态（`previewMode` / `refinePreviewMode`）
-- ✅ 键盘快捷键：精修模式下 Ctrl+Z/Y/Delete/Escape 独立处理，不干扰 zundo
-- ✅ 组件库插入：精修模式下通过 `refineInsertion.ts` 支持向 iframe 添加元素
-
-**未整合项（按设计）**：
-- 格式刷：仅自由画布模式（精修模式通过 RefineInspector 编辑样式）
-- 复制/粘贴：仅自由画布模式（精修模式有独立的重复/删除操作）
-- 多选对齐：仅自由画布模式（精修模式元素为真实 DOM，不支持多选）
-
----
-
-## 7. 当前已知问题 / 待办
-
-### 🔴 高优先级（核心功能缺口）
-
-1. **组件库扩充**：缺少轮播/Carousel、弹窗/Modal、标签页/Tabs、折叠面板/Accordion 等。
-
-### 🟡 中优先级
-
-2. **HTML 导入 CSS 选择器覆盖不全**：不支持 `:not()`、`:nth-child()`、媒体查询
-3. **CSS 变量解析**：`var(--bs-primary)` 等只做了收集，未做变量替换
-4. **撤销栈粒度**：拖拽过程中产生大量历史项，应用 ref 缓冲松手一次性提交
-
-### 🟢 低优先级
-
-5. **多选编组/解组**未实现
-6. **键盘快捷键**：Ctrl+A 全选、方向键移动未实现
-7. **图层重命名**
-8. **缩略图导出 / 复制 HTML 到剪贴板**
-
-### ✅ 已完成（本次迭代）
-
-- ~~精修拖拽吸附对齐线集成~~：见 5.32
-- ~~精修拖拽视觉统一（ghost + 选中框消失）~~：见 5.33
-- ~~松手后重新选中修复~~：见 5.34a
-- ~~浏览器原生拖拽链接干扰撤销~~：见 5.34b
-- ~~吸附参考线不显示~~：见 5.34c
-- ~~精修模式 loading 提示~~：见 5.35
-- ~~草稿保存功能确认~~：见 5.36
-
----
-
-## 8. 关键技术决策
 
 ### 8.1 坐标系统（重要！）
 - 所有节点存储**画布空间**坐标（`x`/`y`），不受 `zoom` 影响
@@ -1571,7 +1673,7 @@ interface InteractionConfig {
 | [src/components/Ruler.tsx](src/components/Ruler.tsx) | - | 画布标尺（水平/垂直，拖拽创建辅助线） |
 | [src/components/Icon.tsx](src/components/Icon.tsx) | - | 智能图标（SVG/emoji 自适应，AutoIcon） |
 | [src/components/LayerTree.tsx](src/components/LayerTree.tsx) | - | 图层树（含 ID 后 4 位） |
-| [src/components/RefineCanvas.tsx](src/components/RefineCanvas.tsx) | ~1400 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 拖拽移动（ghost + 吸附线） + 撤销重做 + 测量同步 + loading 提示 |
+| [src/components/RefineCanvas.tsx](src/components/RefineCanvas.tsx) | ~1550 | 精修画布核心：iframe 渲染 + 事件绑定 + 内联编辑 + 缩放手柄 + 拖拽移动（ghost + 吸附线） + 撤销重做 + 测量同步 + loading 提示 + 100vh 循环依赖修复 |
 | [src/components/RefineInspector.tsx](src/components/RefineInspector.tsx) | ~641 | 精修属性面板：样式编辑器 + 属性编辑器 + 面包屑导航 + 元素操作 |
 | [src/components/RefineBreadcrumb.tsx](src/components/RefineBreadcrumb.tsx) | ~86 | 精修模式 DOM 层级面包屑导航 |
 | [src/components/RefineFloatToolbar.tsx](src/components/RefineFloatToolbar.tsx) | ~86 | 精修模式浮层工具条（删除/复制） |

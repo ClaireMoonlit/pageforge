@@ -414,13 +414,13 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         // 记录元素原始宽高（用于吸附计算）
         dm.elWidth = el.offsetWidth
         dm.elHeight = el.offsetHeight
-        // 创建 ghost 克隆（模拟 Canvas 模式 dnd-kit 原地留浅色影子）
+        // 创建 ghost 克隆（模拟 Canvas 模式 dnd-kit 原元素留在原位）
         const ghost = el.cloneNode(true) as HTMLElement
         ghost.setAttribute('data-pf-drag-ghost', 'true')
         ghost.style.position = el.style.position || 'relative'
         ghost.style.left = el.style.left || '0px'
         ghost.style.top = el.style.top || '0px'
-        ghost.style.opacity = '0.3'
+        ghost.style.opacity = '0.5'
         ghost.style.pointerEvents = 'none'
         ghost.style.transform = ''
         ghost.style.boxShadow = ''
@@ -430,14 +430,15 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         ghost.style.transition = ''
         el.insertAdjacentElement('afterend', ghost)
         dm.ghost = ghost
-        // 拖拽中视觉反馈：模拟 Canvas 模式 dnd-kit 的"提起来"效果
-        el.style.opacity = '0.45'
+        // 拖拽中视觉反馈：与自由画布模式 DragOverlay 统一
+        // opacity: 0.92（匹配 DragOverlay），无 boxShadow，无 transition
+        el.style.opacity = '0.92'
         el.style.transform = `translate(${dx}px, ${dy}px)`
-        el.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.25)'
+        el.style.boxShadow = ''
         el.style.zIndex = '9999'
         el.style.cursor = 'grabbing'
         el.style.userSelect = 'none'
-        el.style.transition = 'box-shadow 0.15s ease'
+        el.style.transition = ''
         // 隐藏选中框/悬停框（与 Canvas 模式一致）
         setIsDragging(true)
         // 不改变 left/top：仅通过 transform 移动，松手后再提交 left/top
@@ -668,11 +669,11 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       const styleEl = doc.createElement('style')
       styleEl.id = NEUTRALIZE_ID
       styleEl.textContent = `
-        html, body, * { min-height: 0 !important; max-height: none !important; }
+        html, body { min-height: 0 !important; max-height: none !important; }
         html, body { height: auto !important; }
         html { overflow: hidden !important; }
         body { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }
-        .vh-100, .min-vh-100, .h-100, [style*="100vh"], [style*="100%"] { height: auto !important; min-height: 0 !important; }
+        .vh-100, .min-vh-100, [style*="100vh"] { height: auto !important; min-height: 0 !important; }
         [style*="100vw"] { width: 100% !important; max-width: 100% !important; }
         [style*="max-width: 100vw"], [style*="max-width:100vw"] { max-width: 100% !important; }
       `
@@ -692,14 +693,14 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
 
     const h = Math.max(body.scrollHeight, body.offsetHeight)
     const finalW = canvasW
-    const finalH = Math.ceil(h) + 8
-    let changed = false
+    const finalH = Math.ceil(h)
     setMeasured((prev) => {
       if (prev && prev.width === finalW && prev.height === finalH) return prev
-      changed = true
+      // React 18 automatic batching 下 setState 回调异步执行，
+      // 必须在回调内部调用 store 更新，不能依赖外部 changed 变量
+      updateRefineSize(finalW, finalH)
       return { width: finalW, height: finalH }
     })
-    if (changed) updateRefineSize(finalW, finalH)
   }, [updateRefineSize])
 
   // ========== 键盘快捷键 ==========
@@ -1205,7 +1206,7 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
 
   // ========== URL 重写 ==========
 
-  const rewriteAssetUrls = (html: string, baseUrl: string): string => {
+  const rewriteAssetUrls = (html: string, baseUrl: string, resourceDir?: string | null): string => {
     const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'
     const assetRefs = html.match(/(?:href|src)=["'](assets-[^"']+)/gi) || []
     const counts = new Map<string, number>()
@@ -1213,13 +1214,19 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
       const m = r.match(/(assets-[^/'"]+)/i)
       if (m) counts.set(m[1], (counts.get(m[1]) || 0) + 1)
     }
-    let resourceDir: string | null = null
+    let detectedDir: string | null = null
     let maxCount = 0
-    for (const [dir, c] of counts) { if (c > maxCount) { maxCount = c; resourceDir = dir } }
+    for (const [dir, c] of counts) { if (c > maxCount) { maxCount = c; detectedDir = dir } }
+    // 优先使用传入的 resourceDir，回退到自动检测的 detectedDir
+    const effectiveDir = resourceDir || detectedDir
 
     const rewriteAttr = (match: string, attr: string, quote: string, value: string): string => {
       if (!value) return match
       if (value.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//')) return match
+      // 如果 HTML 使用 assets/ 通用路径，且有 resourceDir，则映射到正确的 assets-* 目录
+      if (effectiveDir && value.startsWith('assets/') && !value.startsWith('assets-')) {
+        return `${attr}=${quote}${base}${effectiveDir}/${value.slice('assets/'.length)}${quote}`
+      }
       return `${attr}=${quote}${base}${value}${quote}`
     }
 
@@ -1234,12 +1241,17 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
         if (!value || /^[a-z][a-z0-9+.-]*:/i.test(value) || value.startsWith('//') || value.startsWith('#')) return m
         if (value.startsWith('../assets/')) {
           const rest = value.slice('../assets/'.length)
-          const dir = resourceDir || 'assets'
-          return `url("${base}${dir}/${rest}")`
+          const dir = effectiveDir || 'assets'
+          return `url(${quote}${base}${dir}/${rest}${quote})`
         }
-        if (value.startsWith('assets/') && !value.startsWith('assets-')) return `url("${base}${value}")`
-        if (value.startsWith('./assets/')) return `url("${base}${value.slice(2)}")`
-        return `url("${base}${value}")`
+        if (value.startsWith('assets/') && !value.startsWith('assets-')) {
+          if (effectiveDir) {
+            return `url(${quote}${base}${effectiveDir}/${value.slice('assets/'.length)}${quote})`
+          }
+          return `url(${quote}${base}${value}${quote})`
+        }
+        if (value.startsWith('./assets/')) return `url(${quote}${base}${value.slice(2)}${quote})`
+        return `url(${quote}${base}${value}${quote})`
       },
     )
     return result
@@ -1249,19 +1261,74 @@ export function RefineCanvas({ iframeId = 'pf-refine-iframe' }: RefineCanvasProp
   const baseUrl = /^https?:\/\//i.test(rawBase) ? rawBase : typeof window !== 'undefined' ? `${window.location.origin}${rawBase.startsWith('/') ? '' : '/'}${rawBase}` : rawBase
   const normalizedBase = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'
 
-  let iframeHtml = rewriteAssetUrls(session.html, normalizedBase)
+  let iframeHtml = rewriteAssetUrls(session.html, normalizedBase, session.resourceDir)
 
   const canvasW = Math.max(320, parseInt(String(useEditorStore.getState().canvas.width)) || 1200)
   const NEUTRALIZE_CSS = `
 <style id="pf-refine-neutralize">
-  html, body, * { min-height: 0 !important; max-height: none !important; }
+  html, body { margin: 0 !important; min-height: 0 !important; max-height: none !important; }
   html, body { height: auto !important; width: ${canvasW}px !important; box-sizing: border-box !important; }
   html { overflow: hidden !important; }
   body { overflow: visible !important; overflow-x: visible !important; overflow-y: visible !important; }
-  .vh-100, .min-vh-100, .h-100, [style*="100vh"], [style*="100%"] { height: auto !important; min-height: 0 !important; }
+  .vh-100, .min-vh-100, [style*="100vh"] { height: auto !important; min-height: 0 !important; }
   [style*="100vw"] { width: 100% !important; max-width: 100% !important; }
   [style*="max-width: 100vw"], [style*="max-width:100vw"] { max-width: 100% !important; }
-</style>`
+</style>
+<script>
+(function(){
+  var done = false;
+  function neutralize() {
+    if (done) return;
+    done = true;
+    function walk(rules) {
+      for (var i = 0; i < rules.length; i++) {
+        var r = rules[i];
+        if (r.type === 1) {
+          if (r.style.height === '100vh') {
+	            try {
+	              var els = document.querySelectorAll(r.selectorText);
+	              for (var j = 0; j < els.length; j++) {
+	                var el = els[j];
+	                var pos = window.getComputedStyle(el).position;
+	                if (pos === 'fixed' || pos === 'absolute') {
+	                  // 遮罩层（如 modal-backdrop）：直接设为 auto
+	                  el.style.setProperty('height', 'auto', 'important');
+	                } else {
+	                  // position:relative/static 的 hero 区块（如 masthead）：
+	                  // 100vh 在 iframe 中会形成循环依赖（iframe 高度 → body.scrollHeight → 100vh → iframe 高度 → ∞），
+	                  // 用元素自身的 min-height（来自默认规则，如 35rem）作为固定高度替代 100vh，
+	                  // 既打破循环依赖，又保持 hero 区块有足够高度让内部 flex 居中正常工作
+	                  var minH = window.getComputedStyle(el).minHeight;
+	                  if (minH && minH !== '0px' && minH !== 'auto') {
+	                    el.style.setProperty('height', minH, 'important');
+	                  } else {
+	                    el.style.setProperty('height', 'auto', 'important');
+	                  }
+	                }
+	              }
+	            } catch(e) {}
+          }
+        } else if (r.type === 4 || r.type === 12) {
+          walk(r.cssRules);
+        }
+      }
+    }
+    try {
+      var sheets = document.styleSheets;
+      for (var i = 0; i < sheets.length; i++) {
+        try { walk(sheets[i].cssRules) } catch(e) {}
+      }
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      requestAnimationFrame(function() { requestAnimationFrame(neutralize); });
+    });
+  } else {
+    requestAnimationFrame(function() { requestAnimationFrame(neutralize); });
+  }
+})();
+</script>`
   if (iframeHtml.includes('</head>')) {
     iframeHtml = iframeHtml.replace('</head>', NEUTRALIZE_CSS + '</head>')
   } else if (iframeHtml.includes('<body')) {

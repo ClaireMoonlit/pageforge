@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import { create, useStore } from 'zustand'
 import { immer } from 'zustand/middleware/immer'
 import { temporal } from 'zundo'
 import type { CanvasConfig, CanvasNode, ComponentType, InteractionConfig, NodeProps, NodeStyle } from '@/types'
@@ -131,7 +131,7 @@ interface EditorState {
   /** 追加节点到现有画布（用于导入组件片段，不清空已有内容） */
   addNodes: (nodes: CanvasNode[], canvas?: Partial<CanvasConfig>) => void
   /** 启动精修模式：在 iframe 中渲染原始 HTML，可点击选中元素并编辑 */
-  startRefine: (html: string, baseUrl?: string) => void
+  startRefine: (html: string, baseUrl?: string, resourceDir?: string) => void
   /** 退出精修模式：返回自由画布模式（清空 refineSession） */
   exitRefine: () => void
   /** 精修模式：选中 iframe 中的某个元素（用于 Inspector 显示其属性） */
@@ -251,6 +251,9 @@ export interface RefineSession {
   /** HTML 内相对路径解析用的 base URL（如开源模板所在的目录）。
    *  undefined 时 RefineCanvas 自动用 window.location.origin 作为兜底 */
   baseUrl?: string
+  /** 资源目录名（如 assets-landing-page），用于重写 assets/ 路径到正确的 assets-* 目录。
+   *  undefined 时不做额外映射，仅将相对路径转为绝对路径。 */
+  resourceDir?: string
 }
 
 /** 递归查找并就地更新节点（支持嵌套） */
@@ -796,7 +799,7 @@ export const useEditorStore = create<EditorState>()(
 
       /** 启动精修模式：写入原始 HTML，由 RefineCanvas 渲染到 iframe。
        * canvas 配置不变（仍用现有宽度/背景色），仅切换渲染方式。 */
-      startRefine: (html) =>
+      startRefine: (html, baseUrl, resourceDir) =>
         set((state) => {
           const prevSession = state.refineSession
           // canvas.width / canvas.height 是带单位的字符串（如 "1200px"），
@@ -805,6 +808,8 @@ export const useEditorStore = create<EditorState>()(
           const h = parseInt(String(state.canvas.height)) || 800
           state.refineSession = {
             html,
+            baseUrl,
+            resourceDir,
             selectedElement: null,
             width: w,
             height: h,
